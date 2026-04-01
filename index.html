@@ -89,6 +89,52 @@
     left: 50%;
     /* transform: translateX(-50%) 대신 애니메이션 내부 transform을 사용하므로 여기선 생략 */
 }
+
+/* --- 상세 페이지 타임라인 개선 CSS --- */
+
+/* 1. API 주소 줄바꿈 및 전체 레이아웃 설정 */
+.break-all {
+    word-break: break-all; /* 긴 주소가 영역을 벗어나지 않고 줄바꿈되게 함 */
+    white-space: normal;
+}
+
+/* 2. JSON 데이터 블록 (검정 배경) */
+.json-block {
+    background-color: #0f172a; /* 진한 네이비/검정 계열 */
+    color: #e2e8f0;
+    padding: 12px;
+    border-radius: 8px;
+    font-family: 'Fira Code', monospace; /* 코딩용 폰트 느낌 */
+    font-size: 11px;
+    line-height: 1.5;
+    overflow-x: auto; /* 가로 스크롤 허용 */
+    margin-bottom: 12px;
+    border: 1px solid #1e293b;
+}
+
+/* 3. REQUEST / RESPONSE 라벨 */
+.json-label {
+    font-size: 10px;
+    font-weight: 800;
+    color: #94a3b8;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    text-transform: uppercase;
+}
+
+/* 4. API 메소드 배지 (GET, POST 등) */
+.method-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 900;
+    margin-right: 8px;
+    flex-shrink: 0; /* 배지 크기 고정 */
+}
+
     </style>
 </head>
 <body class="bg-gray-50 font-sans text-gray-900">
@@ -234,20 +280,13 @@
                 <h4 class="text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">검수 내용 (Description)</h4>
                 <div id="modal-description" class="text-sm text-slate-700 bg-slate-50 p-5 rounded-xl border border-slate-200 leading-relaxed shadow-inner font-medium whitespace-pre-wrap leading-relaxed"></div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                    <h4 class="text-[12px] font-black text-blue-500 uppercase mb-3 tracking-widest"><i class="fas fa-film mr-1"></i> 씬 정보</h4>
-                    <ul id="modal-scene-history" class="text-[11px] space-y-2 font-mono"></ul>
-                </div>
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                    <h4 class="text-[12px] font-black text-purple-500 uppercase mb-3 tracking-widest"><i class="fas fa-clone mr-1"></i> 팝업 정보</h4>
-                    <ul id="modal-popup-history" class="text-[11px] space-y-2 font-mono"></ul>
-                </div>
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                    <h4 class="text-[12px] font-black text-red-500 uppercase mb-3 tracking-widest"><i class="fas fa-network-wired mr-1"></i> 통신 정보</h4>
-                    <ul id="modal-network-history" class="text-[10px] space-y-2 font-mono break-all"></ul>
-                </div>
-            </div>
+    <div class="bg-slate-50 p-6 rounded-xl border border-slate-100">
+        <h4 class="text-[12px] font-black text-indigo-500 uppercase mb-4 tracking-widest">
+         <i class="fas fa-history mr-1"></i> 인앱 로그 타임라인 (In-App Activity)
+     </h4>
+        <div id="modal-timeline" class="space-y-1 relative before:absolute before:inset-y-0 before:left-[11px] before:w-0.5 before:bg-slate-200">
+        </div>
+    </div>
         </div>
         <div class="p-5 bg-slate-50 border-t flex justify-end gap-3 flex-shrink-0">
             <button onclick="closeModal('detailModal')" class="bg-slate-200 text-slate-600 px-6 py-2 rounded-xl font-bold hover:bg-slate-300 transition">닫기</button>
@@ -766,25 +805,161 @@ function showToast(message, type = 'success') {
 
     // 상세보기 모달
     function openDetailModal(logId) {
-        const log = globalLogs.find(l => l.id === logId); if (!log) return;
-        document.getElementById('modal-id').innerText = log.id; document.getElementById('modal-author').innerText = log.user_name || '알 수 없음';
-        document.getElementById('modal-date').innerText = formatKST(log.created_at); document.getElementById('modal-status').innerHTML = getStateBadge(log.state || log.status);
-        document.getElementById('modal-description').innerText = log.user_description || '내용 없음';
+    const log = globalLogs.find(l => l.id === logId); 
+    if (!log) return;
 
-        const parseJSON = (d) => { if (Array.isArray(d)) return d; try { return JSON.parse(d); } catch(e) { return d ? [d] : []; } };
-        const renderList = (elementId, dataArray, emptyMsg) => {
-            const el = document.getElementById(elementId); el.innerHTML = ''; 
-            if (!dataArray || dataArray.length === 0) return el.innerHTML = `<li class="text-gray-400 italic">${emptyMsg}</li>`;
-            dataArray.forEach((item, i) => {
-                const isLast = i === dataArray.length - 1;
-                const style = isLast ? 'text-blue-700 font-bold bg-white p-2 rounded shadow-sm border border-blue-200' : 'text-slate-500 flex items-center px-2';
-                const icon = isLast ? '<i class="fas fa-play mr-2 text-[8px] text-blue-500"></i>' : '<i class="fas fa-chevron-right mr-2 text-[8px] text-slate-300"></i>';
-                el.innerHTML += `<li class="${style}">${icon} <span>${typeof item === 'object' ? JSON.stringify(item) : item}</span></li>`;
-            });
-        };
-        renderList('modal-scene-history', parseJSON(log.scene_history), '씬 기록 없음.'); renderList('modal-popup-history', parseJSON(log.popup_history), '팝업 기록 없음.'); renderList('modal-network-history', parseJSON(log.network_history), '통신 기록 없음.');
-        openModal('detailModal');
+    // 기본 정보 세팅
+    document.getElementById('modal-id').innerText = log.id; 
+    document.getElementById('modal-author').innerText = log.user_name || '알 수 없음';
+    document.getElementById('modal-date').innerText = formatKST(log.created_at); 
+    document.getElementById('modal-status').innerHTML = getStateBadge(log.state || log.status);
+    document.getElementById('modal-description').innerText = log.user_description || '내용 없음';
+
+    const timelineEl = document.getElementById('modal-timeline');
+    timelineEl.innerHTML = '';
+
+    let logs = [];
+    try {
+        logs = typeof log.inAppLogs === 'string' ? JSON.parse(log.inAppLogs) : (log.inAppLogs || []);
+    } catch (e) {
+        console.error("Log parsing error:", e);
     }
+
+    if (logs.length === 0) {
+        timelineEl.innerHTML = '<p class="text-gray-400 italic text-sm pl-8 py-4">기록된 인앱 로그가 없습니다.</p>';
+    } else {
+        // [최신순 정렬]
+        logs.sort((a, b) => new Date(b.logTime) - new Date(a.logTime));
+
+        logs.forEach((item, index) => {
+            const timeStr = item.logTime ? new Date(item.logTime).toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '--:--:--';
+            let config = { icon: 'fa-info-circle', color: 'text-slate-400', bgColor: 'bg-slate-400', label: 'INFO' };
+            let headerContent = '';
+            let detailContent = '';
+
+            // [API 로그 파싱 로직]
+            if (item.logType === 'API' || item.logType === 2) {
+    config = { icon: 'fa-network-wired', color: 'text-emerald-500', bgColor: 'bg-emerald-500', label: 'API' };
+    
+    const raw = item.logContent;
+    const methodMatch = raw.match(/^\[(GET|POST|PUT|DELETE|PATCH)\]/);
+    const method = methodMatch ? methodMatch[1] : 'API';
+    
+    // URL 추출
+    let url = raw.replace(`[${method}]`, '').trim();
+    if (url.includes('Request:')) {
+        url = url.split('Request:')[0].trim();
+    } else if (url.includes('Response')) {
+        url = url.split('Response')[0].trim();
+    }
+
+    headerContent = `
+        <div class="flex flex-col w-full">
+            <div class="flex items-start">
+                <span class="method-badge bg-emerald-100 text-emerald-700 mt-0.5">${method}</span>
+                <span class="text-[11px] font-bold text-slate-700 break-all leading-relaxed flex-1">${url}</span>
+            </div>
+        </div>
+    `;
+
+    // 헬퍼 함수: JSON 문자열을 들여쓰기가 적용된 예쁜 문자열로 변환
+    const formatJson = (jsonStr) => {
+        try {
+            // 문자열을 객체로 파싱한 뒤, 2칸 들여쓰기를 적용해 다시 문자열로 만듦
+            const obj = JSON.parse(jsonStr.trim());
+            return JSON.stringify(obj, null, 2);
+        } catch (e) {
+            return jsonStr; // JSON 형식이 아니면 원본 그대로 반환
+        }
+    };
+
+    // 1. Request 영역 파싱 및 정렬
+    let requestPart = '';
+    if (raw.includes('Request:')) {
+        const reqRaw = raw.split('Request:')[1].split('Response')[0].trim();
+        requestPart = `
+            <div class="json-label"><i class="fas fa-arrow-right text-[12px]"></i> REQUEST</div>
+            <pre class="json-block">${formatJson(reqRaw)}</pre>
+        `;
+    }
+
+    // 2. Response 영역 및 상태 코드 파싱 및 정렬
+    let responsePart = '';
+    const resMatch = raw.match(/Response\[(\d+)\]:\s*([\s\S]*)$/);
+    
+    if (resMatch) {
+        const resCode = resMatch[1];
+        const resRaw = resMatch[2].trim();
+        const codeColor = resCode.startsWith('2') ? 'text-emerald-500' : 'text-red-500';
+
+        responsePart = `
+            <div class="json-label flex justify-between mt-2">
+                <span><i class="fas fa-arrow-left text-[12px]"></i> RESPONSE</span>
+                <span class="${codeColor} font-black">HTTP ${resCode}</span>
+            </div>
+            <pre class="json-block">${formatJson(resRaw)}</pre>
+        `;
+    }
+
+    detailContent = `
+        <div class="mt-3 border-t border-slate-100 pt-3">
+            ${requestPart}
+            ${responsePart}
+        </div>
+    `;
+}
+            
+            else {
+                // [일반 로그: Scene, Popup, Exception]
+                if (item.logType === 'Scene' || item.logType === 0) config = { icon: 'fa-film', color: 'text-blue-500', bgColor: 'bg-blue-500', label: 'SCENE' };
+                else if (item.logType === 'Popup' || item.logType === 1) config = { icon: 'fa-clone', color: 'text-purple-500', bgColor: 'bg-purple-500', label: 'POPUP' };
+                else if (item.logType === 'Exception' || item.logType === 3) config = { icon: 'fa-exclamation-triangle', color: 'text-red-500', bgColor: 'bg-red-500', label: 'ERROR' };
+
+                headerContent = `<span class="text-[12px] text-slate-700 font-medium truncate flex-1">${item.logContent}</span>`;
+                detailContent = `<div class="mt-2 text-[12px] text-slate-600 bg-slate-50 p-3 rounded border border-dashed whitespace-pre-wrap">${item.logContent}</div>`;
+            }
+
+            const logRow = document.createElement('div');
+            logRow.className = 'relative pl-8 pb-4 group';
+            logRow.innerHTML = `
+                <div class="absolute left-0 top-1 w-6 h-6 rounded-full ${config.bgColor} flex items-center justify-center z-10 border-2 border-white">
+                    <i class="fas ${config.icon} text-[10px] text-white"></i>
+                </div>
+                <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden transition-all">
+                    <div class="p-3 flex justify-between items-center cursor-pointer hover:bg-slate-50" onclick="toggleLogDetail('${index}')">
+                        <div class="flex flex-col flex-1 min-w-0">
+                            <span class="text-[9px] font-black ${config.color} uppercase mb-0.5">${config.label}</span>
+                            <div class="flex items-center">${headerContent}</div>
+                        </div>
+                        <div class="flex items-center gap-3 ml-2">
+                            <span class="text-[10px] font-mono text-slate-400">${timeStr}</span>
+                            <i class="fas fa-chevron-down text-[10px] text-slate-300 transition-transform duration-300" id="icon-${index}"></i>
+                        </div>
+                    </div>
+                    <div id="extra-${index}" class="hidden px-3 pb-3 bg-white">
+                        ${detailContent}
+                    </div>
+                </div>
+            `;
+            timelineEl.appendChild(logRow);
+        });
+    }
+    openModal('detailModal');
+}
+
+// 상세 토글 함수
+function toggleLogDetail(index) {
+    const extra = document.getElementById(`extra-${index}`);
+    const icon = document.getElementById(`icon-${index}`);
+    
+    if (extra.classList.contains('hidden')) {
+        extra.classList.remove('hidden');
+        icon.style.transform = 'rotate(180deg)';
+    } else {
+        extra.classList.add('hidden');
+        icon.style.transform = 'rotate(0deg)';
+    }
+}
 
     // 검수 내용 수정
     function openEditDescModal(logId) {
