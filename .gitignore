@@ -1,0 +1,44 @@
+# --- 의존성 및 패키지 (Dependencies) ---
+node_modules/
+jspm_packages/
+web_archiver/
+package-lock.json
+yarn.lock
+
+# --- 빌드 결과물 (Build Outputs) ---
+dist/
+build/
+out/
+.next/
+.nuxt/
+bin/
+obj/
+
+# --- 환경 설정 및 비밀번호 (Environment Variables) ---
+# 보안을 위해 반드시 포함해야 합니다.
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env.js
+
+# --- 에디터 및 OS 설정 (IDE & OS) ---
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+Thumbs.db
+.DS_Store
+
+# --- 로그 및 캐시 (Logs and Runtime) ---
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.eslintcache
+.stylelintcache
+.cache/
+.parcel-cache/
