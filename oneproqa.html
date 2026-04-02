@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>일프로 QA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-50 font-sans text-gray-900">
+
+<div class="flex flex-col md:flex-row min-h-screen">
+    <aside class="w-full md:w-64 bg-slate-800 text-white flex-shrink-0">
+        <div class="p-4 md:p-6 flex justify-between items-center md:block">
+            <button onclick="showSection('home')" class="flex flex-col items-center gap-1 hover:opacity-80 transition w-32 md:w-full">
+                <img src="./icon_qa2.png" alt="로고" class="h-auto w-full object-contain rounded">
+            </button>
+        </div>
+        <nav class="mt-0 md:mt-6 flex flex-row md:flex-col overflow-x-auto">
+            <button onclick="showSection('home')" id="nav-home" class="nav-item whitespace-nowrap w-full flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-white transition">
+                <i class="fas fa-home mr-3"></i> 홈
+            </button>
+            <button onclick="showSection('list')" id="nav-list" class="nav-item whitespace-nowrap w-full flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-white transition">
+                <i class="fas fa-list mr-3"></i> 검수 목록
+            </button>
+        </nav>
+    </aside>
+
+    <main class="flex-1 p-8">
+        <section id="home" class="section active">
+            <h2 class="text-3xl font-bold mb-1 text-slate-800">Overview</h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+                    <p class="text-gray-400 text-[10px] font-bold uppercase mb-1">검수 버전</p>
+                    <p class="text-xl font-bold text-blue-600" id="qaVersion">로딩중...</p>
+                </div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+                    <p class="text-gray-400 text-[10px] font-bold uppercase mb-1">검수 회차</p>
+                    <p class="text-xl font-bold text-green-600" id="qaRound">로딩중...</p>
+                </div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 md:col-span-2">
+                    <p class="text-gray-400 text-[10px] font-bold uppercase mb-1">검수 기간</p>
+                    <p class="text-lg font-bold text-slate-700" id="qaPeriod">로딩중...</p>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
+                <p class="text-gray-400 text-xs font-bold uppercase mb-4 border-b pb-2">검수 환경</p>
+                <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-server text-purple-600"></i>
+                        </div>
+                        <div>
+                            <p class="text-[10px] text-gray-400 font-bold uppercase">검수 서버</p>
+                            <p class="text-lg font-black text-slate-700" id="qaServer">로딩중...</p>
+                        </div>
+                    </div>
+                    <a id="appDownloadBtn" href="#" target="_blank" class="bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:from-purple-600 hover:to-indigo-700 transition shadow-lg shadow-purple-200 flex items-center gap-2 text-sm">
+                        <i class="fas fa-download"></i>
+                        <span>검수 앱 다운로드</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8">
+                <p class="text-gray-400 text-xs font-bold uppercase mb-4 border-b pb-2">검수 현황</p>
+                <div class="grid grid-cols-4 gap-4 text-center">
+                    <div class="p-3 bg-orange-50 rounded-lg border border-orange-100">
+                        <p class="text-orange-600 text-xs font-bold mb-1">수정 필요</p>
+                        <p class="text-2xl font-black text-orange-700" id="cntRevision">-</p>
+                    </div>
+                    <div class="p-3 bg-blue-50 rounded-lg border border-blue-100">
+                        <p class="text-blue-600 text-xs font-bold mb-1">수정 완료</p>
+                        <p class="text-2xl font-black text-blue-700" id="cntFixed">-</p>
+                    </div>
+                    <div class="p-3 bg-green-50 rounded-lg border border-green-100">
+                        <p class="text-green-600 text-xs font-bold mb-1">수정 확인</p>
+                        <p class="text-2xl font-black text-green-700" id="cntVerified">-</p>
+                    </div>
+                    <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <p class="text-gray-600 text-xs font-bold mb-1">보류</p>
+                        <p class="text-2xl font-black text-gray-700" id="cntHold">-</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="list" class="section">
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-6 gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold mb-1 text-slate-800">검수 목록</h2>
+                    <p class="text-sm text-gray-500">검수 내용을 작성해 주세요.</p>
+                </div>
+                <div class="flex flex-wrap gap-2 relative z-20 w-full lg:w-auto"> 
+                    <button onclick="confirmDeleteSelected()" class="flex-1 lg:flex-none justify-center bg-white border border-red-200 text-red-500 px-4 py-2 rounded-lg text-sm font-bold hover:bg-red-50 shadow-sm transition">
+                        <i class="fas fa-trash-alt mr-2"></i>선택 삭제
+                    </button>
+                    <button onclick="openModal('writeModal')" class="flex-1 lg:flex-none justify-center bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 shadow-md shadow-blue-200 transition">
+                        <i class="fas fa-pen mr-2"></i>작성하기
+                    </button>
+                    <button onclick="fetchLogs()" class="flex-1 lg:flex-none justify-center bg-white border border-gray-300 text-gray-600 px-4 py-2 rounded-lg text-sm font-bold hover:bg-gray-50 shadow-sm transition">
+                        <i class="fas fa-sync-alt mr-2"></i>새로고침
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-md border border-gray-200 relative z-10 overflow-hidden"> 
+                <!-- 모바일 필터 -->
+                <div class="mobile-filters">
+                    <select id="mobileAuthorFilter" onchange="syncFilters('author')" class="mobile-filter-select">
+                        <option value="all">작성자: 전체</option>
+                    </select>
+                    <select id="mobileStateFilter" onchange="syncFilters('state')" class="mobile-filter-select">
+                        <option value="all">상태: 전체</option>
+                        <option value="수정 필요">수정 필요</option>
+                        <option value="수정 완료">수정 완료</option>
+                        <option value="수정 확인">수정 확인</option>
+                        <option value="보류">보류</option>
+                    </select>
+                </div>
+
+                <!-- 모바일 전체 선택 -->
+                <div class="mobile-check-all">
+                    <input type="checkbox" id="mobileCheckAll" class="mobile-card-checkbox" onchange="toggleAllChecks(this)">
+                    <label for="mobileCheckAll">전체 선택</label>
+                </div>
+
+                <!-- 모바일 카드 뷰 -->
+                <div id="mobileCardContainer" class="mobile-card-container"></div>
+
+                <!-- 데스크탑 테이블 뷰 -->
+                <div class="overflow-x-auto desktop-table-wrapper">
+                    <table class="w-full text-left border-collapse min-w-[1000px]" id="logTable">
+                        <thead class="bg-slate-50 text-gray-500 text-xs uppercase">
+                            <tr>
+                                <th class="px-4 py-4 font-bold border-b text-center w-[5%]">
+                                    <input type="checkbox" id="checkAll" class="custom-checkbox" onchange="toggleAllChecks(this)">
+                                </th>
+                                <th class="px-4 py-4 font-bold border-b text-center w-[6%]">작성일</th>
+                                <th class="px-4 py-4 font-bold border-b text-center w-[8%]">
+                                    <div class="flex flex-col items-center gap-1">
+                                        <span>작성자</span>
+                                        <select id="authorFilter" onchange="applyFilters()" class="bg-white border border-gray-300 rounded px-1 py-0.5 text-[12px] focus:outline-none focus:ring-1 focus:ring-blue-500 w-full text-center">
+                                            <option value="all">전체 보기</option>
+                                        </select>
+                                    </div>
+                                </th>
+                                <th class="px-4 py-4 font-bold border-b text-center w-[10%]">
+                                    <div class="flex flex-col items-center gap-1">
+                                        <span>상태</span>
+                                        <select id="stateFilter" onchange="applyFilters()" class="bg-white border border-gray-300 rounded px-1 py-0.5 text-[12px] focus:outline-none focus:ring-1 focus:ring-blue-500 w-full text-center">
+                                            <option value="all">전체 보기</option>
+                                            <option value="수정 필요">수정 필요</option>
+                                            <option value="수정 완료">수정 완료</option>
+                                            <option value="수정 확인">수정 확인</option>
+                                            <option value="보류">보류</option>
+                                        </select>
+                                    </div>
+                                </th>
+                                <th class="px-4 py-4 font-bold border-b text-center w-[10%]">콘텐츠</th>
+                                <th class="px-4 py-4 font-bold border-b text-center w-[32%]">검수 내용</th>
+                                <th class="px-4 py-4 font-bold border-b text-center w-[8%]">캡처</th> 
+                                <th class="px-4 py-4 font-bold border-b text-center w-[10%]">개발자 코멘트</th>
+                                <th class="px-4 py-4 font-bold border-b text-center w-[12%]">상세보기</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logTableBody" class="divide-y divide-gray-100 text-sm">
+                            <tr><td colspan="9" class="text-center py-8 text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>불러오는 중...</td></tr>
+                        </tbody>
+                    </table>
+                    <div id="pagination" class="flex justify-center items-center gap-1 p-4 bg-white border-t border-gray-100"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<div id="detailModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100000]" style="z-index: 100001;">
+    <div class="bg-white rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
+        <div class="p-6 border-b flex justify-between items-start bg-slate-50 flex-shrink-0">
+            <div>
+                <div class="flex items-center gap-3 mb-1">
+                    <h3 class="text-xl font-black text-slate-800">검수 상세 리포트</h3>
+                    <div id="modal-status"></div>
+                </div>
+                <p class="text-xs text-gray-400 font-mono">
+                    ID: <span id="modal-id" class="text-gray-500"></span> | 작성자: <span id="modal-author" class="font-bold text-gray-600"></span> | 일시: <span id="modal-date"></span>
+                </p>
+            </div>
+            <button onclick="closeModal('detailModal')" class="text-gray-400 hover:text-red-500 text-2xl transition">&times;</button>
+        </div>
+        <div class="p-8 overflow-y-auto custom-scrollbar flex-1 bg-white">
+            <!-- 캡처 이미지 영역 -->
+            <div id="modal-image-section" class="mb-6 hidden">
+                <h4 class="text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">캡처 이미지</h4>
+                <div class="bg-slate-100 p-4 rounded-xl border border-slate-200">
+                    <img id="modal-image" src="" alt="캡처 이미지" class="max-w-full rounded-lg shadow-sm cursor-pointer hover:opacity-90 transition" onclick="openImageViewerFromModal()">
+                </div>
+            </div>
+
+            <div class="mb-8">
+                <h4 class="text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">검수 내용 (Description)</h4>
+                <div id="modal-description" class="text-sm text-slate-700 bg-slate-50 p-5 rounded-xl border border-slate-200 leading-relaxed shadow-inner font-medium whitespace-pre-wrap"></div>
+            </div>
+
+            <!-- 개발자 코멘트 영역 -->
+            <div id="modal-dev-comment-section" class="mb-6 hidden">
+                <h4 class="text-[10px] font-black text-blue-400 uppercase mb-2 tracking-widest">개발자 코멘트</h4>
+                <div id="modal-dev-comment" class="text-sm text-blue-700 bg-blue-50 p-5 rounded-xl border border-blue-200 leading-relaxed font-medium whitespace-pre-wrap"></div>
+            </div>
+
+            <div class="bg-slate-50 p-6 rounded-xl border border-slate-100">
+                <h4 class="text-[12px] font-black text-indigo-500 uppercase mb-4 tracking-widest">
+                    <i class="fas fa-history mr-1"></i> 인앱 로그 타임라인 (In-App Activity)
+                </h4>
+                <div id="modal-timeline" class="space-y-1 relative before:absolute before:inset-y-0 before:left-[11px] before:w-0.5 before:bg-slate-200">
+                </div>
+            </div>
+        </div>
+        <div class="p-5 bg-slate-50 border-t flex justify-between gap-3 flex-shrink-0">
+            <div id="modal-action-buttons" class="flex gap-2"></div>
+            <button onclick="closeModal('detailModal')" class="bg-slate-200 text-slate-600 px-6 py-2 rounded-xl font-bold hover:bg-slate-300 transition">닫기</button>
+        </div>
+    </div>
+</div>
+
+<div id="requestModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100002]">
+    <div class="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
+        <div class="p-6 border-b bg-orange-50">
+            <h3 class="text-lg font-black text-orange-800"><i class="fas fa-exclamation-triangle mr-2"></i>재수정 요청 작성</h3>
+            <p class="text-xs text-orange-600 mt-1">상태를 '수정 필요'로 되돌립니다. 추가 요청사항을 남겨주세요.</p>
+        </div>
+        <div class="p-6 bg-white space-y-5">
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                <div>
+                    <h4 class="text-[10px] font-black text-slate-400 uppercase mb-1 tracking-widest">기존 검수 내용</h4>
+                    <p id="request-existing-desc" class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed max-h-24 overflow-y-auto custom-scrollbar"></p>
+                </div>
+                <div>
+                    <h4 class="text-[10px] font-black text-blue-400 uppercase mb-1 tracking-widest">개발자 코멘트</h4>
+                    <p id="request-existing-comment" class="text-sm text-blue-700 font-medium whitespace-pre-wrap leading-relaxed bg-blue-50/50 p-2 rounded border border-blue-100"></p>
+                </div>
+            </div>
+            <div>
+                <h4 class="text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">새로운 요청 사항</h4>
+                <textarea id="request-text" class="w-full h-24 bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none" placeholder="어떤 부분이 아직 수정되지 않았나요?"></textarea>
+                <input type="hidden" id="request-log-id">
+            </div>
+        </div>
+        <div class="p-5 bg-slate-50 border-t flex justify-end gap-3">
+            <button onclick="closeModal('requestModal')" class="bg-slate-200 text-slate-600 px-4 py-2 rounded-xl font-bold hover:bg-slate-300 transition text-sm">취소</button>
+            <button onclick="submitReRequest()" class="bg-orange-500 text-white px-6 py-2 rounded-xl font-bold hover:bg-orange-600 transition text-sm">요청 및 상태 변경</button>
+        </div>
+    </div>
+</div>
+
+<div id="devProcessModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100002]">
+    <div class="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
+        <div class="p-6 border-b bg-indigo-50">
+            <h3 class="text-lg font-black text-indigo-800"><i class="fas fa-check-circle mr-2"></i>검수 항목 처리</h3>
+            <p class="text-xs text-indigo-600 mt-1">개발 진행 상황에 대한 코멘트를 남기고 상태를 변경합니다.</p>
+        </div>
+        <div class="p-6 bg-white space-y-5">
+            <div>
+                <h4 class="text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">개발자 코멘트</h4>
+                <textarea id="dev-comment-text" class="w-full h-32 bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none" placeholder="수정 내용이나 보류 사유를 입력하세요."></textarea>
+                <input type="hidden" id="dev-process-log-id">
+            </div>
+        </div>
+        <div class="p-5 bg-slate-50 border-t flex justify-between gap-3">
+            <button onclick="closeModal('devProcessModal')" class="bg-slate-200 text-slate-600 px-4 py-2 rounded-xl font-bold hover:bg-slate-300 transition text-sm">취소</button>
+            <div class="flex gap-2">
+                <button onclick="submitDevProcess('보류')" class="bg-gray-500 text-white px-5 py-2 rounded-xl font-bold hover:bg-gray-600 transition text-sm">보류 처리</button>
+                <button onclick="submitDevProcess('수정 완료')" class="bg-blue-600 text-white px-5 py-2 rounded-xl font-bold hover:bg-blue-700 transition text-sm shadow-md shadow-blue-100">수정 완료</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="deleteModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[99999]">
+    <div class="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
+        <div class="p-6 text-center">
+            <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-trash-alt text-2xl text-red-500"></i>
+            </div>
+            <h3 class="text-lg font-black text-slate-800 mb-2">정말 삭제하시겠습니까?</h3>
+            <p class="text-sm text-gray-500">선택한 <span id="delete-count" class="font-bold text-red-500">0</span>개의 항목이 목록에서 숨겨집니다.</p>
+        </div>
+        <div class="p-4 bg-slate-50 border-t flex justify-center gap-3">
+            <button onclick="closeModal('deleteModal')" class="bg-slate-200 text-slate-600 px-6 py-2 rounded-xl font-bold hover:bg-slate-300 transition w-full">취소</button>
+            <button onclick="executeDelete()" class="bg-red-500 text-white px-6 py-2 rounded-xl font-bold hover:bg-red-600 transition w-full">삭제하기</button>
+        </div>
+    </div>
+</div>
+
+<div id="writeModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[99999]">
+    <div class="bg-white rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200 flex flex-col h-[600px]">
+        <div class="p-6 border-b bg-blue-50 flex-shrink-0">
+            <h3 class="text-lg font-black text-blue-800"><i class="fas fa-pen mr-2"></i>신규 검수 작성</h3>
+            <p class="text-xs text-blue-600 mt-1">새로 발견한 버그나 수정 요청 사항을 등록합니다.</p>
+        </div>
+        <div class="flex flex-1 overflow-hidden">
+            <div class="w-1/2 p-6 border-r overflow-y-auto">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">작성자 선택</label>
+                        <select id="write-author" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                            <option value="" disabled selected>작성자를 선택해주세요</option>
+                            <option value="김예린">김예린</option><option value="김윤정">김윤정</option><option value="김재혁">김재혁</option><option value="김지용">김지용</option>
+                            <option value="박주은">박주은</option><option value="신은비">신은비</option><option value="염지혜">염지혜</option><option value="유화영">유화영</option>
+                            <option value="이태성">이태성</option><option value="장수빈">장수빈</option><option value="최정명">최정명</option><option value="홍수연">홍수연</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">콘텐츠 위치 (Scene 검색)</label>
+                        <input type="text" id="write-scene-input" list="scene-options" placeholder="예: 타이틀, Study, 로비..." class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        <datalist id="scene-options">
+                            <option value="타이틀화면 (TitleScene)">
+                            <option value="오늘의학습 (DailyStudyScene)">
+                            <option value="메인 로비 (MainLobbyScene_v4)">
+                            <option value="일프로도전 (ChallengeScene)">
+                            <option value="스테이지 (Study_1)">
+                            <option value="스테이지 결과 화면 (StageResultScene)">
+                            <option value="프로필 생성 화면 (CreateProfileScene)">
+                            <option value="매쓰갤럭시 로비 (MathGalaxyLobby)">
+                            <option value="매쓰갤럭시 인게임 (MathGalaxyInGame)">
+                            <option value="매쓰랜드런 로비 (MathRun_Lobby)">
+                            <option value="매쓰랜드런 인게임 (MathRun_Ingame)">
+                            <option value="매쓰림픽 (MathLympics)">
+                            <option value="다이아랭킹 (DiaRankingScene)">
+                            <option value="비디오센터 (VideoCenterScene)">
+                            <option value="학습결과 (LearningResultScene)">
+                            <option value="자유학습 (FreeStudyScene)">
+                            <option value="연산월드 (WorldStudyScene)">
+                            <option value="냠냠냠 스피드연산 로비 (Speed_TitleScene)">
+                            <option value="냠냠냠 스피드연산 인게임 (Speed_PlayScene)">
+                            <option value="냠냠냠 스피드연산 랭킹 (Speed_RankingScene)">
+                            <option value="AI 진단평가 L1 (AILevelTestScene_L1)">
+                            <option value="AI 진단평가 L2 (AILevelTestScene_L2)">
+                            <option value="AI 진단평가 L3 (AILevelTestScene_L3)">
+                            <option value="AI 진단평가 L3-2 (AILevelTestScene_L3_2)">
+                            <option value="판타지 아바타 로비 (FantasyAvatar_Lobby)">
+                            <option value="판타지 아바타 꾸미기 (FantasyAvatar_Play)">
+                            <option value="카드게임 (Card_SelectMode)">
+                            <option value="아이돌 아바타 (IdolAvatarScene)">
+                            <option value="깨비나라 연산런 로비 (RunGame_TitleScene)">
+                            <option value="깨비나라 연산런 인게임 (Rungame_practice_1)">
+                            <option value="인앱결제 상세페이지 (InAppPurchaseScene)">
+                            <option value="아바타 콘테스트 (AvatarContestScene)">
+                            <option value="비디오 실행 (VideoPlayScene)">
+                        </datalist>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">검수 내용</label>
+                        <textarea id="write-desc" oninput="checkSimilarIssues(this.value)" class="w-full h-48 bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none leading-relaxed" placeholder="검수 내용을 작성해 주세요."></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-400 uppercase mb-1 tracking-widest">이미지 추가</label>
+                        <input type="file" id="write-image" accept="image/*" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer border border-gray-200 rounded-lg bg-gray-50">
+                    </div>
+                </div>
+            </div>
+            <div class="w-1/2 bg-slate-50 p-6 overflow-y-auto">
+                <h4 class="text-[10px] font-black text-indigo-500 uppercase mb-3 tracking-widest flex items-center">
+                    <span class="bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded mr-2">AI</span> 유사 검수 조회
+                </h4>
+                <div id="similar-list" class="space-y-3">
+                    <p class="text-xs text-slate-400 italic text-center py-10">내용을 입력하면 유사한 항목을 찾습니다.</p>
+                </div>
+            </div>
+        </div>
+        <div class="p-5 bg-slate-50 border-t flex justify-end gap-3 flex-shrink-0">
+            <button onclick="closeModal('writeModal')" class="bg-slate-200 text-slate-600 px-6 py-2 rounded-xl font-bold hover:bg-slate-300 transition text-sm">취소</button>
+            <button onclick="submitNewLog()" id="write-submit-btn" class="bg-blue-600 text-white px-8 py-2 rounded-xl font-bold hover:bg-blue-700 transition text-sm shadow">등록하기</button>
+        </div>
+    </div>
+</div>
+
+<div id="editDescModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[99999]">
+    <div class="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
+        <div class="p-6 border-b bg-blue-50 relative">
+            <h3 class="text-lg font-black text-blue-800"><i class="fas fa-edit mr-2"></i>검수 내용 수정</h3>
+            <button onclick="closeModal('editDescModal')" class="absolute top-6 right-6 text-gray-400 hover:text-red-500 transition text-lg">&times;</button>
+        </div>
+        <div class="p-6 bg-white space-y-3">
+            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest">수정할 내용</label>
+            <textarea id="edit-desc-text" class="w-full h-32 bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none leading-relaxed"></textarea>
+            <input type="hidden" id="edit-desc-log-id">
+        </div>
+        <div class="p-5 bg-slate-50 border-t flex justify-end gap-3">
+            <button onclick="closeModal('editDescModal')" class="bg-slate-200 text-slate-600 px-5 py-2 rounded-xl font-bold hover:bg-slate-300 transition text-sm">취소</button>
+            <button onclick="submitEditDesc()" id="edit-desc-submit-btn" class="bg-blue-600 text-white px-7 py-2 rounded-xl font-bold hover:bg-blue-700 transition text-sm shadow">수정 완료</button>
+        </div>
+    </div>
+</div>
+
+<div id="editDevCommentModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[99999]">
+    <div class="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
+        <div class="p-6 border-b bg-indigo-50 relative">
+            <h3 class="text-lg font-black text-indigo-800"><i class="fas fa-comment-dots mr-2"></i>개발자 코멘트 수정</h3>
+            <button onclick="closeModal('editDevCommentModal')" class="absolute top-6 right-6 text-gray-400 hover:text-red-500 transition text-lg">&times;</button>
+        </div>
+        <div class="p-6 bg-white space-y-3">
+            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest">코멘트 수정</label>
+            <textarea id="edit-dev-comment-text" class="w-full h-32 bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none leading-relaxed" placeholder="개발자 코멘트를 입력하세요."></textarea>
+            <input type="hidden" id="edit-dev-comment-log-id">
+        </div>
+        <div class="p-5 bg-slate-50 border-t flex justify-end gap-3">
+            <button onclick="closeModal('editDevCommentModal')" class="bg-slate-200 text-slate-600 px-5 py-2 rounded-xl font-bold hover:bg-slate-300 transition text-sm">취소</button>
+            <button onclick="submitDevCommentEdit()" id="edit-dev-comment-submit-btn" class="bg-indigo-600 text-white px-7 py-2 rounded-xl font-bold hover:bg-indigo-700 transition text-sm shadow">수정 완료</button>
+        </div>
+    </div>
+</div>
+
+<div id="imageViewerModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[99999]">
+    <div class="bg-white rounded-2xl w-full max-w-5xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
+        <div class="p-4 border-b flex justify-between items-center bg-slate-50 relative">
+            <h3 class="text-sm font-bold text-slate-800">캡처 이미지 보기</h3>
+            <button onclick="closeModal('imageViewerModal')" class="text-gray-400 hover:text-red-500 transition text-lg">&times;</button>
+        </div>
+        <div class="p-6 text-center bg-slate-100 flex items-center justify-center min-h-[300px]">
+            <img id="viewer-img" src="" alt="캡처 이미지" class="max-w-full max-h-[70vh] rounded border border-gray-200 shadow-sm mx-auto object-contain bg-white">
+        </div>
+        <div class="p-4 bg-white border-t flex justify-center gap-2">
+            <button id="viewer-edit-btn" class="bg-blue-50 text-blue-600 px-4 py-1.5 rounded-lg font-bold hover:bg-blue-100 transition text-xs w-full"><i class="fas fa-sync-alt mr-1"></i>교체</button>
+            <button onclick="closeModal('imageViewerModal')" class="bg-slate-200 text-slate-600 px-4 py-1.5 rounded-lg font-bold hover:bg-slate-300 transition text-xs w-full">닫기</button>
+        </div>
+    </div>
+</div>
+
+<div id="addEditImageModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[99999]">
+    <div class="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200 relative">
+        <div class="p-4 border-b flex justify-between items-center bg-blue-50">
+            <h3 class="text-sm font-bold text-blue-800"><i class="fas fa-image mr-1"></i><span id="aei-title">이미지 관리</span></h3>
+            <button onclick="closeModal('addEditImageModal')" class="text-gray-400 hover:text-red-500 transition text-lg">&times;</button>
+        </div>
+        <div class="p-6 bg-white space-y-4">
+            <div id="aei-preview-container" class="hidden w-full aspect-video bg-slate-100 rounded-lg border border-dashed border-slate-300 overflow-hidden flex items-center justify-center">
+                <img id="aei-preview-img" src="" class="max-w-full max-h-full object-contain">
+            </div>
+            <div>
+                <label class="block text-[10px] font-black text-slate-400 uppercase mb-1 tracking-widest">새로운 이미지 선택</label>
+                <input type="file" id="aei-image-input" accept="image/*" onchange="previewSelectedImage(this)" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer border border-gray-200 rounded-lg bg-gray-50">
+            </div>
+            <input type="hidden" id="aei-log-id">
+            <input type="hidden" id="aei-old-url">
+        </div>
+        <div class="p-4 bg-slate-50 border-t flex justify-end gap-2 relative">
+            <button onclick="closeModal('addEditImageModal')" class="bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg font-bold hover:bg-slate-300 transition text-xs">취소</button>
+            <button id="aei-save-btn" onclick="submitUpdateImage()" class="bg-blue-600 text-white px-5 py-1.5 rounded-lg font-bold shadow hover:bg-blue-700 transition text-xs">이미지 저장</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script src="script.js"></script>
+</body>
+</html>
