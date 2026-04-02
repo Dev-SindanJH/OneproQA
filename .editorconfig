@@ -1,0 +1,26 @@
+root = true
+
+# HTML 파일 설정
+[*.html]
+indent_style = space
+indent_size = 4
+charset = utf-8
+end_of_line = crlf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# HTML5 void 요소 (자동 닫기 불필요)
+# Visual Studio가 HTML5로 인식하도록 설정
+file_header_template = unset
+
+# CSS 파일
+[*.css]
+indent_style = space
+indent_size = 4
+charset = utf-8
+
+# JavaScript 파일
+[*.js]
+indent_style = space
+indent_size = 4
+charset = utf-8

@@ -42,3 +42,10 @@ yarn-error.log*
 .stylelintcache
 .cache/
 .parcel-cache/
+
+# Visual Studio 관련 임시 파일들
+.vs/
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
