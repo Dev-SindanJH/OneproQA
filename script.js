@@ -8,6 +8,94 @@ let filteredLogs = [];
 let currentPage = 1;
 const itemsPerPage = 10;
 
+// Scene 이름 매핑 (영어 코드 → 한글)
+const SCENE_NAME_MAP = {
+    'TitleScene': '타이틀화면',
+    'DailyStudyScene': '오늘의학습',
+    'MainLobbyScene_v4': '메인 로비',
+    'ChallengeScene': '일프로도전',
+    'Study_1': '스테이지',
+    'StageResultScene': '스테이지 결과 화면',
+    'CreateProfileScene': '프로필 생성 화면',
+    'MathGalaxyLobby': '매쓰갤럭시 로비',
+    'MathGalaxyInGame': '매쓰갤럭시 인게임',
+    'MathRun_Lobby': '매쓰랜드런 로비',
+    'MathRun_Ingame': '매쓰랜드런 인게임',
+    'MathLympics': '매쓰림픽',
+    'DiaRankingScene': '다이아랭킹',
+    'VideoCenterScene': '비디오센터',
+    'LearningResultScene': '학습결과',
+    'FreeStudyScene': '자유학습',
+    'WorldStudyScene': '연산월드',
+    'Speed_TitleScene': '냠냠냠 스피드연산 로비',
+    'Speed_PlayScene': '냠냠냠 스피드연산 인게임',
+    'Speed_RankingScene': '냠냠냠 스피드연산 랭킹',
+    'AILevelTestScene_L1': 'AI 진단평가 L1',
+    'AILevelTestScene_L2': 'AI 진단평가 L2',
+    'AILevelTestScene_L3': 'AI 진단평가 L3',
+    'AILevelTestScene_L3_2': 'AI 진단평가 L3-2',
+    'FantasyAvatar_Lobby': '판타지 아바타 로비',
+    'FantasyAvatar_Play': '판타지 아바타 꾸미기',
+    'Card_SelectMode': '카드게임',
+    'IdolAvatarScene': '아이돌 아바타',
+    'RunGame_TitleScene': '깨비나라 연산런 로비',
+    'Rungame_practice_1': '깨비나라 연산런 인게임',
+    'InAppPurchaseScene': '인앱결제 상세페이지',
+    'AvatarContestScene': '아바타 콘테스트',
+    'VideoPlayScene': '비디오 실행'
+};
+
+// Popup 이름 매핑 (영어 코드 → 한글)
+const POPUP_NAME_MAP = {
+    'MyProfilePoP': '내 프로필 팝업',
+    'LevelManager': '레벨 변경 팝업',
+    'ReviewNoteManager': '오답 노트 팝업',
+    'PasswordCheckPoP': '비밀번호 확인 팝업',
+    'NoticePopup': '공지사항 팝업',
+    'MissionManager': '미션 팝업',
+    'SchoolLearningManager': '학교 학습',
+    'VoucherPopManager': '이용권등록 팝업',
+    'AttendanceCharacterEventPop': '7일 출석 캐릭터 이벤트 팝업',
+    'NicknameChangePopup': '닉네임 변경 팝업',
+    'LT_L4_HistoryManager': '레벨테스트 히스토리',
+    'UpgradePop': '업그레이드 팝업',
+    'ProfilePinPoPup': '프로필 비밀번호 팝업',
+    'GameRankingManager': '게임 랭킹 팝업',
+    'ChangePasswordPop': '비밀번호 변경 팝업',
+    'MaintenancePopup': '점검 안내 팝업',
+    'SettingManager': '설정 팝업',
+    'DeleteAccountPop': '계정 탈퇴 팝업',
+    'FriendsAvatarClosetManager': '프렌즈아바타 옷장',
+    'LoginSignupUI': '로그인 회원가입 UI',
+    'CommonBasePopup': '공통 기본 팝업',
+    'PurchaseHistoryPopup': '구매 내역 팝업',
+    'PersonalProfileManager': '개인 프로필 변경',
+    'AllContentPoPManager': '전체 콘텐츠 팝업',
+    'InquiryPop': '문의하기 팝업',
+    'FriendsAvatarShopManager': '프렌즈 아바타 상점',
+    'LiveContentDownloadUI': '라이브 콘텐츠 다운로드 UI',
+    'CalendarManager': '출석 팝업',
+    'VideoPlayerPopup': '비디오 팝업',
+    'PhoneNumberChangePopup': '전화번호 변경 팝업',
+    'ParentCheck_v3': '부모 인증 팝업',
+    'DialogManager_v3': '다이아 내역 팝업',
+    'LocalizationPopup': '로컬라이징 팝업',
+    'StudyStartPoP': '학습 시작 팝업',
+    'MessagePopup': '메시지 팝업',
+    'PushAlarmTimePopup': '푸시 알림 시간 설정 팝업',
+    'AppGuideManager_v3': '앱 가이드 팝업',
+    'SelectCountryPop': '국가 선택 팝업',
+    'ResourceManagerPop': '리소스 관리자 팝업',
+    'SchoolProfileManager': '학교 프로필 변경 팝업'
+};
+
+// 코드를 한글 이름으로 변환하는 함수
+function getDisplayName(code, isPopup = false) {
+    if (!code) return '';
+    const map = isPopup ? POPUP_NAME_MAP : SCENE_NAME_MAP;
+    return map[code] || code; // 매핑이 없으면 원본 반환
+}
+
 /** UI 제어 관련 함수 **/
 function showSection(sectionId) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -53,6 +141,16 @@ function closeModal(id) {
     }
 }
 
+function copyContentKey(key, type) {
+    // 클립보드에 복사
+    navigator.clipboard.writeText(key).then(() => {
+        showToast(`${type} 키값이 복사되었습니다: ${key}`, 'success');
+    }).catch(err => {
+        console.error('복사 실패:', err);
+        showToast('복사에 실패했습니다.', 'error');
+    });
+}
+
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
     if (!container) return;
@@ -81,11 +179,30 @@ function formatRelativeTime(dateString) {
     if (!dateString) return '-';
     const now = new Date();
     const target = new Date(dateString);
-    const diffMs = now - target;
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-    if (diffDays === 0) return '오늘';
+    // 정확한 시간 차이 계산
+    const diffMs = now - target;
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+
+    // 시간을 무시하고 날짜만 비교 (자정 기준)
+    const nowDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const targetDate = new Date(target.getFullYear(), target.getMonth(), target.getDate());
+    const diffDays = Math.round((nowDate - targetDate) / (1000 * 60 * 60 * 24));
+
+    // 1분 미만
+    if (diffMinutes < 1) return '방금 전';
+
+    // 1시간 이내
+    if (diffMinutes < 60) return `${diffMinutes}분 전`;
+
+    // 오늘 (24시간 이내)
+    if (diffDays === 0) return `${diffHours}시간 전`;
+
+    // 어제
     if (diffDays === 1) return '어제';
+
+    // N일 전
     return `${diffDays}일 전`;
 }
 
@@ -101,13 +218,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const rect = container.getBoundingClientRect();
         const isLeftAligned = tooltip.classList.contains('tooltip-text-left');
 
-        tooltip.style.top = `${rect.bottom + window.scrollY}px`;
+        // position: fixed는 viewport 기준이므로 scroll offset 제외
+        tooltip.style.top = `${rect.bottom}px`;
 
         if (isLeftAligned) {
             tooltip.style.left = 'auto';
             tooltip.style.right = `${window.innerWidth - rect.right}px`;
         } else {
-            tooltip.style.left = `${rect.left + window.scrollX}px`;
+            tooltip.style.left = `${rect.left}px`;
             tooltip.style.right = 'auto';
         }
     });
@@ -120,6 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(s === '수정 완료') return '<span class="whitespace-nowrap inline-block bg-blue-100 text-blue-700 px-3 py-1.5 rounded-md text-[11px] font-black border border-blue-200">수정 완료</span>';
         if(s === '수정 확인') return '<span class="whitespace-nowrap inline-block bg-green-100 text-green-700 px-3 py-1.5 rounded-md text-[11px] font-black border border-green-200">수정 확인</span>';
         if(s === '보류') return '<span class="whitespace-nowrap inline-block bg-gray-100 text-gray-600 px-3 py-1.5 rounded-md text-[11px] font-black border border-gray-300">보류</span>';
+        if(s === '서버수정 요청중') return '<span class="whitespace-nowrap inline-block bg-purple-100 text-purple-700 px-3 py-1.5 rounded-md text-[11px] font-black border border-purple-200">서버수정 요청중</span>';
         return `<span class="whitespace-nowrap inline-block bg-slate-50 text-slate-500 px-3 py-1.5 rounded-md text-[11px] font-bold border border-slate-200">${s || '신규 등록'}</span>`;
     }
 
@@ -165,7 +284,7 @@ async function fetchQAInformation() {
 }
 
 function updateDashboard(logs) {
-    let counts = {'수정 필요':0, '수정 완료':0, '수정 확인':0, '보류':0};
+    let counts = {'수정 필요':0, '수정 완료':0, '수정 확인':0, '보류':0, '서버수정 요청중':0};
     logs.forEach(log => { 
         const s = (log.state || log.status || '').trim(); 
         if(counts[s] !== undefined) counts[s]++; 
@@ -174,6 +293,31 @@ function updateDashboard(logs) {
     document.getElementById('cntFixed').innerText = counts['수정 완료'];
     document.getElementById('cntVerified').innerText = counts['수정 확인']; 
     document.getElementById('cntHold').innerText = counts['보류'];
+    // 전역 변수에 카운트 저장
+    window.statusCounts = counts;
+}
+
+function navigateToListWithFilter(state) {
+    // 카운트 확인
+    const count = window.statusCounts ? window.statusCounts[state] : 0;
+
+    if (count === 0) {
+        showToast('항목이 없습니다.', 'error');
+        return;
+    }
+
+    // 검수 목록 페이지로 이동
+    showSection('list');
+
+    // 상태 필터 적용
+    document.getElementById('stateFilter').value = state;
+    const mobileStateFilter = document.getElementById('mobileStateFilter');
+    if (mobileStateFilter) {
+        mobileStateFilter.value = state;
+    }
+
+    // 필터 적용
+    applyFilters();
 }
 
 async function fetchLogs() {
@@ -277,8 +421,8 @@ function renderTable() {
             : `<button onclick="openAddEditImageModal('${log.id}', null)" class="text-slate-500 hover:text-slate-700 text-[10px] font-bold border border-dashed border-slate-300 px-2 py-1 rounded-md transition shadow-inner">+추가</button>`;
 
         let actionButtons = '';
-        if (currentState === '수정 필요') {
-            actionButtons += `<button onclick="openDevProcessModal('${log.id}')" class="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 border border-indigo-200 px-2 py-1.5 rounded shadow-sm text-[10px] font-black transition w-full mb-1">수정완료/보류 처리</button>`;
+        if (currentState === '수정 필요' || currentState === '서버수정 요청중') {
+            actionButtons += `<button onclick="openDevProcessModal('${log.id}')" class="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 border border-indigo-200 px-2 py-1.5 rounded shadow-sm text-[10px] font-black transition w-full mb-1">상태 변경</button>`;
         } else if (currentState === '수정 완료') {
             actionButtons += `<button onclick="directUpdateState('${log.id}', '수정 확인')" class="bg-green-100 text-green-700 hover:bg-green-200 border border-green-200 px-2 py-1.5 rounded shadow-sm text-[10px] font-black transition w-full mb-1">수정 확인</button>`;
             actionButtons += `<button onclick="openReRequestModal('${log.id}')" class="bg-orange-100 text-orange-700 hover:bg-orange-200 border border-orange-200 px-2 py-1.5 rounded shadow-sm text-[10px] font-black transition w-full">재수정요청</button>`;
@@ -288,9 +432,23 @@ function renderTable() {
 
         // 콘텐츠 정보 생성 (current_scene, current_popup)
         let contentInfo = [];
-        if (log.current_scene) contentInfo.push(log.current_scene);
-        if (log.current_popup) contentInfo.push(`[팝업] ${log.current_popup}`);
-        const contentText = contentInfo.length > 0 ? contentInfo.join('<br>') : '-';
+        let contentTooltip = [];
+        if (log.current_scene) {
+            const koreanName = getDisplayName(log.current_scene, false);
+            contentInfo.push(`<span class="content-badge scene-badge" onclick="copyContentKey('${log.current_scene}', 'Scene')">${koreanName}</span>`);
+            contentTooltip.push(`Scene: ${log.current_scene}`);
+        }
+        if (log.current_popup) {
+            const koreanName = getDisplayName(log.current_popup, true);
+            contentInfo.push(`<span class="content-badge popup-badge" onclick="copyContentKey('${log.current_popup}', 'Popup')">[팝업] ${koreanName}</span>`);
+            contentTooltip.push(`Popup: ${log.current_popup}`);
+        }
+        const contentText = contentInfo.length > 0 
+            ? `<div class="tooltip-container">
+                <div>${contentInfo.join('<br>')}</div>
+                <span class="tooltip-text">${contentTooltip.join('<br>')}</span>
+               </div>` 
+            : '-';
 
         // 데스크탑 테이블 행
         const tr = document.createElement('tr');
@@ -345,8 +503,8 @@ function renderTable() {
             card.className = 'mobile-card';
 
             let mobileActionButtons = '';
-            if (currentState === '수정 필요') {
-                mobileActionButtons += `<button onclick="openDevProcessModal('${log.id}')" class="bg-indigo-100 text-indigo-700 border border-indigo-200">수정완료/보류</button>`;
+            if (currentState === '수정 필요' || currentState === '서버수정 요청중') {
+                mobileActionButtons += `<button onclick="openDevProcessModal('${log.id}')" class="bg-indigo-100 text-indigo-700 border border-indigo-200">상태 변경</button>`;
             } else if (currentState === '수정 완료') {
                 mobileActionButtons += `<button onclick="directUpdateState('${log.id}', '수정 확인')" class="bg-green-100 text-green-700 border border-green-200">수정 확인</button>`;
                 mobileActionButtons += `<button onclick="openReRequestModal('${log.id}')" class="bg-orange-100 text-orange-700 border border-orange-200">재수정요청</button>`;
@@ -449,8 +607,8 @@ function openDetailModal(logId) {
     const currentState = (log.state || log.status || '').trim();
     let actionButtonsHtml = '';
 
-    if (currentState === '수정 필요') {
-        actionButtonsHtml = `<button onclick="openDevProcessModal('${log.id}')" class="bg-indigo-600 text-white px-5 py-2 rounded-xl font-bold hover:bg-indigo-700 transition text-sm shadow-md"><i class="fas fa-check-circle mr-1"></i>수정완료/보류 처리</button>`;
+    if (currentState === '수정 필요' || currentState === '서버수정 요청중') {
+        actionButtonsHtml = `<button onclick="openDevProcessModal('${log.id}')" class="bg-indigo-600 text-white px-5 py-2 rounded-xl font-bold hover:bg-indigo-700 transition text-sm shadow-md"><i class="fas fa-check-circle mr-1"></i>상태 변경</button>`;
     } else if (currentState === '수정 완료') {
         actionButtonsHtml = `
             <button onclick="directUpdateStateFromModal('${log.id}', '수정 확인')" class="bg-green-600 text-white px-5 py-2 rounded-xl font-bold hover:bg-green-700 transition text-sm shadow-md"><i class="fas fa-check-double mr-1"></i>수정 확인</button>
@@ -639,14 +797,21 @@ async function uploadImageProcess(file) {
 
 async function submitNewLog() {
     const author = document.getElementById('write-author').value;
-    const sceneInput = document.getElementById('write-scene-input').value;
+    const contentInput = document.getElementById('write-scene-input').value;
     const desc = document.getElementById('write-desc').value.trim();
     const imgInput = document.getElementById('write-image'); 
 
-    const sceneMatch = sceneInput.match(/\(([^)]+)\)/);
-    const sceneName = sceneMatch ? sceneMatch[1] : null;
+    // 괄호 안의 코드명 추출
+    const codeMatch = contentInput.match(/\(([^)]+)\)/);
+    const codeName = codeMatch ? codeMatch[1] : null;
 
-    if (!author || !sceneName || !desc) { showToast('작성자, 올바른 위치 선택, 내용을 확인해주세요.', 'error'); return; }
+    // [Popup] 표시가 있는지 확인
+    const isPopup = contentInput.includes('[Popup]');
+
+    if (!author || !codeName || !desc) { 
+        showToast('작성자, 올바른 위치 선택, 내용을 확인해주세요.', 'error'); 
+        return; 
+    }
     localStorage.setItem('last_qa_author', author);
 
     const btn = document.getElementById('write-submit-btn'); 
@@ -656,10 +821,22 @@ async function submitNewLog() {
         let imageUrl = null;
         if (imgInput && imgInput.files && imgInput.files[0]) imageUrl = await uploadImageProcess(imgInput.files[0]);
 
-        const { error } = await supabaseClient.from('qa_logs').insert([{ 
-            user_name: author, user_description: desc, state: '수정 필요', is_delete: false,
-            current_scene: sceneName, image_url: imageUrl
-        }]);
+        // Scene과 Popup 구분하여 저장
+        const logData = { 
+            user_name: author, 
+            user_description: desc, 
+            state: '수정 필요', 
+            is_delete: false,
+            image_url: imageUrl
+        };
+
+        if (isPopup) {
+            logData.current_popup = codeName;
+        } else {
+            logData.current_scene = codeName;
+        }
+
+        const { error } = await supabaseClient.from('qa_logs').insert([logData]);
 
         if (error) throw error;
         showToast('검수 내용이 등록되었습니다.');
@@ -736,8 +913,11 @@ function openDevProcessModal(logId) {
 async function submitDevProcess(targetState) {
     const id = document.getElementById('dev-process-log-id').value;
     const comment = document.getElementById('dev-comment-text').value.trim();
-    if (!comment) return alert('개발자 코멘트를 입력해주세요.');
-    const { error } = await supabaseClient.from('qa_logs').update({ state: targetState, developer_comment: comment, updated_at: new Date().toISOString() }).eq('id', id);
+
+    // 코멘트가 비어있으면 상태값을 기본 코멘트로 사용
+    const finalComment = comment || targetState;
+
+    const { error } = await supabaseClient.from('qa_logs').update({ state: targetState, developer_comment: finalComment, updated_at: new Date().toISOString() }).eq('id', id);
     if (error) alert('실패: ' + error.message); else { showToast(`[${targetState}] 처리가 완료되었습니다.`); closeModal('devProcessModal'); fetchLogs(); }
 }
 

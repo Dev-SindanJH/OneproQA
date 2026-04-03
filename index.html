@@ -68,19 +68,19 @@
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8">
                     <p class="text-gray-400 text-xs font-bold uppercase mb-4 border-b pb-2">검수 현황</p>
                     <div class="grid grid-cols-4 gap-4 text-center">
-                        <div class="p-3 bg-orange-50 rounded-lg border border-orange-100">
+                        <div onclick="navigateToListWithFilter('수정 필요')" class="p-3 bg-orange-50 rounded-lg border border-orange-100 cursor-pointer hover:shadow-md hover:scale-105 transition-all">
                             <p class="text-orange-600 text-xs font-bold mb-1">수정 필요</p>
                             <p class="text-2xl font-black text-orange-700" id="cntRevision">-</p>
                         </div>
-                        <div class="p-3 bg-blue-50 rounded-lg border border-blue-100">
+                        <div onclick="navigateToListWithFilter('수정 완료')" class="p-3 bg-blue-50 rounded-lg border border-blue-100 cursor-pointer hover:shadow-md hover:scale-105 transition-all">
                             <p class="text-blue-600 text-xs font-bold mb-1">수정 완료</p>
                             <p class="text-2xl font-black text-blue-700" id="cntFixed">-</p>
                         </div>
-                        <div class="p-3 bg-green-50 rounded-lg border border-green-100">
+                        <div onclick="navigateToListWithFilter('수정 확인')" class="p-3 bg-green-50 rounded-lg border border-green-100 cursor-pointer hover:shadow-md hover:scale-105 transition-all">
                             <p class="text-green-600 text-xs font-bold mb-1">수정 확인</p>
                             <p class="text-2xl font-black text-green-700" id="cntVerified">-</p>
                         </div>
-                        <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <div onclick="navigateToListWithFilter('보류')" class="p-3 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer hover:shadow-md hover:scale-105 transition-all">
                             <p class="text-gray-600 text-xs font-bold mb-1">보류</p>
                             <p class="text-2xl font-black text-gray-700" id="cntHold">-</p>
                         </div>
@@ -119,6 +119,7 @@
                             <option value="수정 완료">수정 완료</option>
                             <option value="수정 확인">수정 확인</option>
                             <option value="보류">보류</option>
+                            <option value="서버수정 요청중">서버수정 요청중</option>
                         </select>
                     </div>
 
@@ -157,6 +158,7 @@
                                                 <option value="수정 완료">수정 완료</option>
                                                 <option value="수정 확인">수정 확인</option>
                                                 <option value="보류">보류</option>
+                                                <option value="서버수정 요청중">서버수정 요청중</option>
                                             </select>
                                         </div>
                                     </th>
@@ -273,8 +275,9 @@
             <div class="p-5 bg-slate-50 border-t flex justify-between gap-3">
                 <button onclick="closeModal('devProcessModal')" class="bg-slate-200 text-slate-600 px-4 py-2 rounded-xl font-bold hover:bg-slate-300 transition text-sm">취소</button>
                 <div class="flex gap-2">
-                    <button onclick="submitDevProcess('보류')" class="bg-gray-500 text-white px-5 py-2 rounded-xl font-bold hover:bg-gray-600 transition text-sm">보류 처리</button>
-                    <button onclick="submitDevProcess('수정 완료')" class="bg-blue-600 text-white px-5 py-2 rounded-xl font-bold hover:bg-blue-700 transition text-sm shadow-md shadow-blue-100">수정 완료</button>
+                    <button onclick="submitDevProcess('보류')" class="bg-gray-500 text-white px-4 py-2 rounded-xl font-bold hover:bg-gray-600 transition text-sm">보류</button>
+                    <button onclick="submitDevProcess('서버수정 요청중')" class="bg-purple-500 text-white px-4 py-2 rounded-xl font-bold hover:bg-purple-600 transition text-sm">서버수정 요청중</button>
+                    <button onclick="submitDevProcess('수정 완료')" class="bg-blue-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-blue-700 transition text-sm shadow-md shadow-blue-100">수정 완료</button>
                 </div>
             </div>
         </div>
@@ -324,8 +327,8 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">콘텐츠 위치 (Scene 검색)</label>
-                            <input type="text" id="write-scene-input" list="scene-options" placeholder="예: 타이틀, Study, 로비..." class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                            <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">콘텐츠 위치 (Scene / Popup)</label>
+                            <input type="text" id="write-scene-input" list="scene-options" placeholder="예: 타이틀, 설정 팝업, 로비..." class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
                             <datalist id="scene-options">
                                 <option value="타이틀화면 (TitleScene)">
                                 <option value="오늘의학습 (DailyStudyScene)">
@@ -360,6 +363,46 @@
                                 <option value="인앱결제 상세페이지 (InAppPurchaseScene)">
                                 <option value="아바타 콘테스트 (AvatarContestScene)">
                                 <option value="비디오 실행 (VideoPlayScene)">
+                                <option value="내 프로필 팝업 [Popup] (MyProfilePoP)">
+                                <option value="레벨 변경 팝업 [Popup] (LevelManager)">
+                                <option value="오답 노트 팝업 [Popup] (ReviewNoteManager)">
+                                <option value="비밀번호 확인 팝업 [Popup] (PasswordCheckPoP)">
+                                <option value="공지사항 팝업 [Popup] (NoticePopup)">
+                                <option value="미션 팝업 [Popup] (MissionManager)">
+                                <option value="학교 학습 [Popup] (SchoolLearningManager)">
+                                <option value="이용권등록 팝업 [Popup] (VoucherPopManager)">
+                                <option value="7일 출석 캐릭터 이벤트 팝업 [Popup] (AttendanceCharacterEventPop)">
+                                <option value="닉네임 변경 팝업 [Popup] (NicknameChangePopup)">
+                                <option value="레벨테스트 히스토리 [Popup] (LT_L4_HistoryManager)">
+                                <option value="업그레이드 팝업 [Popup] (UpgradePop)">
+                                <option value="프로필 비밀번호 팝업 [Popup] (ProfilePinPoPup)">
+                                <option value="게임 랭킹 팝업 [Popup] (GameRankingManager)">
+                                <option value="비밀번호 변경 팝업 [Popup] (ChangePasswordPop)">
+                                <option value="점검 안내 팝업 [Popup] (MaintenancePopup)">
+                                <option value="설정 팝업 [Popup] (SettingManager)">
+                                <option value="계정 탈퇴 팝업 [Popup] (DeleteAccountPop)">
+                                <option value="프렌즈아바타 옷장 [Popup] (FriendsAvatarClosetManager)">
+                                <option value="로그인 회원가입 UI [Popup] (LoginSignupUI)">
+                                <option value="공통 기본 팝업 [Popup] (CommonBasePopup)">
+                                <option value="구매 내역 팝업 [Popup] (PurchaseHistoryPopup)">
+                                <option value="개인 프로필 변경 [Popup] (PersonalProfileManager)">
+                                <option value="전체 콘텐츠 팝업 [Popup] (AllContentPoPManager)">
+                                <option value="문의하기 팝업 [Popup] (InquiryPop)">
+                                <option value="프렌즈 아바타 상점 [Popup] (FriendsAvatarShopManager)">
+                                <option value="라이브 콘텐츠 다운로드 UI [Popup] (LiveContentDownloadUI)">
+                                <option value="출석 팝업 [Popup] (CalendarManager)">
+                                <option value="비디오 팝업 [Popup] (VideoPlayerPopup)">
+                                <option value="전화번호 변경 팝업 [Popup] (PhoneNumberChangePopup)">
+                                <option value="부모 인증 팝업 [Popup] (ParentCheck_v3)">
+                                <option value="다이아 내역 팝업 [Popup] (DialogManager_v3)">
+                                <option value="로컬라이징 팝업 [Popup] (LocalizationPopup)">
+                                <option value="학습 시작 팝업 [Popup] (StudyStartPoP)">
+                                <option value="메시지 팝업 [Popup] (MessagePopup)">
+                                <option value="푸시 알림 시간 설정 팝업 [Popup] (PushAlarmTimePopup)">
+                                <option value="앱 가이드 팝업 [Popup] (AppGuideManager_v3)">
+                                <option value="국가 선택 팝업 [Popup] (SelectCountryPop)">
+                                <option value="리소스 관리자 팝업 [Popup] (ResourceManagerPop)">
+                                <option value="학교 프로필 변경 팝업 [Popup] (SchoolProfileManager)">
                             </datalist>
                         </div>
                         <div>

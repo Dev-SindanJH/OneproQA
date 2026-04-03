@@ -43,6 +43,42 @@
     white-space: normal;
 }
 
+/* 콘텐츠 배지 스타일 */
+.content-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+}
+
+.scene-badge {
+    background-color: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #93c5fd;
+}
+
+.scene-badge:hover {
+    background-color: #bfdbfe;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+    transform: translateY(-1px);
+}
+
+.popup-badge {
+    background-color: #e9d5ff;
+    color: #6b21a8;
+    border: 1px solid #c084fc;
+}
+
+.popup-badge:hover {
+    background-color: #d8b4fe;
+    box-shadow: 0 2px 4px rgba(168, 85, 247, 0.3);
+    transform: translateY(-1px);
+}
+
 /* 토스트 애니메이션 */
 @keyframes toast-in {
     from { 
