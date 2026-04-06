@@ -3,6 +3,47 @@
 .section.active { display: block; }
 .nav-item.active { background-color: #334155; border-right-width: 4px; border-color: #3b82f6; color: white; }
 
+/* 사이드바 토글 스타일 */
+#sidebar-toggle {
+    transition: all 0.3s ease;
+}
+
+/* 모바일에서 사이드바 오버레이 */
+@media (max-width: 767px) {
+    #sidebar {
+        transform: translateX(-100%);
+    }
+
+    #sidebar.sidebar-open {
+        transform: translateX(0);
+    }
+
+    #sidebar.sidebar-closed {
+        transform: translateX(-100%);
+    }
+}
+
+/* 데스크탑에서 사이드바 */
+@media (min-width: 768px) {
+    #sidebar {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        transition: width 0.3s ease, transform 0.3s ease;
+    }
+
+    #sidebar.sidebar-open {
+        width: 16rem; /* w-64 */
+        transform: translateX(0);
+    }
+
+    #sidebar.sidebar-closed {
+        width: 0;
+        transform: translateX(-100%);
+        overflow: hidden;
+    }
+}
+
 /* 툴팁 스타일 */
 .tooltip-container { position: relative; cursor: pointer; }
 .tooltip-container:hover { z-index: 50; }

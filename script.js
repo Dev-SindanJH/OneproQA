@@ -97,11 +97,49 @@ function getDisplayName(code, isPopup = false) {
 }
 
 /** UI 제어 관련 함수 **/
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    const toggleBtn = document.getElementById('sidebar-toggle');
+
+    const isOpen = sidebar.classList.contains('sidebar-open');
+
+    if (isOpen) {
+        // 닫기
+        sidebar.classList.remove('sidebar-open');
+        sidebar.classList.add('sidebar-closed');
+        overlay.classList.add('hidden');
+
+        // 햄버거 아이콘 변경
+        toggleBtn.innerHTML = '<i class="fas fa-bars text-xl"></i>';
+    } else {
+        // 열기
+        sidebar.classList.remove('sidebar-closed');
+        sidebar.classList.add('sidebar-open');
+
+        // 모바일에서는 오버레이 표시
+        if (window.innerWidth < 768) {
+            overlay.classList.remove('hidden');
+        }
+
+        // 햄버거 아이콘 변경
+        toggleBtn.innerHTML = '<i class="fas fa-times text-xl"></i>';
+    }
+}
+
 function showSection(sectionId) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.getElementById(sectionId).classList.add('active');
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     document.getElementById('nav-' + sectionId).classList.add('active');
+
+    // 모바일에서 섹션 전환 시 사이드바 자동 닫기
+    if (window.innerWidth < 768) {
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar && sidebar.classList.contains('sidebar-open')) {
+            toggleSidebar();
+        }
+    }
 }
 
 function openModal(id) {
