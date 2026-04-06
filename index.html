@@ -216,6 +216,27 @@
                     </div>
                 </div>
 
+                <!-- 검색 바 -->
+                <div class="mb-4">
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            id="searchInput" 
+                            placeholder="검수 내용 또는 개발자 코멘트 검색..." 
+                            oninput="applyFilters()"
+                            class="w-full bg-white border border-gray-300 rounded-lg pl-10 pr-10 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                        >
+                        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <button 
+                            onclick="clearSearch()" 
+                            id="clearSearchBtn"
+                            class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition hidden"
+                        >
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+
                 <div class="bg-white rounded-xl shadow-md border border-gray-200 relative z-10 overflow-hidden">
                     <!-- 모바일 필터 -->
                     <div class="mobile-filters">

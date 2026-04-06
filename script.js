@@ -494,6 +494,18 @@ function applyFilters() {
     const a = document.getElementById('authorFilter').value;
     const c = document.getElementById('contentFilter').value;
     const s = document.getElementById('stateFilter').value;
+    const searchInput = document.getElementById('searchInput');
+    const searchText = searchInput ? searchInput.value.trim().toLowerCase() : '';
+    const clearBtn = document.getElementById('clearSearchBtn');
+
+    // 검색 버튼 표시/숨김
+    if (clearBtn) {
+        if (searchText) {
+            clearBtn.classList.remove('hidden');
+        } else {
+            clearBtn.classList.add('hidden');
+        }
+    }
 
     filteredLogs = globalLogs.filter(log => {
         const authorName = log.user_name || '알 수 없음';
@@ -510,11 +522,33 @@ function applyFilters() {
         const matchAuthor = (a === 'all' || authorName === a);
         const matchState = (s === 'all' || currentState === s);
 
-        return matchAuthor && matchContent && matchState;
+        // 검색어 매칭 (검수 내용 + 개발자 코멘트)
+        let matchSearch = true;
+        if (searchText) {
+            const description = (log.user_description || '').toLowerCase();
+            const devComment = (log.developer_comment || '').toLowerCase();
+            matchSearch = description.includes(searchText) || devComment.includes(searchText);
+        }
+
+        return matchAuthor && matchContent && matchState && matchSearch;
     });
 
     currentPage = 1; 
     renderTable(); 
+}
+
+function clearSearch() {
+    const searchInput = document.getElementById('searchInput');
+    const clearBtn = document.getElementById('clearSearchBtn');
+
+    if (searchInput) {
+        searchInput.value = '';
+    }
+    if (clearBtn) {
+        clearBtn.classList.add('hidden');
+    }
+
+    applyFilters();
 }
 
 function renderTable() {
