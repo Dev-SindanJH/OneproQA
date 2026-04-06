@@ -127,6 +127,21 @@ function toggleSidebar() {
     }
 }
 
+// 툴팁을 마우스 왼쪽에 표시
+function positionTooltipLeft(event) {
+    const tooltip = event.currentTarget.querySelector('.tooltip-text-left');
+    if (!tooltip) return;
+
+    const mouseX = event.clientX;
+    const mouseY = event.clientY;
+
+    // 툴팁의 너비를 고려하여 왼쪽에 배치
+    const tooltipWidth = tooltip.offsetWidth || 400; // 기본값 400px
+
+    tooltip.style.left = `${mouseX - tooltipWidth - 10}px`;
+    tooltip.style.top = `${mouseY + 10}px`;
+}
+
 function showSection(sectionId) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.getElementById(sectionId).classList.add('active');
