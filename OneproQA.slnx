@@ -1,7 +1,6 @@
 <Solution>
   <Folder Name="/솔루션 항목/">
     <File Path="index.html" />
-    <File Path="oneproqa.html" />
     <File Path="script.js" />
     <File Path="style.css" />
   </Folder>

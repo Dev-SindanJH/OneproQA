@@ -295,6 +295,9 @@ function updateDashboard(logs) {
     document.getElementById('cntHold').innerText = counts['보류'];
     // 전역 변수에 카운트 저장
     window.statusCounts = counts;
+
+    // 대시보드 분석 업데이트
+    updateDashboardAnalytics(logs);
 }
 
 function navigateToListWithFilter(state) {
@@ -363,16 +366,60 @@ function updateAuthorDropdown() {
         mobileAuthorFilter.innerHTML = mobileFilterHtml;
         mobileAuthorFilter.value = currentSelection || 'all';
     }
+
+    // 콘텐츠 필터 드롭다운 업데이트
+    updateContentDropdown();
+}
+
+function updateContentDropdown() {
+    const contentFilter = document.getElementById('contentFilter');
+    const mobileContentFilter = document.getElementById('mobileContentFilter');
+    const contents = new Set();
+
+    globalLogs.forEach(log => {
+        if (log.current_scene) {
+            const koreanName = getDisplayName(log.current_scene, false);
+            contents.add(koreanName);
+        }
+        if (log.current_popup) {
+            const koreanName = getDisplayName(log.current_popup, true);
+            contents.add(`[팝업] ${koreanName}`);
+        }
+    });
+
+    const currentSelection = contentFilter ? contentFilter.value : 'all';
+    let filterHtml = '<option value="all">전체 보기</option>';
+    let mobileFilterHtml = '<option value="all">콘텐츠: 전체</option>';
+
+    const sortedContents = Array.from(contents).sort();
+    sortedContents.forEach(content => {
+        filterHtml += `<option value="${content}">${content}</option>`;
+        mobileFilterHtml += `<option value="${content}">콘텐츠: ${content}</option>`;
+    });
+
+    if (contentFilter) {
+        contentFilter.innerHTML = filterHtml;
+        contentFilter.value = currentSelection || 'all';
+    }
+
+    if (mobileContentFilter) {
+        mobileContentFilter.innerHTML = mobileFilterHtml;
+        mobileContentFilter.value = currentSelection || 'all';
+    }
 }
 
 function syncFilters(type) {
     const authorFilter = document.getElementById('authorFilter');
     const mobileAuthorFilter = document.getElementById('mobileAuthorFilter');
+    const contentFilter = document.getElementById('contentFilter');
+    const mobileContentFilter = document.getElementById('mobileContentFilter');
     const stateFilter = document.getElementById('stateFilter');
     const mobileStateFilter = document.getElementById('mobileStateFilter');
 
     if (type === 'author' && mobileAuthorFilter) {
         authorFilter.value = mobileAuthorFilter.value;
+    } else if (type === 'content' && mobileContentFilter) {
+        contentFilter.value = mobileContentFilter.value;
     } else if (type === 'state' && mobileStateFilter) {
         stateFilter.value = mobileStateFilter.value;
     }
@@ -381,14 +428,25 @@ function syncFilters(type) {
 
 function applyFilters() {
     const a = document.getElementById('authorFilter').value;
+    const c = document.getElementById('contentFilter').value;
     const s = document.getElementById('stateFilter').value;
-    
+
     filteredLogs = globalLogs.filter(log => {
         const authorName = log.user_name || '알 수 없음';
         const currentState = (log.state || log.status || '').trim();
+
+        // 콘텐츠 매칭
+        let matchContent = (c === 'all');
+        if (!matchContent) {
+            const sceneKorean = log.current_scene ? getDisplayName(log.current_scene, false) : null;
+            const popupKorean = log.current_popup ? `[팝업] ${getDisplayName(log.current_popup, true)}` : null;
+            matchContent = (sceneKorean === c || popupKorean === c);
+        }
+
         const matchAuthor = (a === 'all' || authorName === a);
         const matchState = (s === 'all' || currentState === s);
-        return matchAuthor && matchState;
+
+        return matchAuthor && matchContent && matchState;
     });
 
     currentPage = 1; 
@@ -953,6 +1011,339 @@ async function submitDevCommentEdit() {
         closeModal('editDevCommentModal');
         fetchLogs();
     }
+}
+
+/** 대시보드 분석 함수 **/
+// 차트 인스턴스 저장
+let statusChartInstance = null;
+let authorChartInstance = null;
+let sceneChartInstance = null;
+let popupChartInstance = null;
+
+// 씬/팝업 분류 함수
+function analyzeContentDistribution(logs) {
+    const sceneStats = {};
+    const popupStats = {};
+    let popupCount = 0;
+    let sceneOnlyCount = 0;
+
+    logs.forEach(log => {
+        // 씬 집계
+        if (log.current_scene) {
+            const sceneName = getDisplayName(log.current_scene, false);
+            sceneStats[sceneName] = (sceneStats[sceneName] || 0) + 1;
+        }
+
+        // 팝업 집계
+        if (log.current_popup) {
+            const popupName = getDisplayName(log.current_popup, true);
+            popupStats[popupName] = (popupStats[popupName] || 0) + 1;
+            popupCount++;
+        }
+
+        // 씬만 있는 경우와 팝업 포함 분류
+        if (log.current_scene && !log.current_popup) {
+            sceneOnlyCount++;
+        }
+    });
+
+    return {
+        sceneStats,
+        popupStats,
+        popupCount,
+        sceneOnlyCount,
+        totalCount: logs.length
+    };
+}
+
+// 작성자별 검수 건수 집계
+function analyzeAuthorStats(logs) {
+    const authorStats = {};
+
+    logs.forEach(log => {
+        const author = log.user_name || '알 수 없음';
+        if (!authorStats[author]) {
+            authorStats[author] = {
+                total: 0,
+                byStatus: {
+                    '수정 필요': 0,
+                    '수정 완료': 0,
+                    '수정 확인': 0,
+                    '보류': 0,
+                    '서버수정 요청중': 0
+                }
+            };
+        }
+
+        authorStats[author].total++;
+        const status = (log.state || log.status || '').trim();
+        if (authorStats[author].byStatus[status] !== undefined) {
+            authorStats[author].byStatus[status]++;
+        }
+    });
+
+    return authorStats;
+}
+
+// Top N 항목 추출
+function getTopItems(stats, n = 5) {
+    return Object.entries(stats)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, n);
+}
+
+// 대시보드 요약 통계 업데이트
+function updateDashboardSummary(logs) {
+    const { sceneStats, popupStats, popupCount, sceneOnlyCount, totalCount } = analyzeContentDistribution(logs);
+    const authorStats = analyzeAuthorStats(logs);
+
+    document.getElementById('dash-total-count').textContent = totalCount;
+    document.getElementById('dash-popup-count').textContent = popupCount;
+    document.getElementById('dash-scene-count').textContent = sceneOnlyCount;
+    document.getElementById('dash-author-count').textContent = Object.keys(authorStats).length;
+}
+
+// 상태별 분포 도넛 차트
+function renderStatusChart(logs) {
+    const ctx = document.getElementById('statusChart');
+    if (!ctx) return;
+
+    const statusCounts = {
+        '수정 필요': 0,
+        '수정 완료': 0,
+        '수정 확인': 0,
+        '보류': 0,
+        '서버수정 요청중': 0
+    };
+
+    logs.forEach(log => {
+        const status = (log.state || log.status || '').trim();
+        if (statusCounts[status] !== undefined) {
+            statusCounts[status]++;
+        }
+    });
+
+    if (statusChartInstance) {
+        statusChartInstance.destroy();
+    }
+
+    statusChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(statusCounts),
+            datasets: [{
+                data: Object.values(statusCounts),
+                backgroundColor: [
+                    'rgba(251, 146, 60, 0.8)',  // 수정 필요
+                    'rgba(59, 130, 246, 0.8)',  // 수정 완료
+                    'rgba(34, 197, 94, 0.8)',   // 수정 확인
+                    'rgba(156, 163, 175, 0.8)', // 보류
+                    'rgba(168, 85, 247, 0.8)'   // 서버수정 요청중
+                ],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 15,
+                        font: { size: 12 }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${label}: ${value}건 (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// 작성자별 검수 건수 바 차트
+function renderAuthorChart(logs) {
+    const ctx = document.getElementById('authorChart');
+    if (!ctx) return;
+
+    const authorStats = analyzeAuthorStats(logs);
+    const sortedAuthors = Object.entries(authorStats)
+        .map(([name, data]) => ({ name, count: data.total }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10);
+
+    if (authorChartInstance) {
+        authorChartInstance.destroy();
+    }
+
+    authorChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: sortedAuthors.map(a => a.name),
+            datasets: [{
+                label: '검수 건수',
+                data: sortedAuthors.map(a => a.count),
+                backgroundColor: 'rgba(34, 197, 94, 0.7)',
+                borderColor: 'rgba(34, 197, 94, 1)',
+                borderWidth: 2,
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.parsed.x}건`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1 },
+                    grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                },
+                y: {
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+}
+
+// 씬별 검수 건수 수평 바 차트
+function renderSceneChart(logs) {
+    const ctx = document.getElementById('sceneChart');
+    if (!ctx) return;
+
+    const { sceneStats } = analyzeContentDistribution(logs);
+    const sortedScenes = Object.entries(sceneStats)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10);
+
+    if (sceneChartInstance) {
+        sceneChartInstance.destroy();
+    }
+
+    sceneChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: sortedScenes.map(s => s[0]),
+            datasets: [{
+                label: '발생 건수',
+                data: sortedScenes.map(s => s[1]),
+                backgroundColor: 'rgba(99, 102, 241, 0.7)',
+                borderColor: 'rgba(99, 102, 241, 1)',
+                borderWidth: 2,
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `문제 발생: ${context.parsed.x}건`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1 },
+                    grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                },
+                y: {
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+}
+
+// 팝업별 검수 건수 수평 바 차트
+function renderPopupChart(logs) {
+    const ctx = document.getElementById('popupChart');
+    if (!ctx) return;
+
+    const { popupStats } = analyzeContentDistribution(logs);
+    const sortedPopups = Object.entries(popupStats)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10);
+
+    if (popupChartInstance) {
+        popupChartInstance.destroy();
+    }
+
+    popupChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: sortedPopups.map(p => p[0]),
+            datasets: [{
+                label: '발생 건수',
+                data: sortedPopups.map(p => p[1]),
+                backgroundColor: 'rgba(168, 85, 247, 0.7)',
+                borderColor: 'rgba(168, 85, 247, 1)',
+                borderWidth: 2,
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `문제 발생: ${context.parsed.x}건`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1 },
+                    grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                },
+                y: {
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+}
+
+// 대시보드 분석 데이터 업데이트 (차트 렌더링)
+function updateDashboardAnalytics(logs) {
+    updateDashboardSummary(logs);
+    renderStatusChart(logs);
+    renderAuthorChart(logs);
+    renderSceneChart(logs);
+    renderPopupChart(logs);
 }
 
 // 초기 실행

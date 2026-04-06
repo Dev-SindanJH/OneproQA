@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-gray-50 font-sans text-gray-900">
@@ -24,6 +25,9 @@
                 </button>
                 <button onclick="showSection('list')" id="nav-list" class="nav-item whitespace-nowrap w-full flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-white transition">
                     <i class="fas fa-list mr-3"></i> 검수 목록
+                </button>
+                <button onclick="showSection('dashboard')" id="nav-dashboard" class="nav-item whitespace-nowrap w-full flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-white transition">
+                    <i class="fas fa-chart-line mr-3"></i> 대시보드
                 </button>
             </nav>
         </aside>
@@ -88,6 +92,103 @@
                 </div>
             </section>
 
+            <section id="dashboard" class="section">
+                <div class="mb-6">
+                    <h2 class="text-3xl font-bold mb-2 text-slate-800">검수 분석 대시보드</h2>
+                    <p class="text-sm text-gray-500">검수 데이터를 시각적으로 분석합니다.</p>
+                </div>
+
+                <!-- 요약 통계 -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-clipboard-list text-blue-600"></i>
+                            </div>
+                            <p class="text-gray-400 text-xs font-bold uppercase">전체 검수</p>
+                        </div>
+                        <p class="text-2xl font-black text-blue-600" id="dash-total-count">-</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-window-restore text-purple-600"></i>
+                            </div>
+                            <p class="text-gray-400 text-xs font-bold uppercase">팝업 검수</p>
+                        </div>
+                        <p class="text-2xl font-black text-purple-600" id="dash-popup-count">-</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-desktop text-indigo-600"></i>
+                            </div>
+                            <p class="text-gray-400 text-xs font-bold uppercase">씬 검수</p>
+                        </div>
+                        <p class="text-2xl font-black text-indigo-600" id="dash-scene-count">-</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-users text-green-600"></i>
+                            </div>
+                            <p class="text-gray-400 text-xs font-bold uppercase">참여 인원</p>
+                        </div>
+                        <p class="text-2xl font-black text-green-600" id="dash-author-count">-</p>
+                    </div>
+                </div>
+
+                <!-- 차트 그리드 -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <!-- 상태별 분포 도넛 차트 -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <h3 class="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
+                            <i class="fas fa-chart-pie text-blue-500"></i>
+                            검수 상태 분포
+                        </h3>
+                        <div class="relative" style="height: 300px;">
+                            <canvas id="statusChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- 작성자별 검수 건수 바 차트 -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <h3 class="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
+                            <i class="fas fa-chart-bar text-green-500"></i>
+                            작성자별 검수 건수
+                        </h3>
+                        <div class="relative" style="height: 300px;">
+                            <canvas id="authorChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 씬/팝업 분석 -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- 씬별 검수 건수 -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <h3 class="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
+                            <i class="fas fa-desktop text-indigo-500"></i>
+                            씬별 검수 현황 (문제 발생 빈도)
+                        </h3>
+                        <div class="relative" style="height: 350px;">
+                            <canvas id="sceneChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- 팝업별 검수 건수 -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <h3 class="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
+                            <i class="fas fa-window-restore text-purple-500"></i>
+                            팝업별 검수 현황 (문제 발생 빈도)
+                        </h3>
+                        <div class="relative" style="height: 350px;">
+                            <canvas id="popupChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <section id="list" class="section">
                 <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-6 gap-4">
                     <div>
@@ -112,6 +213,9 @@
                     <div class="mobile-filters">
                         <select id="mobileAuthorFilter" onchange="syncFilters('author')" class="mobile-filter-select">
                             <option value="all">작성자: 전체</option>
+                        </select>
+                        <select id="mobileContentFilter" onchange="syncFilters('content')" class="mobile-filter-select">
+                            <option value="all">콘텐츠: 전체</option>
                         </select>
                         <select id="mobileStateFilter" onchange="syncFilters('state')" class="mobile-filter-select">
                             <option value="all">상태: 전체</option>
@@ -151,6 +255,14 @@
                                     </th>
                                     <th class="px-4 py-4 font-bold border-b text-center w-[10%]">
                                         <div class="flex flex-col items-center gap-1">
+                                            <span>콘텐츠</span>
+                                            <select id="contentFilter" onchange="applyFilters()" class="bg-white border border-gray-300 rounded px-1 py-0.5 text-[12px] focus:outline-none focus:ring-1 focus:ring-blue-500 w-full text-center">
+                                                <option value="all">전체 보기</option>
+                                            </select>
+                                        </div>
+                                    </th>
+                                    <th class="px-4 py-4 font-bold border-b text-center w-[10%]">
+                                        <div class="flex flex-col items-center gap-1">
                                             <span>상태</span>
                                             <select id="stateFilter" onchange="applyFilters()" class="bg-white border border-gray-300 rounded px-1 py-0.5 text-[12px] focus:outline-none focus:ring-1 focus:ring-blue-500 w-full text-center">
                                                 <option value="all">전체 보기</option>
@@ -162,7 +274,6 @@
                                             </select>
                                         </div>
                                     </th>
-                                    <th class="px-4 py-4 font-bold border-b text-center w-[10%]">콘텐츠</th>
                                     <th class="px-4 py-4 font-bold border-b text-center w-[32%]">검수 내용</th>
                                     <th class="px-4 py-4 font-bold border-b text-center w-[8%]">캡처</th>
                                     <th class="px-4 py-4 font-bold border-b text-center w-[10%]">개발자 코멘트</th>

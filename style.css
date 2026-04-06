@@ -336,3 +336,30 @@ table {
 tbody, tr, td {
     overflow: visible !important;
 }
+
+/* 대시보드 차트 스타일 */
+.dashboard-chart-container {
+    position: relative;
+    height: 300px;
+}
+
+canvas {
+    max-height: 100%;
+}
+
+/* 대시보드 카드 호버 효과 */
+.dashboard-card {
+    transition: all 0.3s ease;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* 반응형 대시보드 */
+@media (max-width: 768px) {
+    .dashboard-chart-container {
+        height: 250px;
+    }
+}
