@@ -7,6 +7,7 @@ let globalLogs = [];
 let filteredLogs = []; 
 let currentPage = 1;
 const itemsPerPage = 10;
+let currentBundleCode = ''; // 현재 검수 번들 코드
 
 // Scene 이름 매핑 (영어 코드 → 한글)
 const SCENE_NAME_MAP = {
@@ -307,7 +308,16 @@ async function fetchQAInformation() {
     const appDownloadBtn = document.getElementById('appDownloadBtn');
 
     if (data && data.length > 0) {
-        versionEl.innerText = `v${data[0].version}`; 
+        // bundleCode 저장
+        currentBundleCode = data[0].bundleCode || '';
+
+        // 버전 표시 (bundleCode 포함)
+        if (currentBundleCode) {
+            versionEl.innerText = `v${data[0].version} (${currentBundleCode})`;
+        } else {
+            versionEl.innerText = `v${data[0].version}`;
+        }
+
         roundEl.innerText = `${data[0].round}회차`;
         periodEl.innerText = `${formatKST(data[0].start_at)} ~ ${formatKST(data[0].end_at)}`;
 
@@ -327,6 +337,7 @@ async function fetchQAInformation() {
             appDownloadBtn.href = '#';
         }
     } else {
+        currentBundleCode = '';
         versionEl.innerText = "없음"; 
         roundEl.innerText = "-"; 
         periodEl.innerText = "-";
@@ -1026,7 +1037,12 @@ async function submitDevProcess(targetState) {
     const comment = document.getElementById('dev-comment-text').value.trim();
 
     // 코멘트가 비어있으면 상태값을 기본 코멘트로 사용
-    const finalComment = comment || targetState;
+    let finalComment = comment || targetState;
+
+    // 수정완료 상태이고 코멘트가 비어있는 경우 bundleCode 추가
+    if (!comment && targetState === '수정 완료' && currentBundleCode) {
+        finalComment = `수정 완료 (${currentBundleCode})`;
+    }
 
     const { error } = await supabaseClient.from('qa_logs').update({ state: targetState, developer_comment: finalComment, updated_at: new Date().toISOString() }).eq('id', id);
     if (error) alert('실패: ' + error.message); else { showToast(`[${targetState}] 처리가 완료되었습니다.`); closeModal('devProcessModal'); fetchLogs(); }
