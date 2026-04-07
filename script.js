@@ -8,6 +8,8 @@ let filteredLogs = [];
 let currentPage = 1;
 const itemsPerPage = 10;
 let currentBundleCode = ''; // 현재 검수 번들 코드
+let currentAppVersion = ''; // 현재 앱 버전
+let dateSortOrder = 'desc'; // 날짜 정렬 순서: 'asc' (오름차순), 'desc' (내림차순), 'none' (정렬 없음)
 
 // Scene 이름 매핑 (영어 코드 → 한글)
 const SCENE_NAME_MAP = {
@@ -291,7 +293,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(s === '수정 필요') return '<span class="whitespace-nowrap inline-block bg-orange-100 text-orange-700 px-3 py-1.5 rounded-md text-[11px] font-black border border-orange-200">수정 필요</span>';
         if(s === '수정 완료') return '<span class="whitespace-nowrap inline-block bg-blue-100 text-blue-700 px-3 py-1.5 rounded-md text-[11px] font-black border border-blue-200">수정 완료</span>';
         if(s === '수정 확인') return '<span class="whitespace-nowrap inline-block bg-green-100 text-green-700 px-3 py-1.5 rounded-md text-[11px] font-black border border-green-200">수정 확인</span>';
-        if(s === '보류') return '<span class="whitespace-nowrap inline-block bg-gray-100 text-gray-600 px-3 py-1.5 rounded-md text-[11px] font-black border border-gray-300">보류</span>';
+        if(s === '보류/패스') return '<span class="whitespace-nowrap inline-block bg-gray-100 text-gray-600 px-3 py-1.5 rounded-md text-[11px] font-black border border-gray-300">보류/패스</span>';
         if(s === '서버수정 요청중') return '<span class="whitespace-nowrap inline-block bg-purple-100 text-purple-700 px-3 py-1.5 rounded-md text-[11px] font-black border border-purple-200">서버수정 요청중</span>';
         return `<span class="whitespace-nowrap inline-block bg-slate-50 text-slate-500 px-3 py-1.5 rounded-md text-[11px] font-bold border border-slate-200">${s || '신규 등록'}</span>`;
     }
@@ -310,6 +312,8 @@ async function fetchQAInformation() {
     if (data && data.length > 0) {
         // bundleCode 저장
         currentBundleCode = data[0].bundleCode || '';
+        // 앱 버전 저장
+        currentAppVersion = data[0].version || '3.0.0';
 
         // 버전 표시 (bundleCode 포함)
         if (currentBundleCode) {
@@ -338,6 +342,7 @@ async function fetchQAInformation() {
         }
     } else {
         currentBundleCode = '';
+        currentAppVersion = '3.0.0'; // 기본값
         versionEl.innerText = "없음"; 
         roundEl.innerText = "-"; 
         periodEl.innerText = "-";
@@ -357,6 +362,7 @@ function updateDashboard(logs) {
     document.getElementById('cntFixed').innerText = counts['수정 완료'];
     document.getElementById('cntVerified').innerText = counts['수정 확인']; 
     document.getElementById('cntHold').innerText = counts['보류'];
+    document.getElementById('cntServerRequest').innerText = counts['서버수정 요청중'];
     // 전역 변수에 카운트 저장
     window.statusCounts = counts;
 
@@ -387,13 +393,13 @@ function navigateToListWithFilter(state) {
     applyFilters();
 }
 
-async function fetchLogs() {
+async function fetchLogs(preservePage = false) {
     const tbody = document.getElementById('logTableBody');
     const mobileContainer = document.getElementById('mobileCardContainer');
     tbody.innerHTML = '<tr><td colspan="9" class="text-center py-8 text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>데이터를 불러오는 중...</td></tr>';
     if (mobileContainer) mobileContainer.innerHTML = '<p class="text-center py-8 text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>데이터를 불러오는 중...</p>';
 
-    const { data, error } = await supabaseClient.from('qa_logs').select('*').order('created_at', { ascending: false }); 
+    const { data, error } = await supabaseClient.from('qa_logs').select('*').order('created_at', { ascending: false });
     if (error) {
         tbody.innerHTML = `<tr><td colspan="9" class="text-center py-8 text-red-500">실패: ${error.message}</td></tr>`;
         if (mobileContainer) mobileContainer.innerHTML = `<p class="text-center py-8 text-red-500">실패: ${error.message}</p>`;
@@ -403,7 +409,7 @@ async function fetchLogs() {
     globalLogs = data.filter(log => log.is_delete !== true); 
     updateDashboard(globalLogs);
     updateAuthorDropdown(); 
-    applyFilters();
+    applyFilters(preservePage);
     const checkAll = document.getElementById('checkAll');
     const mobileCheckAll = document.getElementById('mobileCheckAll');
     if (checkAll) checkAll.checked = false;
@@ -490,7 +496,7 @@ function syncFilters(type) {
     applyFilters();
 }
 
-function applyFilters() {
+function applyFilters(preservePage = false) {
     const a = document.getElementById('authorFilter').value;
     const c = document.getElementById('contentFilter').value;
     const s = document.getElementById('stateFilter').value;
@@ -533,8 +539,8 @@ function applyFilters() {
         return matchAuthor && matchContent && matchState && matchSearch;
     });
 
-    currentPage = 1; 
-    renderTable(); 
+    // 정렬 적용
+    applySortAndRender(preservePage);
 }
 
 function clearSearch() {
@@ -549,6 +555,60 @@ function clearSearch() {
     }
 
     applyFilters();
+}
+
+function toggleDateSort() {
+    // 정렬 순서 토글: desc -> asc -> none -> desc
+    if (dateSortOrder === 'desc') {
+        dateSortOrder = 'asc';
+    } else if (dateSortOrder === 'asc') {
+        dateSortOrder = 'none';
+    } else {
+        dateSortOrder = 'desc';
+    }
+
+    // 아이콘 업데이트
+    const sortIcon = document.getElementById('sortIcon');
+    if (sortIcon) {
+        if (dateSortOrder === 'desc') {
+            sortIcon.className = 'fas fa-sort-down text-blue-600 text-xs';
+        } else if (dateSortOrder === 'asc') {
+            sortIcon.className = 'fas fa-sort-up text-blue-600 text-xs';
+        } else {
+            sortIcon.className = 'fas fa-sort text-gray-400 text-xs';
+        }
+    }
+
+    // 정렬 적용
+    applySortAndRender();
+}
+
+function applySortAndRender(preservePage = false) {
+    // 정렬이 'none'이 아닌 경우에만 정렬 수행
+    if (dateSortOrder !== 'none') {
+        filteredLogs.sort((a, b) => {
+            const dateA = new Date(a.created_at);
+            const dateB = new Date(b.created_at);
+
+            if (dateSortOrder === 'asc') {
+                return dateA - dateB; // 오름차순 (오래된 것부터)
+            } else {
+                return dateB - dateA; // 내림차순 (최신 것부터)
+            }
+        });
+    }
+
+    // 페이지 유지 여부에 따라 페이지 리셋
+    if (!preservePage) {
+        currentPage = 1;
+    } else {
+        // 현재 페이지가 총 페이지를 초과하는 경우 마지막 페이지로 이동
+        const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
+        if (currentPage > totalPages && totalPages > 0) {
+            currentPage = totalPages;
+        }
+    }
+    renderTable();
 }
 
 function renderTable() {
@@ -846,7 +906,7 @@ async function directUpdateStateFromModal(id, s) {
     } else {
         showToast(`[${s}] 상태로 변경되었습니다.`);
         closeModal('detailModal');
-        fetchLogs();
+        fetchLogs(true);
     }
 }
 
@@ -871,12 +931,12 @@ async function submitEditDesc() {
     const btn = document.getElementById('edit-desc-submit-btn'); btn.innerText = '저장중...'; btn.disabled = true;
     const { error } = await supabaseClient.from('qa_logs').update({ user_description: desc }).eq('id', id);
     btn.innerText = '수정 완료'; btn.disabled = false;
-    if (error) alert('실패: ' + error.message); else { showToast('수정되었습니다.'); closeModal('editDescModal'); fetchLogs(); }
+    if (error) alert('실패: ' + error.message); else { showToast('수정되었습니다.'); closeModal('editDescModal'); fetchLogs(true); }
 }
 
 async function directUpdateState(id, s) {
     const { error } = await supabaseClient.from('qa_logs').update({ state: s }).eq('id', id);
-    if (error) alert('실패: ' + error.message); else { showToast(`[${s}] 상태로 변경되었습니다.`); fetchLogs(); }
+    if (error) alert('실패: ' + error.message); else { showToast(`[${s}] 상태로 변경되었습니다.`); fetchLogs(true); }
 }
 
 function openReRequestModal(logId) {
@@ -891,7 +951,7 @@ async function submitReRequest() {
     if (!t) return alert('내용을 입력해주세요.');
     const log = globalLogs.find(l => l.id === id);
     const { error } = await supabaseClient.from('qa_logs').update({ state: '수정 필요', user_description: `${log.user_description || ''}\n\n[재수정 요청] ${t}` }).eq('id', id);
-    if (error) alert('실패: ' + error.message); else { showToast('재수정 요청이 완료되었습니다.'); closeModal('requestModal'); fetchLogs(); }
+    if (error) alert('실패: ' + error.message); else { showToast('재수정 요청이 완료되었습니다.'); closeModal('requestModal'); fetchLogs(true); }
 }
 
 function toggleAllChecks(source) { document.querySelectorAll('.row-check').forEach(cb => cb.checked = source.checked); }
@@ -906,7 +966,7 @@ async function executeDelete() {
     const checked = document.querySelectorAll('.row-check:checked');
     const ids = Array.from(checked).map(cb => cb.value);
     const { error } = await supabaseClient.from('qa_logs').update({ is_delete: true }).in('id', ids);
-    if (error) alert('실패: ' + error.message); else { showToast('삭제되었습니다.'); closeModal('deleteModal'); fetchLogs(); }
+    if (error) alert('실패: ' + error.message); else { showToast('삭제되었습니다.'); closeModal('deleteModal'); fetchLogs(true); }
 }
 
 /** 이미지 처리 관련 함수 **/
@@ -1055,7 +1115,7 @@ async function submitUpdateImage() {
             const oldPath = oldUrl.split('/').pop();
             if (oldPath) await supabaseClient.storage.from('capture').remove([oldPath]);
         }
-        showToast('이미지가 처리되었습니다.'); closeModal('addEditImageModal'); fetchLogs();
+        showToast('이미지가 처리되었습니다.'); closeModal('addEditImageModal'); fetchLogs(true);
     } catch (e) { alert('작업 실패: ' + e.message); } finally { btn.innerText = '이미지 저장'; btn.disabled = false; }
 }
 
@@ -1079,7 +1139,7 @@ async function submitDevProcess(targetState) {
     }
 
     const { error } = await supabaseClient.from('qa_logs').update({ state: targetState, developer_comment: finalComment, updated_at: new Date().toISOString() }).eq('id', id);
-    if (error) alert('실패: ' + error.message); else { showToast(`[${targetState}] 처리가 완료되었습니다.`); closeModal('devProcessModal'); fetchLogs(); }
+    if (error) alert('실패: ' + error.message); else { showToast(`[${targetState}] 처리가 완료되었습니다.`); closeModal('devProcessModal'); fetchLogs(true); }
 }
 
 function openDevCommentEditModal(logId) {
@@ -1112,7 +1172,7 @@ async function submitDevCommentEdit() {
     } else {
         showToast('개발자 코멘트가 수정되었습니다.');
         closeModal('editDevCommentModal');
-        fetchLogs();
+        fetchLogs(true);
     }
 }
 
@@ -1240,7 +1300,7 @@ function renderStatusChart(logs) {
                     'rgba(251, 146, 60, 0.8)',  // 수정 필요
                     'rgba(59, 130, 246, 0.8)',  // 수정 완료
                     'rgba(34, 197, 94, 0.8)',   // 수정 확인
-                    'rgba(156, 163, 175, 0.8)', // 보류
+                    'rgba(156, 163, 175, 0.8)', // 보류/패스
                     'rgba(168, 85, 247, 0.8)'   // 서버수정 요청중
                 ],
                 borderWidth: 2,

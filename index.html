@@ -79,7 +79,7 @@
 
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8">
                     <p class="text-gray-400 text-xs font-bold uppercase mb-4 border-b pb-2">검수 현황</p>
-                    <div class="grid grid-cols-4 gap-4 text-center">
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
                         <div onclick="navigateToListWithFilter('수정 필요')" class="p-3 bg-orange-50 rounded-lg border border-orange-100 cursor-pointer hover:shadow-md hover:scale-105 transition-all">
                             <p class="text-orange-600 text-xs font-bold mb-1">수정 필요</p>
                             <p class="text-2xl font-black text-orange-700" id="cntRevision">-</p>
@@ -93,8 +93,12 @@
                             <p class="text-2xl font-black text-green-700" id="cntVerified">-</p>
                         </div>
                         <div onclick="navigateToListWithFilter('보류')" class="p-3 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer hover:shadow-md hover:scale-105 transition-all">
-                            <p class="text-gray-600 text-xs font-bold mb-1">보류</p>
+                            <p class="text-gray-600 text-xs font-bold mb-1">보류/패스</p>
                             <p class="text-2xl font-black text-gray-700" id="cntHold">-</p>
+                        </div>
+                        <div onclick="navigateToListWithFilter('서버수정 요청중')" class="p-3 bg-purple-50 rounded-lg border border-purple-100 cursor-pointer hover:shadow-md hover:scale-105 transition-all">
+                            <p class="text-purple-600 text-xs font-bold mb-1">서버수정 요청중</p>
+                            <p class="text-2xl font-black text-purple-700" id="cntServerRequest">-</p>
                         </div>
                     </div>
                 </div>
@@ -243,16 +247,16 @@
                         <select id="mobileAuthorFilter" onchange="syncFilters('author')" class="mobile-filter-select">
                             <option value="all">작성자: 전체</option>
                         </select>
-                        <select id="mobileContentFilter" onchange="syncFilters('content')" class="mobile-filter-select">
-                            <option value="all">콘텐츠: 전체</option>
-                        </select>
                         <select id="mobileStateFilter" onchange="syncFilters('state')" class="mobile-filter-select">
                             <option value="all">상태: 전체</option>
                             <option value="수정 필요">수정 필요</option>
                             <option value="수정 완료">수정 완료</option>
                             <option value="수정 확인">수정 확인</option>
-                            <option value="보류">보류</option>
+                            <option value="보류">보류/패스</option>
                             <option value="서버수정 요청중">서버수정 요청중</option>
+                        </select>
+                        <select id="mobileContentFilter" onchange="syncFilters('content')" class="mobile-filter-select">
+                            <option value="all">콘텐츠: 전체</option>
                         </select>
                     </div>
 
@@ -273,19 +277,16 @@
                                     <th class="px-4 py-4 font-bold border-b text-center w-[5%]">
                                         <input type="checkbox" id="checkAll" class="custom-checkbox" onchange="toggleAllChecks(this)">
                                     </th>
-                                    <th class="px-4 py-4 font-bold border-b text-center w-[6%]">작성일</th>
+                                    <th class="px-4 py-4 font-bold border-b text-center w-[6%] cursor-pointer hover:bg-slate-100 transition" onclick="toggleDateSort()">
+                                        <div class="flex items-center justify-center gap-1">
+                                            <span>작성일</span>
+                                            <i id="sortIcon" class="fas fa-sort text-gray-400 text-xs"></i>
+                                        </div>
+                                    </th>
                                     <th class="px-4 py-4 font-bold border-b text-center w-[8%]">
                                         <div class="flex flex-col items-center gap-1">
                                             <span>작성자</span>
                                             <select id="authorFilter" onchange="applyFilters()" class="bg-white border border-gray-300 rounded px-1 py-0.5 text-[12px] focus:outline-none focus:ring-1 focus:ring-blue-500 w-full text-center">
-                                                <option value="all">전체 보기</option>
-                                            </select>
-                                        </div>
-                                    </th>
-                                    <th class="px-4 py-4 font-bold border-b text-center w-[10%]">
-                                        <div class="flex flex-col items-center gap-1">
-                                            <span>콘텐츠</span>
-                                            <select id="contentFilter" onchange="applyFilters()" class="bg-white border border-gray-300 rounded px-1 py-0.5 text-[12px] focus:outline-none focus:ring-1 focus:ring-blue-500 w-full text-center">
                                                 <option value="all">전체 보기</option>
                                             </select>
                                         </div>
@@ -298,8 +299,16 @@
                                                 <option value="수정 필요">수정 필요</option>
                                                 <option value="수정 완료">수정 완료</option>
                                                 <option value="수정 확인">수정 확인</option>
-                                                <option value="보류">보류</option>
+                                                <option value="보류">보류/패스</option>
                                                 <option value="서버수정 요청중">서버수정 요청중</option>
+                                            </select>
+                                        </div>
+                                    </th>
+                                    <th class="px-4 py-4 font-bold border-b text-center w-[10%]">
+                                        <div class="flex flex-col items-center gap-1">
+                                            <span>콘텐츠</span>
+                                            <select id="contentFilter" onchange="applyFilters()" class="bg-white border border-gray-300 rounded px-1 py-0.5 text-[12px] focus:outline-none focus:ring-1 focus:ring-blue-500 w-full text-center">
+                                                <option value="all">전체 보기</option>
                                             </select>
                                         </div>
                                     </th>
@@ -423,7 +432,7 @@
             <div class="p-5 bg-slate-50 border-t flex justify-between gap-3">
                 <button onclick="closeModal('devProcessModal')" class="bg-slate-200 text-slate-600 px-4 py-2 rounded-xl font-bold hover:bg-slate-300 transition text-sm">취소</button>
                 <div class="flex gap-2">
-                    <button onclick="submitDevProcess('보류')" class="bg-gray-500 text-white px-4 py-2 rounded-xl font-bold hover:bg-gray-600 transition text-sm">보류</button>
+                    <button onclick="submitDevProcess('보류')" class="bg-gray-500 text-white px-4 py-2 rounded-xl font-bold hover:bg-gray-600 transition text-sm">보류/패스</button>
                     <button onclick="submitDevProcess('서버수정 요청중')" class="bg-purple-500 text-white px-4 py-2 rounded-xl font-bold hover:bg-purple-600 transition text-sm">서버수정 요청중</button>
                     <button onclick="submitDevProcess('수정 완료')" class="bg-blue-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-blue-700 transition text-sm shadow-md shadow-blue-100">수정 완료</button>
                 </div>
