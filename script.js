@@ -15,6 +15,28 @@ let dateSortOrder = 'desc'; // 날짜 정렬 순서: 'asc' (오름차순), 'desc
 let contentFilterChoices = null;
 let mobileContentFilterChoices = null;
 
+// 캐시 관련 헬퍼 함수
+async function invalidateLogsCache() {
+    console.log('🗑️ QA Logs 캐시 무효화');
+    await cacheManager.delete('qa_logs', 'default');
+}
+
+async function invalidateQAInfoCache() {
+    console.log('🗑️ QA Information 캐시 무효화');
+    const today = new Date().toISOString().split('T')[0];
+    await cacheManager.delete('qa_information', today);
+}
+
+async function refreshAllData() {
+    console.log('🔄 모든 데이터 강제 갱신');
+    showToast('데이터를 새로고침하는 중...', 'success');
+    await invalidateLogsCache();
+    await invalidateQAInfoCache();
+    await fetchQAInformation(true);
+    await fetchLogs(true, true);
+    showToast('데이터가 새로고침되었습니다!', 'success');
+}
+
 // Scene 이름 매핑 (영어 코드 → 한글)
 const SCENE_NAME_MAP = {
     'TitleScene': '타이틀화면',
@@ -329,34 +351,57 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 /** 데이터 로드 및 처리 함수 **/
-async function fetchQAInformation() {
+async function fetchQAInformation(forceRefresh = false) {
     const today = new Date().toISOString().split('T')[0];
+
+    // 캐시에서 먼저 시도
+    if (!forceRefresh) {
+        const cachedData = await cacheManager.get('qa_information', today);
+        if (cachedData) {
+            console.log('✓ QA Information 캐시에서 로드');
+            updateQAInformationUI(cachedData);
+            return;
+        }
+    }
+
+    // 캐시 미스 또는 강제 갱신 - Supabase에서 가져오기
+    console.log('↓ QA Information Supabase에서 로드');
     const { data } = await supabaseClient.from('qa_information').select('*').lte('start_at', today).gte('end_at', today).order('created_at', { ascending: false }).limit(1);
 
+    // 데이터가 있으면 캐시에 저장 (10분 TTL)
+    if (data && data.length > 0) {
+        await cacheManager.set('qa_information', today, data[0], 10 * 60 * 1000);
+        updateQAInformationUI(data[0]);
+    } else {
+        updateQAInformationUI(null);
+    }
+}
+
+function updateQAInformationUI(qaInfo) {
     const versionEl = document.getElementById('qaVersion');
     const roundEl = document.getElementById('qaRound');
     const periodEl = document.getElementById('qaPeriod');
     const serverEl = document.getElementById('qaServer');
     const appDownloadBtn = document.getElementById('appDownloadBtn');
 
-    if (data && data.length > 0) {
+    if (qaInfo) {
         // bundleCode 저장
-        currentBundleCode = data[0].bundleCode || '';
+        currentBundleCode = qaInfo.bundleCode || '';
         // 앱 버전 저장
-        currentAppVersion = data[0].version || '3.0.0';
+        currentAppVersion = qaInfo.version || '3.0.0';
 
         // 버전 표시 (bundleCode 포함)
         if (currentBundleCode) {
-            versionEl.innerText = `v${data[0].version} (${currentBundleCode})`;
+            versionEl.innerText = `v${qaInfo.version} (${currentBundleCode})`;
         } else {
-            versionEl.innerText = `v${data[0].version}`;
+            versionEl.innerText = `v${qaInfo.version}`;
         }
 
-        roundEl.innerText = `${data[0].round}회차`;
-        periodEl.innerText = `${formatKST(data[0].start_at)} ~ ${formatKST(data[0].end_at)}`;
+        roundEl.innerText = `${qaInfo.round}회차`;
+        periodEl.innerText = `${formatKST(qaInfo.start_at)} ~ ${formatKST(qaInfo.end_at)}`;
 
         // 서버 정보 및 다운로드 링크 설정
-        const serverInfo = data[0].serverInfo || 'dev';
+        const serverInfo = qaInfo.serverInfo || 'dev';
         if (serverInfo === 'dev') {
             serverEl.innerText = '개발서버';
             serverEl.className = 'text-lg font-black text-orange-600';
@@ -423,17 +468,41 @@ function navigateToListWithFilter(state) {
     applyFilters();
 }
 
-async function fetchLogs(preservePage = false) {
+async function fetchLogs(preservePage = false, forceRefresh = false) {
     const tbody = document.getElementById('logTableBody');
     const mobileContainer = document.getElementById('mobileCardContainer');
     tbody.innerHTML = '<tr><td colspan="9" class="text-center py-8 text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>데이터를 불러오는 중...</td></tr>';
     if (mobileContainer) mobileContainer.innerHTML = '<p class="text-center py-8 text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>데이터를 불러오는 중...</p>';
 
+    // 캐시에서 먼저 시도
+    if (!forceRefresh) {
+        const cachedData = await cacheManager.get('qa_logs', 'default');
+        if (cachedData) {
+            console.log('✓ QA Logs 캐시에서 로드 (' + cachedData.length + '건)');
+            globalLogs = cachedData.filter(log => log.is_delete !== true); 
+            updateDashboard(globalLogs);
+            updateAuthorDropdown(); 
+            applyFilters(preservePage);
+            const checkAll = document.getElementById('checkAll');
+            const mobileCheckAll = document.getElementById('mobileCheckAll');
+            if (checkAll) checkAll.checked = false;
+            if (mobileCheckAll) mobileCheckAll.checked = false;
+            return;
+        }
+    }
+
+    // 캐시 미스 또는 강제 갱신 - Supabase에서 가져오기
+    console.log('↓ QA Logs Supabase에서 로드');
     const { data, error } = await supabaseClient.from('qa_logs').select('*').order('created_at', { ascending: false });
     if (error) {
         tbody.innerHTML = `<tr><td colspan="9" class="text-center py-8 text-red-500">실패: ${error.message}</td></tr>`;
         if (mobileContainer) mobileContainer.innerHTML = `<p class="text-center py-8 text-red-500">실패: ${error.message}</p>`;
         return;
+    }
+
+    // 데이터를 캐시에 저장 (5분 TTL)
+    if (data) {
+        await cacheManager.set('qa_logs', 'default', data, 5 * 60 * 1000);
     }
 
     globalLogs = data.filter(log => log.is_delete !== true); 
@@ -987,8 +1056,9 @@ async function directUpdateStateFromModal(id, s) {
         alert('실패: ' + error.message);
     } else {
         showToast(`[${s}] 상태로 변경되었습니다.`);
+        await invalidateLogsCache(); // 캐시 무효화
         closeModal('detailModal');
-        fetchLogs(true);
+        fetchLogs(true, true); // 강제 새로고침
     }
 }
 
@@ -1013,12 +1083,25 @@ async function submitEditDesc() {
     const btn = document.getElementById('edit-desc-submit-btn'); btn.innerText = '저장중...'; btn.disabled = true;
     const { error } = await supabaseClient.from('qa_logs').update({ user_description: desc }).eq('id', id);
     btn.innerText = '수정 완료'; btn.disabled = false;
-    if (error) alert('실패: ' + error.message); else { showToast('수정되었습니다.'); closeModal('editDescModal'); fetchLogs(true); }
+    if (error) { 
+        alert('실패: ' + error.message); 
+    } else { 
+        showToast('수정되었습니다.'); 
+        await invalidateLogsCache(); // 캐시 무효화
+        closeModal('editDescModal'); 
+        fetchLogs(true, true); // 강제 새로고침
+    }
 }
 
 async function directUpdateState(id, s) {
     const { error } = await supabaseClient.from('qa_logs').update({ state: s }).eq('id', id);
-    if (error) alert('실패: ' + error.message); else { showToast(`[${s}] 상태로 변경되었습니다.`); fetchLogs(true); }
+    if (error) { 
+        alert('실패: ' + error.message); 
+    } else { 
+        showToast(`[${s}] 상태로 변경되었습니다.`); 
+        await invalidateLogsCache(); // 캐시 무효화
+        fetchLogs(true, true); // 강제 새로고침
+    }
 }
 
 function openReRequestModal(logId) {
@@ -1033,7 +1116,14 @@ async function submitReRequest() {
     if (!t) return alert('내용을 입력해주세요.');
     const log = globalLogs.find(l => l.id === id);
     const { error } = await supabaseClient.from('qa_logs').update({ state: '수정 필요', user_description: `${log.user_description || ''}\n\n[재수정 요청] ${t}` }).eq('id', id);
-    if (error) alert('실패: ' + error.message); else { showToast('재수정 요청이 완료되었습니다.'); closeModal('requestModal'); fetchLogs(true); }
+    if (error) { 
+        alert('실패: ' + error.message); 
+    } else { 
+        showToast('재수정 요청이 완료되었습니다.'); 
+        await invalidateLogsCache(); // 캐시 무효화
+        closeModal('requestModal'); 
+        fetchLogs(true, true); // 강제 새로고침
+    }
 }
 
 function toggleAllChecks(source) { document.querySelectorAll('.row-check').forEach(cb => cb.checked = source.checked); }
@@ -1048,7 +1138,14 @@ async function executeDelete() {
     const checked = document.querySelectorAll('.row-check:checked');
     const ids = Array.from(checked).map(cb => cb.value);
     const { error } = await supabaseClient.from('qa_logs').update({ is_delete: true }).in('id', ids);
-    if (error) alert('실패: ' + error.message); else { showToast('삭제되었습니다.'); closeModal('deleteModal'); fetchLogs(true); }
+    if (error) { 
+        alert('실패: ' + error.message); 
+    } else { 
+        showToast('삭제되었습니다.'); 
+        await invalidateLogsCache(); // 캐시 무효화
+        closeModal('deleteModal'); 
+        fetchLogs(true, true); // 강제 새로고침
+    }
 }
 
 /** 이미지 처리 관련 함수 **/
@@ -1138,7 +1235,8 @@ async function submitNewLog() {
 
         if (error) throw error;
         showToast('검수 내용이 등록되었습니다.');
-        closeModal('writeModal'); fetchLogs();
+        await invalidateLogsCache(); // 캐시 무효화
+        closeModal('writeModal'); fetchLogs(true); // 강제 새로고침
     } catch (e) { showToast('실패: ' + e.message, 'error'); } finally { btn.innerText = '등록하기'; btn.disabled = false; }
 }
 
@@ -1197,7 +1295,9 @@ async function submitUpdateImage() {
             const oldPath = oldUrl.split('/').pop();
             if (oldPath) await supabaseClient.storage.from('capture').remove([oldPath]);
         }
-        showToast('이미지가 처리되었습니다.'); closeModal('addEditImageModal'); fetchLogs(true);
+        showToast('이미지가 처리되었습니다.'); 
+        await invalidateLogsCache(); // 캐시 무효화
+        closeModal('addEditImageModal'); fetchLogs(true); // 강제 새로고침
     } catch (e) { alert('작업 실패: ' + e.message); } finally { btn.innerText = '이미지 저장'; btn.disabled = false; }
 }
 
@@ -1227,7 +1327,14 @@ async function submitDevProcess(targetState) {
     }
 
     const { error } = await supabaseClient.from('qa_logs').update({ state: targetState, developer_comment: finalComment, updated_at: new Date().toISOString() }).eq('id', id);
-    if (error) alert('실패: ' + error.message); else { showToast(`[${targetState}] 처리가 완료되었습니다.`); closeModal('devProcessModal'); fetchLogs(true); }
+    if (error) { 
+        alert('실패: ' + error.message); 
+    } else { 
+        showToast(`[${targetState}] 처리가 완료되었습니다.`); 
+        await invalidateLogsCache(); // 캐시 무효화
+        closeModal('devProcessModal'); 
+        fetchLogs(true); // 강제 새로고침
+    }
 }
 
 function openDevCommentEditModal(logId) {
@@ -1259,8 +1366,9 @@ async function submitDevCommentEdit() {
         alert('실패: ' + error.message);
     } else {
         showToast('개발자 코멘트가 수정되었습니다.');
+        await invalidateLogsCache(); // 캐시 무효화
         closeModal('editDevCommentModal');
-        fetchLogs(true);
+        fetchLogs(true); // 강제 새로고침
     }
 }
 
