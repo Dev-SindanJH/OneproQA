@@ -372,10 +372,47 @@
 
 table {
     position: relative;
+    width: 100%;
+    table-layout: fixed;
 }
 
 tbody, tr, td {
     overflow: visible !important;
+}
+
+/* 테이블 컬럼 너비 최적화 - 가로 스크롤 방지 */
+table th:nth-child(1), table td:nth-child(1) { width: 50px; }  /* 체크박스 */
+table th:nth-child(2), table td:nth-child(2) { width: 90px; }  /* 작성일 */
+table th:nth-child(3), table td:nth-child(3) { width: 130px; }  /* 작성자 */
+table th:nth-child(4), table td:nth-child(4) { width: 130px; } /* 상태 */
+table th:nth-child(5), table td:nth-child(5) { width: 130px; } /* 콘텐츠 */
+table th:nth-child(6), table td:nth-child(6) { width: auto; }  /* 검수 내용 - 남은 공간 차지 */
+table th:nth-child(7), table td:nth-child(7) { width: 140px; }  /* 캡처 */
+table th:nth-child(8), table td:nth-child(8) { width: 200px; } /* 개발자 코멘트 */
+table th:nth-child(9), table td:nth-child(9) { width: 140px; }  /* 상세보기 */
+
+/* 작성일 폰트 크기 축소 */
+table td:nth-child(2) { 
+    font-size: 11px; 
+}
+
+/* 작성자 폰트 크기 축소 */
+table td:nth-child(3) { 
+    font-size: 11px; 
+}
+
+/* 검수 내용 - 텍스트 자동 줄바꿈 */
+table td:nth-child(6) { 
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+/* 개발자 코멘트 - 텍스트 자동 줄바꿈 */
+table td:nth-child(8) { 
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 /* 대시보드 차트 스타일 */
@@ -423,4 +460,75 @@ canvas {
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
+}
+
+/* Choices.js 커스텀 스타일 */
+.choices {
+    margin-bottom: 0;
+    width: 100%;
+}
+
+.choices__inner {
+    min-height: auto;
+    padding: 2px 8px;
+    font-size: 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    background-color: white;
+    width: 100%;
+}
+
+.choices__list--dropdown {
+    font-size: 12px;
+    z-index: 100;
+    min-width: 300px;
+    position: absolute !important;
+}
+
+.choices__list--dropdown .choices__item {
+    padding: 10px 16px;
+}
+
+.choices__list--dropdown .choices__item--selectable {
+    padding: 10px 16px;
+}
+
+.choices[data-type*="select-one"] .choices__input {
+    font-size: 12px;
+    padding: 6px 12px;
+    margin-bottom: 4px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+}
+
+.choices__placeholder {
+    opacity: 0.5;
+}
+
+/* "선택" 텍스트 숨기기 */
+.choices__item--selectable::after {
+    display: none !important;
+}
+
+/* 모바일 Choices.js 스타일 */
+@media (max-width: 768px) {
+    .mobile-filters .choices__inner {
+        padding: 10px 12px;
+        font-size: 14px;
+        border-radius: 8px;
+    }
+
+    .mobile-filters .choices[data-type*="select-one"] .choices__input {
+        font-size: 14px;
+        padding: 8px 12px;
+    }
+
+    .mobile-filters .choices__list--dropdown {
+        min-width: 100%;
+    }
+
+    .mobile-filters .choices__list--dropdown .choices__item--selectable {
+        padding: 12px 16px;
+        font-size: 14px;
+    }
 }

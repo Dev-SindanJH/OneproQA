@@ -11,6 +11,10 @@ let currentBundleCode = ''; // 현재 검수 번들 코드
 let currentAppVersion = ''; // 현재 앱 버전
 let dateSortOrder = 'desc'; // 날짜 정렬 순서: 'asc' (오름차순), 'desc' (내림차순), 'none' (정렬 없음)
 
+// Choices.js 인스턴스 저장
+let contentFilterChoices = null;
+let mobileContentFilterChoices = null;
+
 // Scene 이름 매핑 (영어 코드 → 한글)
 const SCENE_NAME_MAP = {
     'TitleScene': '타이틀화면',
@@ -264,6 +268,32 @@ function formatRelativeTime(dateString) {
 
 // 툴팁 위치 동적 계산
 document.addEventListener('DOMContentLoaded', () => {
+    // Choices.js 초기화 (콘텐츠 필터 검색 가능하게)
+    const contentFilterElement = document.getElementById('contentFilter');
+    const mobileContentFilterElement = document.getElementById('mobileContentFilter');
+
+    if (contentFilterElement) {
+        contentFilterChoices = new Choices(contentFilterElement, {
+            searchEnabled: true,
+            searchPlaceholderValue: '검색...',
+            noResultsText: '결과 없음',
+            itemSelectText: '',
+            shouldSort: false,
+            position: 'bottom'
+        });
+    }
+
+    if (mobileContentFilterElement) {
+        mobileContentFilterChoices = new Choices(mobileContentFilterElement, {
+            searchEnabled: true,
+            searchPlaceholderValue: '검색...',
+            noResultsText: '결과 없음',
+            itemSelectText: '',
+            shouldSort: false,
+            position: 'bottom'
+        });
+    }
+
     document.addEventListener('mouseover', (e) => {
         const container = e.target.closest('.tooltip-container');
         if (!container) return;
@@ -458,21 +488,47 @@ function updateContentDropdown() {
     });
 
     const currentSelection = contentFilter ? contentFilter.value : 'all';
-    let filterHtml = '<option value="all">전체 보기</option>';
-    let mobileFilterHtml = '<option value="all">콘텐츠: 전체</option>';
 
     const sortedContents = Array.from(contents).sort();
-    sortedContents.forEach(content => {
-        filterHtml += `<option value="${content}">${content}</option>`;
-        mobileFilterHtml += `<option value="${content}">콘텐츠: ${content}</option>`;
-    });
 
-    if (contentFilter) {
+    // Choices.js가 초기화되어 있으면 clearStore하고 다시 설정
+    if (contentFilterChoices) {
+        contentFilterChoices.clearStore();
+        contentFilterChoices.setChoices([
+            { value: 'all', label: '전체 보기', selected: currentSelection === 'all' },
+            ...sortedContents.map(content => ({
+                value: content,
+                label: content,
+                selected: content === currentSelection
+            }))
+        ], 'value', 'label', true);
+    } else if (contentFilter) {
+        // Choices.js가 없으면 기본 select 업데이트
+        let filterHtml = '<option value="all">전체 보기</option>';
+        sortedContents.forEach(content => {
+            filterHtml += `<option value="${content}">${content}</option>`;
+        });
         contentFilter.innerHTML = filterHtml;
         contentFilter.value = currentSelection || 'all';
     }
 
-    if (mobileContentFilter) {
+    // 모바일 콘텐츠 필터 업데이트
+    if (mobileContentFilterChoices) {
+        mobileContentFilterChoices.clearStore();
+        mobileContentFilterChoices.setChoices([
+            { value: 'all', label: '콘텐츠: 전체', selected: currentSelection === 'all' },
+            ...sortedContents.map(content => ({
+                value: content,
+                label: `콘텐츠: ${content}`,
+                selected: content === currentSelection
+            }))
+        ], 'value', 'label', true);
+    } else if (mobileContentFilter) {
+        // Choices.js가 없으면 기본 select 업데이트
+        let mobileFilterHtml = '<option value="all">콘텐츠: 전체</option>';
+        sortedContents.forEach(content => {
+            mobileFilterHtml += `<option value="${content}">콘텐츠: ${content}</option>`;
+        });
         mobileContentFilter.innerHTML = mobileFilterHtml;
         mobileContentFilter.value = currentSelection || 'all';
     }
@@ -768,14 +824,40 @@ function renderPagination(totalItems) {
     if (totalItems <= itemsPerPage) return; 
 
     const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const maxVisiblePages = 10; // 한 번에 보여줄 최대 페이지 수
+
+    // 현재 페이지 그룹 계산 (1-10, 11-20, 21-30...)
+    const currentGroup = Math.ceil(currentPage / maxVisiblePages);
+    const startPage = (currentGroup - 1) * maxVisiblePages + 1;
+    const endPage = Math.min(startPage + maxVisiblePages - 1, totalPages);
+
+    // 이전 버튼
     const prevDisabled = currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-100';
     paginationDiv.innerHTML += `<button onclick="changePage(${currentPage - 1})" class="px-3 py-1 rounded border border-gray-200 text-slate-600 text-xs font-bold ${prevDisabled}" ${currentPage === 1 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>`;
 
-    for (let i = 1; i <= totalPages; i++) {
+    // 첫 페이지로 가기 (현재 그룹이 1보다 크면 표시)
+    if (startPage > 1) {
+        paginationDiv.innerHTML += `<button onclick="changePage(1)" class="px-3 py-1 rounded border bg-white text-slate-600 border-gray-200 hover:bg-slate-50 text-xs font-bold transition">1</button>`;
+        if (startPage > 2) {
+            paginationDiv.innerHTML += `<span class="px-2 py-1 text-slate-400">...</span>`;
+        }
+    }
+
+    // 현재 그룹의 페이지 버튼들
+    for (let i = startPage; i <= endPage; i++) {
         const activeClass = i === currentPage ? 'bg-blue-500 text-white border-blue-500' : 'bg-white text-slate-600 border-gray-200 hover:bg-slate-50';
         paginationDiv.innerHTML += `<button onclick="changePage(${i})" class="px-3 py-1 rounded border text-xs font-bold transition ${activeClass}">${i}</button>`;
     }
 
+    // 마지막 페이지로 가기 (현재 그룹이 마지막이 아니면 표시)
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            paginationDiv.innerHTML += `<span class="px-2 py-1 text-slate-400">...</span>`;
+        }
+        paginationDiv.innerHTML += `<button onclick="changePage(${totalPages})" class="px-3 py-1 rounded border bg-white text-slate-600 border-gray-200 hover:bg-slate-50 text-xs font-bold transition">${totalPages}</button>`;
+    }
+
+    // 다음 버튼
     const nextDisabled = currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-100';
     paginationDiv.innerHTML += `<button onclick="changePage(${currentPage + 1})" class="px-3 py-1 rounded border border-gray-200 text-slate-600 text-xs font-bold ${nextDisabled}" ${currentPage === totalPages ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
 }
@@ -1133,9 +1215,15 @@ async function submitDevProcess(targetState) {
     // 코멘트가 비어있으면 상태값을 기본 코멘트로 사용
     let finalComment = comment || targetState;
 
-    // 수정완료 상태이고 코멘트가 비어있는 경우 bundleCode 추가
-    if (!comment && targetState === '수정 완료' && currentBundleCode) {
-        finalComment = `수정 완료 (${currentBundleCode})`;
+    // 수정완료, 보류/패스, 서버수정 요청중 상태인 경우 bundleCode 추가
+    if ((targetState === '수정 완료' || targetState === '보류/패스' || targetState === '서버수정 요청중') && currentBundleCode) {
+        if (!comment) {
+            // 코멘트가 비어있으면 기본 메시지 + 번들 코드
+            finalComment = `${targetState} (${currentBundleCode})`;
+        } else {
+            // 코멘트가 있으면 코멘트 뒤에 번들 코드 추가
+            finalComment = `${comment} (${currentBundleCode})`;
+        }
     }
 
     const { error } = await supabaseClient.from('qa_logs').update({ state: targetState, developer_comment: finalComment, updated_at: new Date().toISOString() }).eq('id', id);

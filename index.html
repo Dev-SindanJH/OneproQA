@@ -6,8 +6,10 @@
     <title>일프로 QA</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-gray-50 font-sans text-gray-900">
@@ -271,7 +273,7 @@
 
                     <!-- 데스크탑 테이블 뷰 -->
                     <div class="overflow-x-auto desktop-table-wrapper">
-                        <table class="w-full text-left border-collapse min-w-[1000px]" id="logTable">
+                        <table class="w-full text-left border-collapse" id="logTable">
                             <thead class="bg-slate-50 text-gray-500 text-xs uppercase">
                                 <tr>
                                     <th class="px-4 py-4 font-bold border-b text-center w-[5%]">
@@ -432,7 +434,7 @@
             <div class="p-5 bg-slate-50 border-t flex justify-between gap-3">
                 <button onclick="closeModal('devProcessModal')" class="bg-slate-200 text-slate-600 px-4 py-2 rounded-xl font-bold hover:bg-slate-300 transition text-sm">취소</button>
                 <div class="flex gap-2">
-                    <button onclick="submitDevProcess('보류')" class="bg-gray-500 text-white px-4 py-2 rounded-xl font-bold hover:bg-gray-600 transition text-sm">보류/패스</button>
+                    <button onclick="submitDevProcess('보류/패스')" class="bg-gray-500 text-white px-4 py-2 rounded-xl font-bold hover:bg-gray-600 transition text-sm">보류/패스</button>
                     <button onclick="submitDevProcess('서버수정 요청중')" class="bg-purple-500 text-white px-4 py-2 rounded-xl font-bold hover:bg-purple-600 transition text-sm">서버수정 요청중</button>
                     <button onclick="submitDevProcess('수정 완료')" class="bg-blue-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-blue-700 transition text-sm shadow-md shadow-blue-100">수정 완료</button>
                 </div>
