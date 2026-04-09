@@ -368,6 +368,18 @@
 .desktop-table-wrapper {
     overflow-x: auto;
     overflow-y: visible;
+    position: relative;
+}
+
+/* 테이블 헤더의 드롭다운이 표 외부로 나올 수 있도록 */
+table thead th {
+    position: relative;
+    overflow: visible !important;
+}
+
+/* 드롭다운이 있는 컬럼은 overflow visible 유지 */
+table thead th:nth-child(5) {
+    overflow: visible !important;
 }
 
 table {
@@ -387,6 +399,19 @@ table th:nth-child(3), table td:nth-child(3) { width: 130px; }  /* 작성자 */
 table th:nth-child(4), table td:nth-child(4) { width: 130px; } /* 상태 */
 table th:nth-child(5), table td:nth-child(5) { width: 130px; } /* 콘텐츠 */
 table th:nth-child(6), table td:nth-child(6) { width: auto; }  /* 검수 내용 - 남은 공간 차지 */
+
+/* 콘텐츠 컬럼 - 배지가 인접 열을 침범하지 않도록 */
+table td:nth-child(5) {
+    overflow: hidden !important;
+}
+
+table td:nth-child(5) .content-badge {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+}
 table th:nth-child(7), table td:nth-child(7) { width: 140px; }  /* 캡처 */
 table th:nth-child(8), table td:nth-child(8) { width: 200px; } /* 개발자 코멘트 */
 table th:nth-child(9), table td:nth-child(9) { width: 140px; }  /* 상세보기 */
@@ -413,6 +438,111 @@ table td:nth-child(8) {
     white-space: normal;
     word-break: break-word;
     overflow-wrap: break-word;
+}
+
+/* 상태 필터 토글 버튼 바 */
+.state-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.state-filter-btn {
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    border: 2px solid #e2e8f0;
+    background: #f1f5f9;
+    color: #64748b;
+    transition: all 0.2s;
+    line-height: 1.4;
+}
+
+.state-filter-btn:hover {
+    border-color: #94a3b8;
+    background: #e2e8f0;
+}
+
+.state-filter-btn[data-state="all"].active         { background: #334155;  color: #fff;    border-color: #334155; }
+.state-filter-btn[data-state="수정 필요"].active   { background: #fff7ed;  color: #c2410c; border-color: #fb923c; }
+.state-filter-btn[data-state="수정 완료"].active   { background: #eff6ff;  color: #1d4ed8; border-color: #60a5fa; }
+.state-filter-btn[data-state="수정 확인"].active   { background: #f0fdf4;  color: #15803d; border-color: #4ade80; }
+.state-filter-btn[data-state="보류/패스"].active   { background: #f8fafc;  color: #475569; border-color: #94a3b8; }
+.state-filter-btn[data-state="서버수정 요청중"].active { background: #faf5ff; color: #7e22ce; border-color: #c084fc; }
+
+.state-count {
+    display: inline-block;
+    margin-left: 5px;
+    padding: 0 6px;
+    border-radius: 10px;
+    font-size: 11px;
+    background: rgba(0, 0, 0, 0.08);
+    font-weight: 900;
+}
+
+@media (max-width: 768px) {
+    .state-filter-bar {
+        display: none;
+    }
+}
+
+/* 데스크탑 필터 영역 */
+.desktop-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding: 16px;
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.filter-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 200px;
+    flex: 1;
+}
+
+.filter-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.filter-select {
+    padding: 10px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 14px;
+    background: white;
+    color: #334155;
+    font-weight: 600;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.filter-select:hover {
+    border-color: #94a3b8;
+}
+
+.filter-select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+@media (max-width: 768px) {
+    .desktop-filters {
+        display: none;
+    }
 }
 
 /* 대시보드 차트 스타일 */
@@ -480,7 +610,7 @@ canvas {
 
 .choices__list--dropdown {
     font-size: 12px;
-    z-index: 100;
+    z-index: 9999 !important;
     min-width: 300px;
     position: absolute !important;
 }

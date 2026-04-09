@@ -301,7 +301,7 @@ document.addEventListener('DOMContentLoaded', () => {
             noResultsText: '결과 없음',
             itemSelectText: '',
             shouldSort: false,
-            position: 'bottom'
+            position: 'auto'
         });
     }
 
@@ -312,7 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
             noResultsText: '결과 없음',
             itemSelectText: '',
             shouldSort: false,
-            position: 'bottom'
+            position: 'auto'
         });
     }
 
@@ -428,7 +428,7 @@ function updateQAInformationUI(qaInfo) {
 }
 
 function updateDashboard(logs) {
-    let counts = {'수정 필요':0, '수정 완료':0, '수정 확인':0, '보류':0, '서버수정 요청중':0};
+    let counts = {'수정 필요':0, '수정 완료':0, '수정 확인':0, '보류/패스':0, '서버수정 요청중':0};
     logs.forEach(log => { 
         const s = (log.state || log.status || '').trim(); 
         if(counts[s] !== undefined) counts[s]++; 
@@ -436,13 +436,49 @@ function updateDashboard(logs) {
     document.getElementById('cntRevision').innerText = counts['수정 필요']; 
     document.getElementById('cntFixed').innerText = counts['수정 완료'];
     document.getElementById('cntVerified').innerText = counts['수정 확인']; 
-    document.getElementById('cntHold').innerText = counts['보류'];
+    document.getElementById('cntHold').innerText = counts['보류/패스'];
     document.getElementById('cntServerRequest').innerText = counts['서버수정 요청중'];
     // 전역 변수에 카운트 저장
     window.statusCounts = counts;
 
+    // 상태 필터 토글 버튼 카운트 업데이트
+    const scntAll = document.getElementById('scnt-all');
+    const scntRevision = document.getElementById('scnt-revision');
+    const scntFixed = document.getElementById('scnt-fixed');
+    const scntVerified = document.getElementById('scnt-verified');
+    const scntHold = document.getElementById('scnt-hold');
+    const scntServer = document.getElementById('scnt-server');
+    if (scntAll) scntAll.textContent = logs.length;
+    if (scntRevision) scntRevision.textContent = counts['수정 필요'];
+    if (scntFixed) scntFixed.textContent = counts['수정 완료'];
+    if (scntVerified) scntVerified.textContent = counts['수정 확인'];
+    if (scntHold) scntHold.textContent = counts['보류/패스'];
+    if (scntServer) scntServer.textContent = counts['서버수정 요청중'];
+
     // 대시보드 분석 업데이트
     updateDashboardAnalytics(logs);
+}
+
+function setStateFilter(value) {
+    // hidden select 업데이트
+    const stateFilter = document.getElementById('stateFilter');
+    if (stateFilter) stateFilter.value = value;
+
+    // 모바일 select 동기화
+    const mobileStateFilter = document.getElementById('mobileStateFilter');
+    if (mobileStateFilter) mobileStateFilter.value = value;
+
+    // 토글 버튼 active 상태 업데이트
+    document.querySelectorAll('.state-filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.state === value);
+    });
+
+    // 콘텐츠 필터를 전체로 초기화 후 현재 상태에 맞게 옵션 갱신
+    const contentFilter = document.getElementById('contentFilter');
+    if (contentFilter) contentFilter.value = 'all';
+    updateContentDropdown();
+
+    applyFilters();
 }
 
 function navigateToListWithFilter(state) {
@@ -457,15 +493,8 @@ function navigateToListWithFilter(state) {
     // 검수 목록 페이지로 이동
     showSection('list');
 
-    // 상태 필터 적용
-    document.getElementById('stateFilter').value = state;
-    const mobileStateFilter = document.getElementById('mobileStateFilter');
-    if (mobileStateFilter) {
-        mobileStateFilter.value = state;
-    }
-
-    // 필터 적용
-    applyFilters();
+    // 상태 필터 적용 (토글 버튼 + hidden select 동기화)
+    setStateFilter(state);
 }
 
 async function fetchLogs(preservePage = false, forceRefresh = false) {
@@ -545,7 +574,13 @@ function updateContentDropdown() {
     const mobileContentFilter = document.getElementById('mobileContentFilter');
     const contents = new Set();
 
-    globalLogs.forEach(log => {
+    // 현재 상태 필터에 해당하는 항목만 콘텐츠 목록에 포함
+    const currentState = document.getElementById('stateFilter')?.value || 'all';
+    const logsForContent = currentState === 'all'
+        ? globalLogs
+        : globalLogs.filter(log => (log.state || log.status || '').trim() === currentState);
+
+    logsForContent.forEach(log => {
         if (log.current_scene) {
             const koreanName = getDisplayName(log.current_scene, false);
             contents.add(koreanName);
@@ -557,18 +592,22 @@ function updateContentDropdown() {
     });
 
     const currentSelection = contentFilter ? contentFilter.value : 'all';
-
     const sortedContents = Array.from(contents).sort();
+
+    // 현재 선택이 새 목록에 없으면 'all'로 초기화
+    const validSelection = currentSelection === 'all' || sortedContents.includes(currentSelection);
+    const finalSelection = validSelection ? currentSelection : 'all';
+    if (!validSelection && contentFilter) contentFilter.value = 'all';
 
     // Choices.js가 초기화되어 있으면 clearStore하고 다시 설정
     if (contentFilterChoices) {
         contentFilterChoices.clearStore();
         contentFilterChoices.setChoices([
-            { value: 'all', label: '전체 보기', selected: currentSelection === 'all' },
+            { value: 'all', label: '전체 보기', selected: finalSelection === 'all' },
             ...sortedContents.map(content => ({
                 value: content,
                 label: content,
-                selected: content === currentSelection
+                selected: content === finalSelection
             }))
         ], 'value', 'label', true);
     } else if (contentFilter) {
@@ -578,18 +617,18 @@ function updateContentDropdown() {
             filterHtml += `<option value="${content}">${content}</option>`;
         });
         contentFilter.innerHTML = filterHtml;
-        contentFilter.value = currentSelection || 'all';
+        contentFilter.value = finalSelection;
     }
 
     // 모바일 콘텐츠 필터 업데이트
     if (mobileContentFilterChoices) {
         mobileContentFilterChoices.clearStore();
         mobileContentFilterChoices.setChoices([
-            { value: 'all', label: '콘텐츠: 전체', selected: currentSelection === 'all' },
+            { value: 'all', label: '콘텐츠: 전체', selected: finalSelection === 'all' },
             ...sortedContents.map(content => ({
                 value: content,
                 label: `콘텐츠: ${content}`,
-                selected: content === currentSelection
+                selected: content === finalSelection
             }))
         ], 'value', 'label', true);
     } else if (mobileContentFilter) {
@@ -599,7 +638,7 @@ function updateContentDropdown() {
             mobileFilterHtml += `<option value="${content}">콘텐츠: ${content}</option>`;
         });
         mobileContentFilter.innerHTML = mobileFilterHtml;
-        mobileContentFilter.value = currentSelection || 'all';
+        mobileContentFilter.value = finalSelection;
     }
 }
 
@@ -616,7 +655,9 @@ function syncFilters(type) {
     } else if (type === 'content' && mobileContentFilter) {
         contentFilter.value = mobileContentFilter.value;
     } else if (type === 'state' && mobileStateFilter) {
-        stateFilter.value = mobileStateFilter.value;
+        // 모바일 상태 필터 변경 시 토글 버튼과 동기화
+        setStateFilter(mobileStateFilter.value);
+        return;
     }
     applyFilters();
 }
@@ -767,7 +808,7 @@ function renderTable() {
         } else if (currentState === '수정 완료') {
             actionButtons += `<button onclick="directUpdateState('${log.id}', '수정 확인')" class="bg-green-100 text-green-700 hover:bg-green-200 border border-green-200 px-2 py-1.5 rounded shadow-sm text-[10px] font-black transition w-full mb-1">수정 확인</button>`;
             actionButtons += `<button onclick="openReRequestModal('${log.id}')" class="bg-orange-100 text-orange-700 hover:bg-orange-200 border border-orange-200 px-2 py-1.5 rounded shadow-sm text-[10px] font-black transition w-full">재수정요청</button>`;
-        } else if (currentState === '보류' || currentState === '수정 확인') {
+        } else if (currentState === '보류/패스' || currentState === '수정 확인') {
             actionButtons += `<button onclick="openReRequestModal('${log.id}')" class="bg-orange-100 text-orange-700 hover:bg-orange-200 border border-orange-200 px-2 py-1.5 rounded shadow-sm text-[10px] font-black transition w-full">재수정요청</button>`;
         }
 
@@ -849,7 +890,7 @@ function renderTable() {
             } else if (currentState === '수정 완료') {
                 mobileActionButtons += `<button onclick="directUpdateState('${log.id}', '수정 확인')" class="bg-green-100 text-green-700 border border-green-200">수정 확인</button>`;
                 mobileActionButtons += `<button onclick="openReRequestModal('${log.id}')" class="bg-orange-100 text-orange-700 border border-orange-200">재수정요청</button>`;
-            } else if (currentState === '보류' || currentState === '수정 확인') {
+            } else if (currentState === '보류/패스' || currentState === '수정 확인') {
                 mobileActionButtons += `<button onclick="openReRequestModal('${log.id}')" class="bg-orange-100 text-orange-700 border border-orange-200">재수정요청</button>`;
             }
 
@@ -981,7 +1022,7 @@ function openDetailModal(logId) {
             <button onclick="directUpdateStateFromModal('${log.id}', '수정 확인')" class="bg-green-600 text-white px-5 py-2 rounded-xl font-bold hover:bg-green-700 transition text-sm shadow-md"><i class="fas fa-check-double mr-1"></i>수정 확인</button>
             <button onclick="openReRequestModal('${log.id}')" class="bg-orange-500 text-white px-5 py-2 rounded-xl font-bold hover:bg-orange-600 transition text-sm shadow-md"><i class="fas fa-exclamation-triangle mr-1"></i>재수정요청</button>
         `;
-    } else if (currentState === '보류' || currentState === '수정 확인') {
+    } else if (currentState === '보류/패스' || currentState === '수정 확인') {
         actionButtonsHtml = `<button onclick="openReRequestModal('${log.id}')" class="bg-orange-500 text-white px-5 py-2 rounded-xl font-bold hover:bg-orange-600 transition text-sm shadow-md"><i class="fas fa-exclamation-triangle mr-1"></i>재수정요청</button>`;
     }
     actionButtonsContainer.innerHTML = actionButtonsHtml;
@@ -1428,7 +1469,7 @@ function analyzeAuthorStats(logs) {
                     '수정 필요': 0,
                     '수정 완료': 0,
                     '수정 확인': 0,
-                    '보류': 0,
+                    '보류/패스': 0,
                     '서버수정 요청중': 0
                 }
             };
@@ -1471,7 +1512,7 @@ function renderStatusChart(logs) {
         '수정 필요': 0,
         '수정 완료': 0,
         '수정 확인': 0,
-        '보류': 0,
+        '보류/패스': 0,
         '서버수정 요청중': 0
     };
 
