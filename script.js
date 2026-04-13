@@ -352,7 +352,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /** 데이터 로드 및 처리 함수 **/
 async function fetchQAInformation(forceRefresh = false) {
-    const today = new Date().toISOString().split('T')[0];
+    const now = new Date().toISOString(); // 시간까지 포함된 전체 타임스탬프
+    const today = now.split('T')[0]; // 캐시 키용 날짜
 
     // 캐시에서 먼저 시도
     if (!forceRefresh) {
@@ -366,7 +367,7 @@ async function fetchQAInformation(forceRefresh = false) {
 
     // 캐시 미스 또는 강제 갱신 - Supabase에서 가져오기
     console.log('↓ QA Information Supabase에서 로드');
-    const { data } = await supabaseClient.from('qa_information').select('*').lte('start_at', today).gte('end_at', today).order('created_at', { ascending: false }).limit(1);
+    const { data } = await supabaseClient.from('qa_information').select('*').lte('start_at', now).gte('end_at', now).order('created_at', { ascending: false }).limit(1);
 
     // 데이터가 있으면 캐시에 저장 (10분 TTL)
     if (data && data.length > 0) {
