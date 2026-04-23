@@ -8,7 +8,7 @@ class CacheManager {
         this.dbName = dbName;
         this.version = version;
         this.db = null;
-        this.TTL = 5 * 60 * 1000; // 기본 5분 (밀리초)
+        this.TTL = 30 * 60 * 1000; // 기본 30분 (밀리초) - Egress 절감을 위해 5분에서 30분으로 연장
     }
 
     /**

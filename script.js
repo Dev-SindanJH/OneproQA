@@ -366,12 +366,18 @@ async function fetchQAInformation(forceRefresh = false) {
     }
 
     // 캐시 미스 또는 강제 갱신 - Supabase에서 가져오기
-    console.log('↓ QA Information Supabase에서 로드');
-    const { data } = await supabaseClient.from('qa_information').select('*').lte('start_at', now).gte('end_at', now).order('created_at', { ascending: false }).limit(1);
+    console.log('↓ QA Information Supabase에서 로드 (최적화: 필요 컬럼만)');
+    const { data } = await supabaseClient
+        .from('qa_information')
+        .select('id,version,round,start_at,end_at,bundleCode,serverInfo,created_at')
+        .lte('start_at', now)
+        .gte('end_at', now)
+        .order('created_at', { ascending: false })
+        .limit(1);
 
-    // 데이터가 있으면 캐시에 저장 (10분 TTL)
+    // 데이터가 있으면 캐시에 저장 (30분 TTL로 연장)
     if (data && data.length > 0) {
-        await cacheManager.set('qa_information', today, data[0], 10 * 60 * 1000);
+        await cacheManager.set('qa_information', today, data[0], 30 * 60 * 1000);
         updateQAInformationUI(data[0]);
     } else {
         updateQAInformationUI(null);
@@ -509,7 +515,8 @@ async function fetchLogs(preservePage = false, forceRefresh = false) {
         const cachedData = await cacheManager.get('qa_logs', 'default');
         if (cachedData) {
             console.log('✓ QA Logs 캐시에서 로드 (' + cachedData.length + '건)');
-            globalLogs = cachedData.filter(log => log.is_delete !== true); 
+            // 이미 서버에서 is_delete 필터링했으므로 클라이언트 필터링 불필요
+            globalLogs = cachedData;
             updateDashboard(globalLogs);
             updateAuthorDropdown(); 
             applyFilters(preservePage);
@@ -517,25 +524,36 @@ async function fetchLogs(preservePage = false, forceRefresh = false) {
             const mobileCheckAll = document.getElementById('mobileCheckAll');
             if (checkAll) checkAll.checked = false;
             if (mobileCheckAll) mobileCheckAll.checked = false;
+
+            // 백그라운드에서 증분 업데이트 시도 (비동기, UI 블로킹 없음)
+            performIncrementalUpdate();
             return;
         }
     }
 
     // 캐시 미스 또는 강제 갱신 - Supabase에서 가져오기
-    console.log('↓ QA Logs Supabase에서 로드');
-    const { data, error } = await supabaseClient.from('qa_logs').select('*').order('created_at', { ascending: false });
+    console.log('↓ QA Logs Supabase에서 로드 (최적화: 필요 컬럼만, 삭제 제외)');
+    const { data, error } = await supabaseClient
+        .from('qa_logs')
+        .select('id,user_name,state,current_scene,current_popup,user_description,developer_comment,created_at,updated_at,image_url,is_delete,inAppLogs')
+        .or('is_delete.is.null,is_delete.eq.false')
+        .order('created_at', { ascending: false });
+
     if (error) {
         tbody.innerHTML = `<tr><td colspan="9" class="text-center py-8 text-red-500">실패: ${error.message}</td></tr>`;
         if (mobileContainer) mobileContainer.innerHTML = `<p class="text-center py-8 text-red-500">실패: ${error.message}</p>`;
         return;
     }
 
-    // 데이터를 캐시에 저장 (5분 TTL)
+    // 데이터를 캐시에 저장 (30분 TTL로 연장)
     if (data) {
-        await cacheManager.set('qa_logs', 'default', data, 5 * 60 * 1000);
+        await cacheManager.set('qa_logs', 'default', data, 30 * 60 * 1000);
+        // 마지막 업데이트 시간 저장 (증분 업데이트용)
+        await cacheManager.setMetadata('last_logs_update', new Date().toISOString());
     }
 
-    globalLogs = data.filter(log => log.is_delete !== true); 
+    // 이미 서버에서 is_delete 필터링했으므로 클라이언트 필터링 불필요
+    globalLogs = data;
     updateDashboard(globalLogs);
     updateAuthorDropdown(); 
     applyFilters(preservePage);
@@ -543,6 +561,82 @@ async function fetchLogs(preservePage = false, forceRefresh = false) {
     const mobileCheckAll = document.getElementById('mobileCheckAll');
     if (checkAll) checkAll.checked = false;
     if (mobileCheckAll) mobileCheckAll.checked = false;
+}
+
+/**
+ * 증분 업데이트: 마지막 업데이트 이후 변경된 항목만 가져와 캐시 병합
+ * 백그라운드에서 비동기로 실행되어 UI 블로킹 없음
+ */
+async function performIncrementalUpdate() {
+    try {
+        // 마지막 업데이트 시간 확인
+        const lastUpdate = await cacheManager.getMetadata('last_logs_update');
+        if (!lastUpdate) {
+            console.log('⚠️ 증분 업데이트: 마지막 업데이트 시간 없음, 스킵');
+            return;
+        }
+
+        // 마지막 업데이트 이후 변경된 항목만 조회
+        const { data: updatedLogs, error } = await supabaseClient
+            .from('qa_logs')
+            .select('id,user_name,state,current_scene,current_popup,user_description,developer_comment,created_at,updated_at,image_url,is_delete,inAppLogs')
+            .or('is_delete.is.null,is_delete.eq.false')
+            .gt('updated_at', lastUpdate)
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('❌ 증분 업데이트 실패:', error);
+            return;
+        }
+
+        if (!updatedLogs || updatedLogs.length === 0) {
+            console.log('✓ 증분 업데이트: 변경사항 없음');
+            return;
+        }
+
+        console.log(`🔄 증분 업데이트: ${updatedLogs.length}건의 변경사항 발견`);
+
+        // 기존 캐시 데이터 가져오기
+        const cachedData = await cacheManager.get('qa_logs', 'default');
+        if (!cachedData) return;
+
+        // 변경된 항목을 ID 기준으로 병합
+        const mergedData = mergeLogs(cachedData, updatedLogs);
+
+        // 캐시 업데이트
+        await cacheManager.set('qa_logs', 'default', mergedData, 30 * 60 * 1000);
+        await cacheManager.setMetadata('last_logs_update', new Date().toISOString());
+
+        // 전역 데이터 업데이트 (화면 자동 갱신)
+        globalLogs = mergedData;
+        updateDashboard(globalLogs);
+        updateAuthorDropdown();
+        applyFilters(true); // 현재 페이지 유지
+
+        console.log('✓ 증분 업데이트 완료: 캐시 및 화면 갱신');
+    } catch (err) {
+        console.error('❌ 증분 업데이트 오류:', err);
+    }
+}
+
+/**
+ * 두 로그 배열을 병합 (ID 기준으로 최신 데이터 우선)
+ * @param {Array} cachedLogs - 캐시된 로그
+ * @param {Array} newLogs - 새로운/업데이트된 로그
+ * @returns {Array} 병합된 로그 (created_at 내림차순 정렬)
+ */
+function mergeLogs(cachedLogs, newLogs) {
+    const logMap = new Map();
+
+    // 캐시된 로그를 맵에 추가
+    cachedLogs.forEach(log => logMap.set(log.id, log));
+
+    // 새 로그로 덮어쓰기 (업데이트된 항목 반영)
+    newLogs.forEach(log => logMap.set(log.id, log));
+
+    // Map을 배열로 변환 후 created_at 기준 내림차순 정렬
+    return Array.from(logMap.values())
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 }
 
 function updateAuthorDropdown() {
