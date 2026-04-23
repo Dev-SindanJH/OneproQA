@@ -3,13 +3,22 @@ const SUPABASE_ANON_KEY = 'sb_publishable_4IUFaMgTOLEY4cC-oS3efQ_KVnvWldX';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // 전역 변수
-let globalLogs = []; 
-let filteredLogs = []; 
+let globalLogs = []; // 대시보드/드롭다운용 요약 데이터만 저장
+let currentPageLogs = []; // 현재 페이지의 데이터
+let totalLogsCount = 0; // 전체(필터링된) 로그 개수
 let currentPage = 1;
 const itemsPerPage = 10;
 let currentBundleCode = ''; // 현재 검수 번들 코드
 let currentAppVersion = ''; // 현재 앱 버전
 let dateSortOrder = 'desc'; // 날짜 정렬 순서: 'asc' (오름차순), 'desc' (내림차순), 'none' (정렬 없음)
+
+// 현재 필터 상태 저장
+let currentFilters = {
+    author: 'all',
+    content: 'all',
+    state: 'all',
+    search: ''
+};
 
 // Choices.js 인스턴스 저장
 let contentFilterChoices = null;
@@ -18,7 +27,13 @@ let mobileContentFilterChoices = null;
 // 캐시 관련 헬퍼 함수
 async function invalidateLogsCache() {
     console.log('🗑️ QA Logs 캐시 무효화');
+    // 페이지별 캐시 삭제를 위해 패턴 매칭 필요 (간단히 전체 삭제)
     await cacheManager.delete('qa_logs', 'default');
+    // 페이지별 캐시도 삭제 (실제로는 모든 페이지 키를 삭제해야 하지만, 간단히 처리)
+    for (let i = 1; i <= 100; i++) {
+        await cacheManager.delete('qa_logs_page', i.toString());
+    }
+    await cacheManager.delete('qa_logs_count', 'default');
 }
 
 async function invalidateQAInfoCache() {
@@ -33,8 +48,116 @@ async function refreshAllData() {
     await invalidateLogsCache();
     await invalidateQAInfoCache();
     await fetchQAInformation(true);
-    await fetchLogs(true, true);
+    await fetchLogsCount(true); // 카운트 갱신
+    await fetchLogs(true); // 현재 페이지 갱신
     showToast('데이터가 새로고침되었습니다!', 'success');
+}
+
+/**
+ * 필터 조건을 Supabase 쿼리에 적용하는 헬퍼 함수
+ * @param {Object} query - Supabase 쿼리 빌더
+ * @param {Object} filters - 필터 조건 { author, content, state, search }
+ * @returns {Object} 필터가 적용된 쿼리
+ */
+function applyFiltersToQuery(query, filters) {
+    // 삭제되지 않은 항목만
+    query = query.not('is_delete', 'eq', true);
+
+    // 상태 필터
+    if (filters.state && filters.state !== 'all') {
+        query = query.eq('state', filters.state);
+    }
+
+    // 작성자 필터
+    if (filters.author && filters.author !== 'all') {
+        query = query.eq('user_name', filters.author);
+    }
+
+    // 콘텐츠 필터 (Scene 또는 Popup)
+    if (filters.content && filters.content !== 'all') {
+        const isPopup = filters.content.startsWith('[팝업]');
+        const contentName = isPopup ? filters.content.replace('[팝업] ', '') : filters.content;
+
+        // 한글 이름을 영어 코드로 역변환
+        let codeValue = null;
+        if (isPopup) {
+            // Popup 매핑에서 찾기
+            for (const [code, name] of Object.entries(POPUP_NAME_MAP)) {
+                if (name === contentName) {
+                    codeValue = code;
+                    break;
+                }
+            }
+            if (codeValue) {
+                query = query.eq('current_popup', codeValue);
+            }
+        } else {
+            // Scene 매핑에서 찾기
+            for (const [code, name] of Object.entries(SCENE_NAME_MAP)) {
+                if (name === contentName) {
+                    codeValue = code;
+                    break;
+                }
+            }
+            if (codeValue) {
+                query = query.eq('current_scene', codeValue);
+            }
+        }
+    }
+
+    // 검색어 필터 (Supabase에서는 textSearch나 ilike 사용)
+    if (filters.search && filters.search.trim()) {
+        const searchTerm = `%${filters.search.trim()}%`;
+        // user_description 또는 developer_comment에 검색어 포함
+        query = query.or(`user_description.ilike.${searchTerm},developer_comment.ilike.${searchTerm}`);
+    }
+
+    return query;
+}
+
+/**
+ * 총 로그 개수를 조회하는 함수 (필터 적용)
+ * @param {boolean} forceRefresh - 강제 새로고침 여부
+ * @returns {Promise<number>} 총 개수
+ */
+async function fetchLogsCount(forceRefresh = false) {
+    // 캐시 키 생성 (필터 조건 포함)
+    const cacheKey = JSON.stringify(currentFilters);
+
+    // 캐시에서 먼저 시도
+    if (!forceRefresh) {
+        const cachedCount = await cacheManager.get('qa_logs_count', cacheKey);
+        if (cachedCount !== null && cachedCount !== undefined) {
+            console.log('✓ Logs Count 캐시에서 로드:', cachedCount);
+            totalLogsCount = cachedCount;
+            return cachedCount;
+        }
+    }
+
+    // Supabase에서 개수 조회
+    console.log('↓ Logs Count Supabase에서 조회');
+    let query = supabaseClient
+        .from('qa_logs')
+        .select('*', { count: 'exact', head: true });
+
+    // 필터 적용
+    query = applyFiltersToQuery(query, currentFilters);
+
+    const { count, error } = await query;
+
+    if (error) {
+        console.error('카운트 조회 실패:', error);
+        totalLogsCount = 0;
+        return 0;
+    }
+
+    totalLogsCount = count || 0;
+
+    // 캐시에 저장 (5분 TTL)
+    await cacheManager.set('qa_logs_count', cacheKey, totalLogsCount, 5 * 60 * 1000);
+
+    console.log('✓ 총 로그 개수:', totalLogsCount);
+    return totalLogsCount;
 }
 
 // Scene 이름 매핑 (영어 코드 → 한글)
@@ -504,41 +627,60 @@ function navigateToListWithFilter(state) {
     setStateFilter(state);
 }
 
-async function fetchLogs(preservePage = false, forceRefresh = false) {
+/**
+ * 현재 페이지의 로그 데이터를 조회하는 함수 (서버 사이드 페이징)
+ * @param {boolean} forceRefresh - 강제 새로고침 여부
+ */
+async function fetchLogs(forceRefresh = false) {
     const tbody = document.getElementById('logTableBody');
     const mobileContainer = document.getElementById('mobileCardContainer');
     tbody.innerHTML = '<tr><td colspan="9" class="text-center py-8 text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>데이터를 불러오는 중...</td></tr>';
     if (mobileContainer) mobileContainer.innerHTML = '<p class="text-center py-8 text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>데이터를 불러오는 중...</p>';
 
+    // 캐시 키 생성 (페이지 + 필터 + 정렬 조건 포함)
+    const cacheKey = JSON.stringify({
+        page: currentPage,
+        filters: currentFilters,
+        sort: dateSortOrder
+    });
+
     // 캐시에서 먼저 시도
     if (!forceRefresh) {
-        const cachedData = await cacheManager.get('qa_logs', 'default');
+        const cachedData = await cacheManager.get('qa_logs_page', cacheKey);
         if (cachedData) {
-            console.log('✓ QA Logs 캐시에서 로드 (' + cachedData.length + '건)');
-            // 클라이언트 사이드에서도 is_delete 필터링 (캐시 안전성 강화)
-            globalLogs = cachedData.filter(log => !log.is_delete);
-            console.log('✓ 삭제된 항목 제외 후: ' + globalLogs.length + '건');
-            updateDashboard(globalLogs);
-            updateAuthorDropdown(); 
-            applyFilters(preservePage);
+            console.log(`✓ 페이지 ${currentPage} 캐시에서 로드 (${cachedData.length}건)`);
+            currentPageLogs = cachedData;
+            renderTable();
             const checkAll = document.getElementById('checkAll');
             const mobileCheckAll = document.getElementById('mobileCheckAll');
             if (checkAll) checkAll.checked = false;
             if (mobileCheckAll) mobileCheckAll.checked = false;
-
-            // 백그라운드에서 증분 업데이트 시도 (비동기, UI 블로킹 없음)
-            performIncrementalUpdate();
             return;
         }
     }
 
-    // 캐시 미스 또는 강제 갱신 - Supabase에서 가져오기
-    console.log('↓ QA Logs Supabase에서 로드 (최적화: 필요 컬럼만, 삭제 제외)');
-    const { data, error } = await supabaseClient
+    // Supabase에서 페이지별 데이터 조회
+    console.log(`↓ 페이지 ${currentPage} Supabase에서 로드`);
+
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage - 1;
+
+    let query = supabaseClient
         .from('qa_logs')
-        .select('id,user_name,state,current_scene,current_popup,user_description,developer_comment,created_at,updated_at,image_url,is_delete,inAppLogs')
-        .not('is_delete', 'eq', true)
-        .order('created_at', { ascending: false });
+        .select('id,user_name,state,current_scene,current_popup,user_description,developer_comment,created_at,updated_at,image_url,is_delete,inAppLogs');
+
+    // 필터 적용
+    query = applyFiltersToQuery(query, currentFilters);
+
+    // 정렬 적용
+    if (dateSortOrder !== 'none') {
+        query = query.order('created_at', { ascending: dateSortOrder === 'asc' });
+    }
+
+    // 페이징 적용
+    query = query.range(startIndex, endIndex);
+
+    const { data, error } = await query;
 
     if (error) {
         tbody.innerHTML = `<tr><td colspan="9" class="text-center py-8 text-red-500">실패: ${error.message}</td></tr>`;
@@ -546,19 +688,15 @@ async function fetchLogs(preservePage = false, forceRefresh = false) {
         return;
     }
 
-    // 데이터를 캐시에 저장 (30분 TTL로 연장) - 삭제된 항목 제외
+    // 데이터를 캐시에 저장 (10분 TTL)
     if (data) {
-        const filteredData = data.filter(log => !log.is_delete);
-        await cacheManager.set('qa_logs', 'default', filteredData, 30 * 60 * 1000);
-        // 마지막 업데이트 시간 저장 (증분 업데이트용)
-        await cacheManager.setMetadata('last_logs_update', new Date().toISOString());
-        globalLogs = filteredData;
+        currentPageLogs = data;
+        await cacheManager.set('qa_logs_page', cacheKey, data, 10 * 60 * 1000);
     } else {
-        globalLogs = [];
+        currentPageLogs = [];
     }
-    updateDashboard(globalLogs);
-    updateAuthorDropdown(); 
-    applyFilters(preservePage);
+
+    renderTable();
     const checkAll = document.getElementById('checkAll');
     const mobileCheckAll = document.getElementById('mobileCheckAll');
     if (checkAll) checkAll.checked = false;
@@ -566,80 +704,43 @@ async function fetchLogs(preservePage = false, forceRefresh = false) {
 }
 
 /**
- * 증분 업데이트: 마지막 업데이트 이후 변경된 항목만 가져와 캐시 병합
- * 백그라운드에서 비동기로 실행되어 UI 블로킹 없음
+ * 대시보드 및 드롭다운용 요약 데이터를 조회하는 함수
+ * (상태별 카운트, 작성자 목록, 콘텐츠 목록 등)
  */
-async function performIncrementalUpdate() {
-    try {
-        // 마지막 업데이트 시간 확인
-        const lastUpdate = await cacheManager.getMetadata('last_logs_update');
-        if (!lastUpdate) {
-            console.log('⚠️ 증분 업데이트: 마지막 업데이트 시간 없음, 스킵');
+async function fetchSummaryData(forceRefresh = false) {
+    // 캐시에서 먼저 시도
+    if (!forceRefresh) {
+        const cachedSummary = await cacheManager.get('qa_logs_summary', 'default');
+        if (cachedSummary) {
+            console.log('✓ Summary 데이터 캐시에서 로드');
+            globalLogs = cachedSummary;
+            updateDashboard(globalLogs);
+            updateAuthorDropdown();
             return;
         }
-
-        // 마지막 업데이트 이후 변경된 항목만 조회 (삭제된 항목 제외)
-        const { data: updatedLogs, error } = await supabaseClient
-            .from('qa_logs')
-            .select('id,user_name,state,current_scene,current_popup,user_description,developer_comment,created_at,updated_at,image_url,is_delete,inAppLogs')
-            .not('is_delete', 'eq', true)
-            .gt('updated_at', lastUpdate)
-            .order('created_at', { ascending: false });
-
-        if (error) {
-            console.error('❌ 증분 업데이트 실패:', error);
-            return;
-        }
-
-        if (!updatedLogs || updatedLogs.length === 0) {
-            console.log('✓ 증분 업데이트: 변경사항 없음');
-            return;
-        }
-
-        console.log(`🔄 증분 업데이트: ${updatedLogs.length}건의 변경사항 발견`);
-
-        // 기존 캐시 데이터 가져오기
-        const cachedData = await cacheManager.get('qa_logs', 'default');
-        if (!cachedData) return;
-
-        // 변경된 항목을 ID 기준으로 병합
-        const mergedData = mergeLogs(cachedData, updatedLogs);
-
-        // 캐시 업데이트
-        await cacheManager.set('qa_logs', 'default', mergedData, 30 * 60 * 1000);
-        await cacheManager.setMetadata('last_logs_update', new Date().toISOString());
-
-        // 전역 데이터 업데이트 (화면 자동 갱신)
-        globalLogs = mergedData;
-        updateDashboard(globalLogs);
-        updateAuthorDropdown();
-        applyFilters(true); // 현재 페이지 유지
-
-        console.log('✓ 증분 업데이트 완료: 캐시 및 화면 갱신');
-    } catch (err) {
-        console.error('❌ 증분 업데이트 오류:', err);
     }
-}
 
-/**
- * 두 로그 배열을 병합 (ID 기준으로 최신 데이터 우선)
- * @param {Array} cachedLogs - 캐시된 로그
- * @param {Array} newLogs - 새로운/업데이트된 로그
- * @returns {Array} 병합된 로그 (created_at 내림차순 정렬)
- */
-function mergeLogs(cachedLogs, newLogs) {
-    const logMap = new Map();
+    // Supabase에서 요약 데이터 조회 (전체 데이터, 단 필요한 컬럼만)
+    console.log('↓ Summary 데이터 Supabase에서 로드');
+    const { data, error } = await supabaseClient
+        .from('qa_logs')
+        .select('id,user_name,state,current_scene,current_popup,created_at')
+        .not('is_delete', 'eq', true)
+        .order('created_at', { ascending: false });
 
-    // 캐시된 로그를 맵에 추가
-    cachedLogs.forEach(log => logMap.set(log.id, log));
+    if (error) {
+        console.error('Summary 조회 실패:', error);
+        globalLogs = [];
+        return;
+    }
 
-    // 새 로그로 덮어쓰기 (업데이트된 항목 반영)
-    newLogs.forEach(log => logMap.set(log.id, log));
+    globalLogs = data || [];
 
-    // Map을 배열로 변환 후 삭제된 항목 제외 및 created_at 기준 내림차순 정렬
-    return Array.from(logMap.values())
-        .filter(log => !log.is_delete)
-        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    // 캐시에 저장 (30분 TTL)
+    await cacheManager.set('qa_logs_summary', 'default', globalLogs, 30 * 60 * 1000);
+
+    updateDashboard(globalLogs);
+    updateAuthorDropdown();
 }
 
 function updateAuthorDropdown() {
@@ -760,51 +861,37 @@ function syncFilters(type) {
     applyFilters();
 }
 
-function applyFilters(preservePage = false) {
-    const a = document.getElementById('authorFilter').value;
-    const c = document.getElementById('contentFilter').value;
-    const s = document.getElementById('stateFilter').value;
+async function applyFilters() {
+    // 현재 필터 상태 업데이트
+    currentFilters.author = document.getElementById('authorFilter').value;
+    currentFilters.content = document.getElementById('contentFilter').value;
+    currentFilters.state = document.getElementById('stateFilter').value;
+
     const searchInput = document.getElementById('searchInput');
-    const searchText = searchInput ? searchInput.value.trim().toLowerCase() : '';
+    currentFilters.search = searchInput ? searchInput.value.trim() : '';
+
     const clearBtn = document.getElementById('clearSearchBtn');
 
     // 검색 버튼 표시/숨김
     if (clearBtn) {
-        if (searchText) {
+        if (currentFilters.search) {
             clearBtn.classList.remove('hidden');
         } else {
             clearBtn.classList.add('hidden');
         }
     }
 
-    filteredLogs = globalLogs.filter(log => {
-        const authorName = log.user_name || '알 수 없음';
-        const currentState = (log.state || log.status || '').trim();
+    // 페이지를 1로 리셋
+    currentPage = 1;
 
-        // 콘텐츠 매칭
-        let matchContent = (c === 'all');
-        if (!matchContent) {
-            const sceneKorean = log.current_scene ? getDisplayName(log.current_scene, false) : null;
-            const popupKorean = log.current_popup ? `[팝업] ${getDisplayName(log.current_popup, true)}` : null;
-            matchContent = (sceneKorean === c || popupKorean === c);
-        }
+    // 총 개수 다시 조회
+    await fetchLogsCount(true);
 
-        const matchAuthor = (a === 'all' || authorName === a);
-        const matchState = (s === 'all' || currentState === s);
+    // 현재 페이지 데이터 조회
+    await fetchLogs(true);
 
-        // 검색어 매칭 (검수 내용 + 개발자 코멘트)
-        let matchSearch = true;
-        if (searchText) {
-            const description = (log.user_description || '').toLowerCase();
-            const devComment = (log.developer_comment || '').toLowerCase();
-            matchSearch = description.includes(searchText) || devComment.includes(searchText);
-        }
-
-        return matchAuthor && matchContent && matchState && matchSearch;
-    });
-
-    // 정렬 적용
-    applySortAndRender(preservePage);
+    // 페이지네이션 렌더링
+    renderPagination();
 }
 
 function clearSearch() {
@@ -821,7 +908,7 @@ function clearSearch() {
     applyFilters();
 }
 
-function toggleDateSort() {
+async function toggleDateSort() {
     // 정렬 순서 토글: desc -> asc -> none -> desc
     if (dateSortOrder === 'desc') {
         dateSortOrder = 'asc';
@@ -843,37 +930,14 @@ function toggleDateSort() {
         }
     }
 
-    // 정렬 적용
-    applySortAndRender();
+    // 정렬 적용 - 서버에서 다시 가져오기
+    currentPage = 1;
+    await fetchLogs(true);
+    renderPagination();
 }
 
-function applySortAndRender(preservePage = false) {
-    // 정렬이 'none'이 아닌 경우에만 정렬 수행
-    if (dateSortOrder !== 'none') {
-        filteredLogs.sort((a, b) => {
-            const dateA = new Date(a.created_at);
-            const dateB = new Date(b.created_at);
-
-            if (dateSortOrder === 'asc') {
-                return dateA - dateB; // 오름차순 (오래된 것부터)
-            } else {
-                return dateB - dateA; // 내림차순 (최신 것부터)
-            }
-        });
-    }
-
-    // 페이지 유지 여부에 따라 페이지 리셋
-    if (!preservePage) {
-        currentPage = 1;
-    } else {
-        // 현재 페이지가 총 페이지를 초과하는 경우 마지막 페이지로 이동
-        const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
-        if (currentPage > totalPages && totalPages > 0) {
-            currentPage = totalPages;
-        }
-    }
-    renderTable();
-}
+// applySortAndRender 함수는 더 이상 필요 없음 (서버에서 정렬)
+// 삭제하거나 주석 처리
 
 function renderTable() {
     const tbody = document.getElementById('logTableBody');
@@ -881,17 +945,14 @@ function renderTable() {
     tbody.innerHTML = ''; 
     if (mobileContainer) mobileContainer.innerHTML = '';
 
-    if (filteredLogs.length === 0) {
-        renderPagination(0);
+    if (currentPageLogs.length === 0) {
+        renderPagination();
         tbody.innerHTML = '<tr><td colspan="9" class="text-center py-8 text-gray-400">내역이 없습니다.</td></tr>';
         if (mobileContainer) mobileContainer.innerHTML = '<p class="text-center py-8 text-gray-400">내역이 없습니다.</p>';
         return;
     }
 
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedLogs = filteredLogs.slice(startIndex, startIndex + itemsPerPage);
-
-    paginatedLogs.forEach(log => {
+    currentPageLogs.forEach(log => {
         const authorName = log.user_name || '알 수 없음';
         const currentState = (log.state || log.status || '').trim();
         const devComment = log.developer_comment || '<span class="text-gray-300 italic">코멘트 없음</span>';
@@ -1023,13 +1084,15 @@ function renderTable() {
             mobileContainer.appendChild(card);
         }
     });
-    renderPagination(filteredLogs.length);
+    renderPagination();
 }
 
-function renderPagination(totalItems) {
+function renderPagination() {
     const paginationDiv = document.getElementById('pagination');
     paginationDiv.innerHTML = '';
-    if (totalItems <= itemsPerPage) return; 
+
+    const totalItems = totalLogsCount;
+    if (totalItems <= itemsPerPage) return;
 
     const totalPages = Math.ceil(totalItems / itemsPerPage);
     const maxVisiblePages = 10; // 한 번에 보여줄 최대 페이지 수
@@ -1070,15 +1133,52 @@ function renderPagination(totalItems) {
     paginationDiv.innerHTML += `<button onclick="changePage(${currentPage + 1})" class="px-3 py-1 rounded border border-gray-200 text-slate-600 text-xs font-bold ${nextDisabled}" ${currentPage === totalPages ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
 }
 
-function changePage(p) {
-    const total = Math.ceil(filteredLogs.length / itemsPerPage);
+async function changePage(p) {
+    const total = Math.ceil(totalLogsCount / itemsPerPage);
     if (p < 1 || p > total) return;
-    currentPage = p; renderTable();
+
+    currentPage = p;
+
+    // 서버에서 해당 페이지 데이터 가져오기
+    await fetchLogs();
+}
+
+/**
+ * ID로 로그를 조회하는 헬퍼 함수 (현재 페이지 또는 서버에서)
+ * @param {string} logId - 로그 ID
+ * @returns {Promise<Object|null>} 로그 객체 또는 null
+ */
+async function findLogById(logId) {
+    // 현재 페이지에서 먼저 찾기
+    let log = currentPageLogs.find(l => l.id === logId);
+    if (log) return log;
+
+    // Summary 데이터에서 찾기
+    log = globalLogs.find(l => l.id === logId);
+    if (log) {
+        // Summary 데이터에는 상세 정보가 없을 수 있으므로 서버에서 전체 데이터 조회
+        const { data, error } = await supabaseClient
+            .from('qa_logs')
+            .select('*')
+            .eq('id', logId)
+            .single();
+
+        if (!error && data) return data;
+    }
+
+    // 서버에서 조회
+    const { data, error } = await supabaseClient
+        .from('qa_logs')
+        .select('*')
+        .eq('id', logId)
+        .single();
+
+    return error ? null : data;
 }
 
 /** 모달 비즈니스 로직 **/
-function openDetailModal(logId) {
-    const log = globalLogs.find(l => l.id === logId); 
+async function openDetailModal(logId) {
+    const log = await findLogById(logId); 
     if (!log) return;
 
     document.getElementById('modal-id').innerText = log.id; 
@@ -1197,7 +1297,9 @@ async function directUpdateStateFromModal(id, s) {
         showToast(`[${s}] 상태로 변경되었습니다.`);
         await invalidateLogsCache(); // 캐시 무효화
         closeModal('detailModal');
-        fetchLogs(true, true); // 강제 새로고침
+        await fetchSummaryData(true); // 요약 데이터 갱신
+        await fetchLogsCount(true); // 카운트 갱신
+        await fetchLogs(true); // 현재 페이지 갱신
     }
 }
 
@@ -1209,8 +1311,8 @@ function toggleLogDetail(index) {
     icon.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
 }
 
-function openEditDescModal(logId) {
-    const log = globalLogs.find(l => l.id === logId); if (!log) return;
+async function openEditDescModal(logId) {
+    const log = await findLogById(logId); if (!log) return;
     document.getElementById('edit-desc-log-id').value = logId;
     document.getElementById('edit-desc-text').value = log.user_description || '';
     openModal('editDescModal');
@@ -1228,7 +1330,8 @@ async function submitEditDesc() {
         showToast('수정되었습니다.'); 
         await invalidateLogsCache(); // 캐시 무효화
         closeModal('editDescModal'); 
-        fetchLogs(true, true); // 강제 새로고침
+        await fetchSummaryData(true); // 요약 데이터 갱신
+        await fetchLogs(true); // 현재 페이지 갱신
     }
 }
 
@@ -1239,12 +1342,15 @@ async function directUpdateState(id, s) {
     } else { 
         showToast(`[${s}] 상태로 변경되었습니다.`); 
         await invalidateLogsCache(); // 캐시 무효화
-        fetchLogs(true, true); // 강제 새로고침
+        await fetchSummaryData(true); // 요약 데이터 갱신
+        await fetchLogsCount(true); // 카운트 갱신
+        await fetchLogs(true); // 현재 페이지 갱신
     }
 }
 
-function openReRequestModal(logId) {
-    const log = globalLogs.find(l => l.id === logId);
+async function openReRequestModal(logId) {
+    const log = await findLogById(logId);
+    if (!log) return;
     document.getElementById('request-log-id').value = logId; document.getElementById('request-text').value = ''; 
     document.getElementById('request-existing-desc').innerText = log.user_description || '-'; document.getElementById('request-existing-comment').innerText = log.developer_comment || '-';
     openModal('requestModal');
@@ -1253,7 +1359,8 @@ function openReRequestModal(logId) {
 async function submitReRequest() {
     const id = document.getElementById('request-log-id').value; const t = document.getElementById('request-text').value.trim();
     if (!t) return alert('내용을 입력해주세요.');
-    const log = globalLogs.find(l => l.id === id);
+    const log = await findLogById(id);
+    if (!log) return alert('로그를 찾을 수 없습니다.');
     const { error } = await supabaseClient.from('qa_logs').update({ state: '수정 필요', user_description: `${log.user_description || ''}\n\n[재수정 요청] ${t}` }).eq('id', id);
     if (error) { 
         alert('실패: ' + error.message); 
@@ -1261,7 +1368,9 @@ async function submitReRequest() {
         showToast('재수정 요청이 완료되었습니다.'); 
         await invalidateLogsCache(); // 캐시 무효화
         closeModal('requestModal'); 
-        fetchLogs(true, true); // 강제 새로고침
+        await fetchSummaryData(true); // 요약 데이터 갱신
+        await fetchLogsCount(true); // 카운트 갱신
+        await fetchLogs(true); // 현재 페이지 갱신
     }
 }
 
@@ -1283,7 +1392,9 @@ async function executeDelete() {
         showToast('삭제되었습니다.'); 
         await invalidateLogsCache(); // 캐시 무효화
         closeModal('deleteModal'); 
-        fetchLogs(true, true); // 강제 새로고침
+        await fetchSummaryData(true); // 요약 데이터 갱신
+        await fetchLogsCount(true); // 카운트 갱신
+        await fetchLogs(true); // 현재 페이지 갱신
     }
 }
 
@@ -1375,20 +1486,31 @@ async function submitNewLog() {
         if (error) throw error;
         showToast('검수 내용이 등록되었습니다.');
         await invalidateLogsCache(); // 캐시 무효화
-        closeModal('writeModal'); fetchLogs(true); // 강제 새로고침
+        closeModal('writeModal');
+        await fetchSummaryData(true); // 요약 데이터 갱신
+        await fetchLogsCount(true); // 카운트 갱신
+        await fetchLogs(true); // 현재 페이지 갱신
     } catch (e) { showToast('실패: ' + e.message, 'error'); } finally { btn.innerText = '등록하기'; btn.disabled = false; }
 }
 
-function checkSimilarIssues(text) {
+async function checkSimilarIssues(text) {
     const listContainer = document.getElementById('similar-list');
     if (!text || text.trim().length < 5) {
         listContainer.innerHTML = '<p class="text-xs text-slate-400 italic text-center py-10">내용을 좀 더 입력해 주세요.</p>';
         return;
     }
-    const keywords = text.split(/\s+/).filter(word => word.length >= 2);
-    const matches = globalLogs.filter(log => keywords.some(key => (log.user_description || '').includes(key))).slice(0, 5);
 
-    if (matches.length === 0) {
+    // 서버에서 검색 (ilike 사용)
+    const searchTerm = `%${text.trim()}%`;
+    const { data: matches, error } = await supabaseClient
+        .from('qa_logs')
+        .select('id,user_name,state,user_description,created_at')
+        .not('is_delete', 'eq', true)
+        .ilike('user_description', searchTerm)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+    if (error || !matches || matches.length === 0) {
         listContainer.innerHTML = '<p class="text-xs text-green-500 font-bold text-center py-10"><i class="fas fa-check-circle mr-1"></i> 유사한 검수가 없습니다.</p>';
         return;
     }
@@ -1400,8 +1522,8 @@ function checkSimilarIssues(text) {
         </div>`).join('');
 }
 
-function openImageViewerModal(logId) {
-    const log = globalLogs.find(l => l.id === logId); if (!log || !log.image_url) return;
+async function openImageViewerModal(logId) {
+    const log = await findLogById(logId); if (!log || !log.image_url) return;
     document.getElementById('viewer-img').src = log.image_url;
     document.getElementById('viewer-edit-btn').onclick = () => { closeModal('imageViewerModal'); openAddEditImageModal(logId, log.image_url); };
     openModal('imageViewerModal');
@@ -1436,12 +1558,14 @@ async function submitUpdateImage() {
         }
         showToast('이미지가 처리되었습니다.'); 
         await invalidateLogsCache(); // 캐시 무효화
-        closeModal('addEditImageModal'); fetchLogs(true); // 강제 새로고침
+        closeModal('addEditImageModal');
+        await fetchSummaryData(true); // 요약 데이터 갱신
+        await fetchLogs(true); // 현재 페이지 갱신
     } catch (e) { alert('작업 실패: ' + e.message); } finally { btn.innerText = '이미지 저장'; btn.disabled = false; }
 }
 
-function openDevProcessModal(logId) {
-    const log = globalLogs.find(l => l.id === logId); if (!log) return;
+async function openDevProcessModal(logId) {
+    const log = await findLogById(logId); if (!log) return;
     document.getElementById('dev-process-log-id').value = logId;
     document.getElementById('dev-comment-text').value = log.developer_comment || '';
     openModal('devProcessModal');
@@ -1472,12 +1596,14 @@ async function submitDevProcess(targetState) {
         showToast(`[${targetState}] 처리가 완료되었습니다.`); 
         await invalidateLogsCache(); // 캐시 무효화
         closeModal('devProcessModal'); 
-        fetchLogs(true); // 강제 새로고침
+        await fetchSummaryData(true); // 요약 데이터 갱신
+        await fetchLogsCount(true); // 카운트 갱신
+        await fetchLogs(true); // 현재 페이지 갱신
     }
 }
 
-function openDevCommentEditModal(logId) {
-    const log = globalLogs.find(l => l.id === logId); 
+async function openDevCommentEditModal(logId) {
+    const log = await findLogById(logId); 
     if (!log) return;
     document.getElementById('edit-dev-comment-log-id').value = logId;
     document.getElementById('edit-dev-comment-text').value = log.developer_comment || '';
@@ -1507,7 +1633,8 @@ async function submitDevCommentEdit() {
         showToast('개발자 코멘트가 수정되었습니다.');
         await invalidateLogsCache(); // 캐시 무효화
         closeModal('editDevCommentModal');
-        fetchLogs(true); // 강제 새로고침
+        await fetchSummaryData(true); // 요약 데이터 갱신
+        await fetchLogs(true); // 현재 페이지 갱신
     }
 }
 
@@ -1845,4 +1972,10 @@ function updateDashboardAnalytics(logs) {
 }
 
 // 초기 실행
-window.onload = () => { showSection('home'); fetchQAInformation(); fetchLogs(); };
+window.onload = async () => { 
+    showSection('home'); 
+    await fetchQAInformation();
+    await fetchSummaryData(); // 대시보드용 요약 데이터 로드
+    await fetchLogsCount(); // 총 개수 로드
+    await fetchLogs(); // 첫 페이지 로드
+};

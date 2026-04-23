@@ -4,7 +4,7 @@
  */
 
 class CacheManager {
-    constructor(dbName = 'OneproQA_Cache', version = 1) {
+    constructor(dbName = 'OneproQA_Cache', version = 2) {
         this.dbName = dbName;
         this.version = version;
         this.db = null;
@@ -27,9 +27,24 @@ class CacheManager {
             request.onupgradeneeded = (event) => {
                 const db = event.target.result;
 
-                // qa_logs 캐시 저장소
+                // qa_logs 캐시 저장소 (레거시 - 하위 호환성)
                 if (!db.objectStoreNames.contains('qa_logs')) {
                     db.createObjectStore('qa_logs', { keyPath: 'cacheKey' });
+                }
+
+                // qa_logs_page 캐시 저장소 (페이지별 데이터)
+                if (!db.objectStoreNames.contains('qa_logs_page')) {
+                    db.createObjectStore('qa_logs_page', { keyPath: 'cacheKey' });
+                }
+
+                // qa_logs_summary 캐시 저장소 (대시보드용 요약 데이터)
+                if (!db.objectStoreNames.contains('qa_logs_summary')) {
+                    db.createObjectStore('qa_logs_summary', { keyPath: 'cacheKey' });
+                }
+
+                // qa_logs_count 캐시 저장소 (필터별 카운트)
+                if (!db.objectStoreNames.contains('qa_logs_count')) {
+                    db.createObjectStore('qa_logs_count', { keyPath: 'cacheKey' });
                 }
 
                 // qa_information 캐시 저장소
@@ -152,9 +167,9 @@ class CacheManager {
     async clearAll() {
         if (!this.db) await this.init();
 
-        const stores = ['qa_logs', 'qa_information', 'metadata'];
+        const stores = ['qa_logs', 'qa_logs_page', 'qa_logs_summary', 'qa_logs_count', 'qa_information', 'metadata'];
         const promises = stores.map(store => this.clearStore(store));
-        
+
         return Promise.all(promises);
     }
 
