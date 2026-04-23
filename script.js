@@ -515,8 +515,9 @@ async function fetchLogs(preservePage = false, forceRefresh = false) {
         const cachedData = await cacheManager.get('qa_logs', 'default');
         if (cachedData) {
             console.log('✓ QA Logs 캐시에서 로드 (' + cachedData.length + '건)');
-            // 이미 서버에서 is_delete 필터링했으므로 클라이언트 필터링 불필요
-            globalLogs = cachedData;
+            // 클라이언트 사이드에서도 is_delete 필터링 (캐시 안전성 강화)
+            globalLogs = cachedData.filter(log => !log.is_delete);
+            console.log('✓ 삭제된 항목 제외 후: ' + globalLogs.length + '건');
             updateDashboard(globalLogs);
             updateAuthorDropdown(); 
             applyFilters(preservePage);
@@ -536,7 +537,7 @@ async function fetchLogs(preservePage = false, forceRefresh = false) {
     const { data, error } = await supabaseClient
         .from('qa_logs')
         .select('id,user_name,state,current_scene,current_popup,user_description,developer_comment,created_at,updated_at,image_url,is_delete,inAppLogs')
-        .or('is_delete.is.null,is_delete.eq.false')
+        .not('is_delete', 'eq', true)
         .order('created_at', { ascending: false });
 
     if (error) {
@@ -545,15 +546,16 @@ async function fetchLogs(preservePage = false, forceRefresh = false) {
         return;
     }
 
-    // 데이터를 캐시에 저장 (30분 TTL로 연장)
+    // 데이터를 캐시에 저장 (30분 TTL로 연장) - 삭제된 항목 제외
     if (data) {
-        await cacheManager.set('qa_logs', 'default', data, 30 * 60 * 1000);
+        const filteredData = data.filter(log => !log.is_delete);
+        await cacheManager.set('qa_logs', 'default', filteredData, 30 * 60 * 1000);
         // 마지막 업데이트 시간 저장 (증분 업데이트용)
         await cacheManager.setMetadata('last_logs_update', new Date().toISOString());
+        globalLogs = filteredData;
+    } else {
+        globalLogs = [];
     }
-
-    // 이미 서버에서 is_delete 필터링했으므로 클라이언트 필터링 불필요
-    globalLogs = data;
     updateDashboard(globalLogs);
     updateAuthorDropdown(); 
     applyFilters(preservePage);
@@ -576,11 +578,11 @@ async function performIncrementalUpdate() {
             return;
         }
 
-        // 마지막 업데이트 이후 변경된 항목만 조회
+        // 마지막 업데이트 이후 변경된 항목만 조회 (삭제된 항목 제외)
         const { data: updatedLogs, error } = await supabaseClient
             .from('qa_logs')
             .select('id,user_name,state,current_scene,current_popup,user_description,developer_comment,created_at,updated_at,image_url,is_delete,inAppLogs')
-            .or('is_delete.is.null,is_delete.eq.false')
+            .not('is_delete', 'eq', true)
             .gt('updated_at', lastUpdate)
             .order('created_at', { ascending: false });
 
@@ -634,8 +636,9 @@ function mergeLogs(cachedLogs, newLogs) {
     // 새 로그로 덮어쓰기 (업데이트된 항목 반영)
     newLogs.forEach(log => logMap.set(log.id, log));
 
-    // Map을 배열로 변환 후 created_at 기준 내림차순 정렬
+    // Map을 배열로 변환 후 삭제된 항목 제외 및 created_at 기준 내림차순 정렬
     return Array.from(logMap.values())
+        .filter(log => !log.is_delete)
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 }
 
