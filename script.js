@@ -535,7 +535,8 @@ function updateQAInformationUI(qaInfo) {
         if (serverInfo === 'dev') {
             serverEl.innerText = '개발서버';
             serverEl.className = 'text-lg font-black text-orange-600';
-            appDownloadBtn.href = 'https://play.google.com/apps/internaltest/4699691061985176904';
+            //appDownloadBtn.href = 'https://play.google.com/apps/internaltest/4699691061985176904';
+            appDownloadBtn.href = 'https://play.google.com/apps/internaltest/4698733065951662135';
         } else if (serverInfo === 'prod') {
             serverEl.innerText = '운영서버';
             serverEl.className = 'text-lg font-black text-green-600';
