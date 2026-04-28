@@ -371,11 +371,11 @@ class CacheManager {
     }
 }
 
-// 전역 캐시 매니저 인스턴스
-const cacheManager = new CacheManager();
+// 전역 캐시 매니저 인스턴스 (window에 명시적으로 할당)
+window.cacheManager = new CacheManager();
 
 // 초기화 Promise를 전역으로 노출 (다른 스크립트에서 대기 가능)
-const cacheManagerReady = cacheManager.init().catch(err => {
+window.cacheManagerReady = window.cacheManager.init().catch(err => {
     console.error('⚠️ 캐시 매니저 초기화 실패 (메모리 캐시로 전환):', err);
     // 초기화 실패해도 메모리 캐시로 동작하므로 에러를 던지지 않음
     return Promise.resolve();

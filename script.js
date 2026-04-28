@@ -2,6 +2,10 @@ const SUPABASE_URL = 'https://lhahvxtirwofvptqdheq.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_4IUFaMgTOLEY4cC-oS3efQ_KVnvWldX'; 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// 캐시 매니저 참조 (cache-manager.js에서 window.cacheManager로 노출됨)
+const cacheManager = window.cacheManager;
+const cacheManagerReady = window.cacheManagerReady;
+
 // 전역 변수
 let globalLogs = []; // 대시보드/드롭다운용 요약 데이터만 저장
 let currentPageLogs = []; // 현재 페이지의 데이터
@@ -107,9 +111,10 @@ function applyFiltersToQuery(query, filters) {
 
     // 검색어 필터 (Supabase에서는 textSearch나 ilike 사용)
     if (filters.search && filters.search.trim()) {
-        const searchTerm = `%${filters.search.trim()}%`;
-        // user_description 또는 developer_comment에 검색어 포함
-        query = query.or(`user_description.ilike.${searchTerm},developer_comment.ilike.${searchTerm}`);
+        const searchTerm = filters.search.trim();
+        const likeTerm = `%${searchTerm}%`;
+        // id(UUID 부분 일치), user_description, developer_comment에 검색어 포함
+        query = query.or(`id.eq.${searchTerm},user_description.ilike.${likeTerm},developer_comment.ilike.${likeTerm}`);
     }
 
     return query;
