@@ -713,7 +713,7 @@ async function fetchSummaryData(forceRefresh = false) {
     if (!forceRefresh) {
         const cachedSummary = await cacheManager.get('qa_logs_summary', 'default');
         if (cachedSummary) {
-            console.log('✓ Summary 데이터 캐시에서 로드');
+            console.log('✓ Summary 데이터 캐시에서 로드:', cachedSummary.length, '건');
             globalLogs = cachedSummary;
             updateDashboard(globalLogs);
             updateAuthorDropdown();
@@ -723,7 +723,7 @@ async function fetchSummaryData(forceRefresh = false) {
 
     // Supabase에서 요약 데이터 조회 (전체 데이터, 단 필요한 컬럼만)
     // 1000개 제한을 우회하기 위해 페이징으로 모든 데이터 가져오기
-    console.log('↓ Summary 데이터 Supabase에서 로드');
+    console.log('↓ Summary 데이터 Supabase에서 로드 시작...');
 
     let allData = [];
     let page = 0;
@@ -734,6 +734,8 @@ async function fetchSummaryData(forceRefresh = false) {
         const startIndex = page * pageSize;
         const endIndex = startIndex + pageSize - 1;
 
+        console.log(`  📄 페이지 ${page + 1} 요청: range(${startIndex}, ${endIndex})`);
+
         const { data, error } = await supabaseClient
             .from('qa_logs')
             .select('id,user_name,state,current_scene,current_popup,created_at')
@@ -742,27 +744,30 @@ async function fetchSummaryData(forceRefresh = false) {
             .range(startIndex, endIndex);
 
         if (error) {
-            console.error('Summary 조회 실패:', error);
+            console.error('❌ Summary 조회 실패:', error);
             break;
         }
 
         if (data && data.length > 0) {
             allData = allData.concat(data);
-            console.log(`  페이지 ${page + 1}: ${data.length}건 로드 (누적: ${allData.length}건)`);
+            console.log(`  ✓ 페이지 ${page + 1}: ${data.length}건 로드 (누적: ${allData.length}건)`);
 
             // 다음 페이지가 있는지 확인
             if (data.length < pageSize) {
+                console.log(`  ⏹ 마지막 페이지 도달 (${data.length} < ${pageSize})`);
                 hasMore = false;
             } else {
+                console.log(`  ➡ 다음 페이지 계속...`);
                 page++;
             }
         } else {
+            console.log(`  ⏹ 데이터 없음 - 종료`);
             hasMore = false;
         }
     }
 
     globalLogs = allData;
-    console.log(`✓ 총 ${globalLogs.length}건의 Summary 데이터 로드 완료`);
+    console.log(`✅ 총 ${globalLogs.length}건의 Summary 데이터 로드 완료`);
 
     // 캐시에 저장 (30분 TTL)
     await cacheManager.set('qa_logs_summary', 'default', globalLogs, 30 * 60 * 1000);
@@ -2000,10 +2005,32 @@ function updateDashboardAnalytics(logs) {
 }
 
 // 초기 실행
-window.onload = async () => { 
+window.onload = async () => {
+    // 캐시 매니저 초기화 완료 대기
+    if (typeof cacheManagerReady !== 'undefined') {
+        await cacheManagerReady;
+        console.log('✓ 캐시 매니저 준비 완료');
+    }
+
     showSection('home'); 
     await fetchQAInformation();
-    await fetchSummaryData(); // 대시보드용 요약 데이터 로드
+
+    // 첫 로드 시 Summary 데이터는 강제로 새로고침 (1000개 제한 문제 방지)
+    // URL에 ?refresh 파라미터가 있거나, 로컬스토리지에 마지막 로드 시간이 1시간 이상 지났으면 강제 새로고침
+    const urlParams = new URLSearchParams(window.location.search);
+    const forceRefresh = urlParams.has('refresh');
+    const lastLoadTime = localStorage.getItem('last_summary_load_time');
+    const oneHourAgo = Date.now() - (60 * 60 * 1000);
+    const shouldForceRefresh = forceRefresh || !lastLoadTime || parseInt(lastLoadTime) < oneHourAgo;
+
+    if (shouldForceRefresh) {
+        console.log('🔄 Summary 데이터 강제 갱신 (첫 로드 또는 1시간 경과)');
+        await fetchSummaryData(true); // 강제 새로고침
+        localStorage.setItem('last_summary_load_time', Date.now().toString());
+    } else {
+        await fetchSummaryData(); // 캐시 사용
+    }
+
     await fetchLogsCount(); // 총 개수 로드
     await fetchLogs(); // 첫 페이지 로드
 };
