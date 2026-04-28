@@ -722,20 +722,47 @@ async function fetchSummaryData(forceRefresh = false) {
     }
 
     // Supabase에서 요약 데이터 조회 (전체 데이터, 단 필요한 컬럼만)
+    // 1000개 제한을 우회하기 위해 페이징으로 모든 데이터 가져오기
     console.log('↓ Summary 데이터 Supabase에서 로드');
-    const { data, error } = await supabaseClient
-        .from('qa_logs')
-        .select('id,user_name,state,current_scene,current_popup,created_at')
-        .not('is_delete', 'eq', true)
-        .order('created_at', { ascending: false });
 
-    if (error) {
-        console.error('Summary 조회 실패:', error);
-        globalLogs = [];
-        return;
+    let allData = [];
+    let page = 0;
+    const pageSize = 1000;
+    let hasMore = true;
+
+    while (hasMore) {
+        const startIndex = page * pageSize;
+        const endIndex = startIndex + pageSize - 1;
+
+        const { data, error } = await supabaseClient
+            .from('qa_logs')
+            .select('id,user_name,state,current_scene,current_popup,created_at')
+            .not('is_delete', 'eq', true)
+            .order('created_at', { ascending: false })
+            .range(startIndex, endIndex);
+
+        if (error) {
+            console.error('Summary 조회 실패:', error);
+            break;
+        }
+
+        if (data && data.length > 0) {
+            allData = allData.concat(data);
+            console.log(`  페이지 ${page + 1}: ${data.length}건 로드 (누적: ${allData.length}건)`);
+
+            // 다음 페이지가 있는지 확인
+            if (data.length < pageSize) {
+                hasMore = false;
+            } else {
+                page++;
+            }
+        } else {
+            hasMore = false;
+        }
     }
 
-    globalLogs = data || [];
+    globalLogs = allData;
+    console.log(`✓ 총 ${globalLogs.length}건의 Summary 데이터 로드 완료`);
 
     // 캐시에 저장 (30분 TTL)
     await cacheManager.set('qa_logs_summary', 'default', globalLogs, 30 * 60 * 1000);
