@@ -109,12 +109,18 @@ function applyFiltersToQuery(query, filters) {
         }
     }
 
-    // 검색어 필터 (Supabase에서는 textSearch나 ilike 사용)
+    // 검색어 필터
     if (filters.search && filters.search.trim()) {
         const searchTerm = filters.search.trim();
         const likeTerm = `%${searchTerm}%`;
-        // id(UUID 부분 일치), user_description, developer_comment에 검색어 포함
-        query = query.or(`id.eq.${searchTerm},user_description.ilike.${likeTerm},developer_comment.ilike.${likeTerm}`);
+        // 16진수 + 대시로만 이루어진 경우 → UUID 부분 일치 검색 (직접 filter로 cast)
+        // 그 외 → 검수 내용 + 개발자 코멘트 텍스트 검색
+        const isUuidLike = /^[0-9a-f-]+$/i.test(searchTerm);
+        if (isUuidLike) {
+            query = query.filter('id::text', 'ilike', likeTerm);
+        } else {
+            query = query.or(`user_description.ilike.${likeTerm},developer_comment.ilike.${likeTerm}`);
+        }
     }
 
     return query;
@@ -909,8 +915,6 @@ async function applyFilters() {
     currentFilters.search = searchInput ? searchInput.value.trim() : '';
 
     const clearBtn = document.getElementById('clearSearchBtn');
-
-    // 검색 버튼 표시/숨김
     if (clearBtn) {
         if (currentFilters.search) {
             clearBtn.classList.remove('hidden');
@@ -930,6 +934,18 @@ async function applyFilters() {
 
     // 페이지네이션 렌더링
     renderPagination();
+}
+
+function onSearchInput() {
+    const searchInput = document.getElementById('searchInput');
+    const clearBtn = document.getElementById('clearSearchBtn');
+    if (clearBtn) {
+        if (searchInput && searchInput.value.trim()) {
+            clearBtn.classList.remove('hidden');
+        } else {
+            clearBtn.classList.add('hidden');
+        }
+    }
 }
 
 function clearSearch() {
