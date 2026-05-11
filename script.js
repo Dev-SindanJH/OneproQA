@@ -2448,86 +2448,116 @@ async function loadCountryMasterData(countryCode = 'KR', forceRefresh = false) {
 function renderCountryDataUI(payload) {
     document.getElementById('md-loading').classList.add('hidden');
 
-    // payload에서 배열 데이터를 가진 키를 탭으로 구성
+    const curriculum = payload.nationalCurriculumMasterData ?? {};
+    const levelTest  = payload.nationalLevelTestCurriculumData ?? {};
+
+    // 버전 바
+    const versionBar = document.getElementById('md-version-bar');
+    const parts = [];
+    if (curriculum.masterDataVersion !== undefined)
+        parts.push(`<span class="bg-slate-100 px-2 py-0.5 rounded font-mono text-[11px]"><span class="font-bold text-slate-600">국가커리큘럼</span> v${curriculum.masterDataVersion}</span>`);
+    if (levelTest.masterDataVersion !== undefined)
+        parts.push(`<span class="bg-slate-100 px-2 py-0.5 rounded font-mono text-[11px]"><span class="font-bold text-slate-600">레벨테스트</span> v${levelTest.masterDataVersion}</span>`);
+    const countryCode = curriculum.countryCode ?? levelTest.countryCode ?? currentCountryCode;
+    versionBar.innerHTML = `<i class="fas fa-tag text-slate-400"></i><span class="font-bold text-slate-600">버전</span>${parts.join('')}<span class="ml-auto text-slate-400">Country: <span class="font-mono font-bold text-slate-600">${countryCode}</span></span>`;
+    versionBar.classList.remove('hidden');
+
+    // 탭 버튼 생성
     const tabsContainer = document.getElementById('md-country-tabs');
     tabsContainer.innerHTML = '';
-
-    const tabKeys = Object.keys(payload).filter(k => Array.isArray(payload[k]) && payload[k].length > 0);
-
-    if (tabKeys.length === 0) {
-        // 배열이 없으면 key-value 테이블로 렌더
-        countryMdAllRows = Object.entries(payload).map(([k, v]) => ({ key: k, value: typeof v === 'object' ? JSON.stringify(v) : String(v ?? '-') }));
-        currentCountryTab = '__kv__';
-        renderCountryTable(countryMdAllRows, [
-            { label: 'Key', key: 'key', cls: 'font-mono text-xs text-indigo-700 font-bold' },
-            { label: 'Value', key: 'value', cls: 'text-slate-700 text-xs break-all' },
-        ]);
-    } else {
-        // 탭 버튼 생성
-        tabKeys.forEach((key, idx) => {
-            const cnt = payload[key].length;
-            const btn = document.createElement('button');
-            btn.className = 'md-tab-btn' + (idx === 0 ? ' active' : '');
-            btn.id = `md-country-tab-${key}`;
-            btn.innerHTML = `${key} <span class="md-tab-count">${cnt.toLocaleString()}</span>`;
-            btn.onclick = () => showCountryMdTab(key, payload);
-            tabsContainer.appendChild(btn);
-        });
-
-        // 첫 번째 탭 표시
-        showCountryMdTab(tabKeys[0], payload);
-    }
+    const tabOrder = Object.keys(COUNTRY_TAB_CONFIG);
+    tabOrder.forEach((key, idx) => {
+        const cfg = COUNTRY_TAB_CONFIG[key];
+        const rows = cfg.getData(payload);
+        const btn = document.createElement('button');
+        btn.className = 'md-tab-btn' + (idx === 0 ? ' active' : '');
+        btn.id = `md-country-tab-${key}`;
+        btn.innerHTML = `${cfg.label} <span class="md-tab-count">${rows.length.toLocaleString()}</span>`;
+        btn.onclick = () => showCountryMdTab(key);
+        tabsContainer.appendChild(btn);
+    });
 
     document.getElementById('md-country-search').value = '';
     document.getElementById('md-country-content').classList.remove('hidden');
+    showCountryMdTab(tabOrder[0]);
 }
 
-function showCountryMdTab(tabKey, payload) {
+const COUNTRY_TAB_CONFIG = {
+    supremeChapter: {
+        label: '대단원',
+        getData: p => p.nationalCurriculumMasterData?.nationalSupremeChapters ?? [],
+        columns: [
+            { label: 'ID',       key: 'nationalSupremeChapterId', cls: 'text-center font-mono text-xs font-bold text-indigo-700' },
+            { label: '레벨',     key: 'level',                    cls: 'text-center' },
+            { label: '순서',     key: 'sequence',                 cls: 'text-center' },
+            { label: 'Translation Key', key: row => row.translation?.translationKey ?? '-', cls: 'font-mono text-xs text-slate-500 break-all' },
+        ]
+    },
+    chapter: {
+        label: '소단원',
+        getData: p => p.nationalCurriculumMasterData?.nationalChapters ?? [],
+        columns: [
+            { label: '소단원 ID',   key: 'nationalChapterId',         cls: 'text-center font-mono text-xs font-bold text-indigo-700' },
+            { label: '대단원 ID',   key: 'nationalSupremeChapterId',  cls: 'text-center font-mono text-xs' },
+            { label: '순서',        key: 'sequence',                  cls: 'text-center' },
+            { label: 'Translation Key', key: row => row.translation?.translationKey ?? '-', cls: 'font-mono text-xs text-slate-500 break-all' },
+        ]
+    },
+    stage: {
+        label: '스테이지',
+        getData: p => p.nationalCurriculumMasterData?.nationalStages ?? [],
+        columns: [
+            { label: '국가스테이지 ID', key: 'nationalStageId',   cls: 'text-center font-mono text-xs font-bold text-indigo-700' },
+            { label: '소단원 ID',       key: 'nationalChapterId', cls: 'text-center font-mono text-xs' },
+            { label: '순서',            key: 'sequence',          cls: 'text-center' },
+            { label: '스테이지 ID',     key: 'stageId',           cls: 'text-center font-mono text-xs text-blue-600' },
+            { label: 'Translation Key', key: row => row.translation?.translationKey ?? '-', cls: 'font-mono text-xs text-slate-500 break-all' },
+        ]
+    },
+    levelTest: {
+        label: '레벨테스트',
+        getData: p => p.nationalLevelTestCurriculumData?.levelTestCurriculums ?? [],
+        columns: [
+            { label: '소단원 ID',  key: 'nationalChapterId', cls: 'text-center font-mono text-xs font-bold text-indigo-700' },
+            { label: 'Logic ID',   key: 'logicId',           cls: 'text-center font-mono text-xs' },
+            { label: '정확도',     key: 'accuracy',          cls: 'text-center' },
+            { label: 'Prefab ID',  key: 'prefabId',          cls: 'text-center font-mono text-xs' },
+            { label: '등급 조건',  key: row => (row.gradeConditions ?? []).join(', '), cls: 'text-xs text-slate-500' },
+            { label: 'Translation Key', key: row => row.translation?.translationKey ?? '-', cls: 'font-mono text-xs text-slate-500 break-all' },
+        ]
+    },
+};
+
+function showCountryMdTab(tabKey) {
     currentCountryTab = tabKey;
     document.querySelectorAll('#md-country-tabs .md-tab-btn').forEach(b => b.classList.remove('active'));
     const btn = document.getElementById(`md-country-tab-${tabKey}`);
     if (btn) btn.classList.add('active');
 
     const cached = countryDataCache[currentCountryCode];
-    const source = payload ?? cached;
-    if (!source) return;
+    if (!cached) return;
 
-    const rows = source[tabKey] ?? [];
-    countryMdAllRows = rows;
+    const cfg = COUNTRY_TAB_CONFIG[tabKey];
+    if (!cfg) return;
+
+    countryMdAllRows = cfg.getData(cached);
     document.getElementById('md-country-search').value = '';
-
-    // 컬럼은 첫 번째 row의 key에서 동적으로 구성
-    const columns = rows.length > 0
-        ? Object.keys(rows[0]).map(k => ({ label: k, key: k, cls: 'text-xs text-slate-700 break-all' }))
-        : [];
-
-    renderCountryTable(countryMdAllRows, columns);
+    renderCountryTable(countryMdAllRows, cfg.columns);
 }
 
 function filterCountryMdTable() {
     const q = document.getElementById('md-country-search').value.toLowerCase().trim();
-    const cached = countryDataCache[currentCountryCode];
-    if (!cached) return;
-
-    let columns;
-    if (currentCountryTab === '__kv__') {
-        columns = [
-            { label: 'Key', key: 'key', cls: '' },
-            { label: 'Value', key: 'value', cls: '' },
-        ];
-    } else {
-        const rows = cached[currentCountryTab] ?? [];
-        columns = rows.length > 0 ? Object.keys(rows[0]).map(k => ({ label: k, key: k, cls: '' })) : [];
-    }
+    const cfg = COUNTRY_TAB_CONFIG[currentCountryTab];
+    if (!cfg) return;
 
     const filtered = q ? countryMdAllRows.filter(row =>
-        columns.some(col => {
+        cfg.columns.some(col => {
             const val = typeof col.key === 'function' ? col.key(row) : row[col.key];
             return String(val ?? '').toLowerCase().includes(q);
         })
     ) : countryMdAllRows;
 
-    renderCountryTable(filtered, columns);
+    renderCountryTable(filtered, cfg.columns);
 }
 
 function renderCountryTable(rows, columns) {
