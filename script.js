@@ -2800,15 +2800,16 @@ function renderMasterDataUI(payload) {
 // 아바타 아이템 이미지 경로 생성
 function getAvatarItemImagePath(item) {
     const type1 = item.type1;
-    const id = item.friendsAvatarItemId;
+    const f = item.fileName;
+    if (!f) return null;
     const TYPE1_PATH = {
-        'BACK_ACCESSORIES': `Avatar/BACK_ACCESSORIES/AccB${id}/accB_${id}_Icon.png`,
-        'HAT':              `Avatar/HAT/Hat${id}/hat_${id}_Icon.png`,
-        'HEAD_ACCESSORIES': `Avatar/HEAD_ACCESSORIES/AccH${id}/accH_${id}_Icon.png`,
-        'PANTS':            `Avatar/PANTS/Pants${id}/pants_${id}_Icon.png`,
-        'SUIT':             `Avatar/SUIT/Suit${id}/suit_${id}_Icon.png`,
-        'TOP':              `Avatar/TOP/Top${id}/top_${id}_Icon.png`,
-        'WEAPON':           `Avatar/WEAPON/Weapon${id}/weapon_${id}_Icon.png`,
+        'BACK_ACCESSORIES': `Avatar/BACK_ACCESSORIES/AccB${f}/accB_${f}_Icon.png`,
+        'HAT':              `Avatar/HAT/Hat${f}/hat_${f}_Icon.png`,
+        'HEAD_ACCESSORIES': `Avatar/HEAD_ACCESSORIES/AccH${f}/accH_${f}_Icon.png`,
+        'PANTS':            `Avatar/PANTS/Pants${f}/pants_${f}_Icon.png`,
+        'SUIT':             `Avatar/SUIT/Suit${f}/suit_${f}_Icon.png`,
+        'TOP':              `Avatar/TOP/Top${f}/top_${f}_Icon.png`,
+        'WEAPON':           `Avatar/WEAPON/Weapon${f}/weapon_${f}_Icon.png`,
     };
     return TYPE1_PATH[type1] ?? null;
 }
@@ -2895,7 +2896,7 @@ const MD_TAB_CONFIG = {
             { label: '이미지', key: row => {
                 const src = getAvatarItemImagePath(row);
                 if (!src) return '<span class="text-slate-300 text-xs">-</span>';
-                return `<img src="${src}" alt="${row.friendsAvatarItemId}" class="w-12 h-12 object-contain mx-auto rounded" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span class="text-slate-300 text-xs hidden">없음</span>`;
+                return `<img src="${src}" alt="${row.friendsAvatarItemId}" class="w-20 h-20 object-contain mx-auto rounded" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span class="text-slate-300 text-xs hidden">없음</span>`;
             }, cls: 'text-center w-16' },
             { label: 'ID', key: 'friendsAvatarItemId', cls: 'text-center font-mono text-xs' },
             { label: 'Type1', key: 'type1', cls: 'text-center text-xs' },
