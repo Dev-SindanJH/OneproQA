@@ -106,9 +106,13 @@
                             <p class="text-gray-600 text-xs font-bold mb-1">보류/패스</p>
                             <p class="text-2xl font-black text-gray-700" id="cntHold">-</p>
                         </div>
-                        <div onclick="navigateToListWithFilter('서버수정 요청중')" class="p-3 bg-purple-50 rounded-lg border border-purple-100 cursor-pointer hover:shadow-md hover:scale-105 transition-all">
-                            <p class="text-purple-600 text-xs font-bold mb-1">서버수정 요청중</p>
+                        <div onclick="navigateToListWithFilter('서버 수정 요청')" class="p-3 bg-purple-50 rounded-lg border border-purple-100 cursor-pointer hover:shadow-md hover:scale-105 transition-all">
+                            <p class="text-purple-600 text-xs font-bold mb-1">서버 수정 요청</p>
                             <p class="text-2xl font-black text-purple-700" id="cntServerRequest">-</p>
+                        </div>
+                        <div onclick="navigateToListWithFilter('서버 수정 완료')" class="p-3 bg-teal-50 rounded-lg border border-teal-100 cursor-pointer hover:shadow-md hover:scale-105 transition-all">
+                            <p class="text-teal-600 text-xs font-bold mb-1">서버 수정 완료</p>
+                            <p class="text-2xl font-black text-teal-700" id="cntServerDone">-</p>
                         </div>
                     </div>
                 </div>
@@ -269,7 +273,8 @@
                     <button class="state-filter-btn" data-state="수정 완료" onclick="setStateFilter('수정 완료')">수정 완료 <span class="state-count" id="scnt-fixed">0</span></button>
                     <button class="state-filter-btn" data-state="수정 확인" onclick="setStateFilter('수정 확인')">수정 확인 <span class="state-count" id="scnt-verified">0</span></button>
                     <button class="state-filter-btn" data-state="보류/패스" onclick="setStateFilter('보류/패스')">보류/패스 <span class="state-count" id="scnt-hold">0</span></button>
-                    <button class="state-filter-btn" data-state="서버수정 요청중" onclick="setStateFilter('서버수정 요청중')">서버수정 요청중 <span class="state-count" id="scnt-server">0</span></button>
+                    <button class="state-filter-btn" data-state="서버 수정 요청" onclick="setStateFilter('서버 수정 요청')">서버 수정 요청 <span class="state-count" id="scnt-server">0</span></button>
+                    <button class="state-filter-btn" data-state="서버 수정 완료" onclick="setStateFilter('서버 수정 완료')">서버 수정 완료 <span class="state-count" id="scnt-server-done">0</span></button>
                 </div>
 
                 <!-- 필터 영역 (데스크탑) -->
@@ -295,7 +300,8 @@
                     <option value="수정 완료">수정 완료</option>
                     <option value="수정 확인">수정 확인</option>
                     <option value="보류/패스">보류/패스</option>
-                    <option value="서버수정 요청중">서버수정 요청중</option>
+                    <option value="서버 수정 요청">서버 수정 요청</option>
+                    <option value="서버 수정 완료">서버 수정 완료</option>
                 </select>
 
                 <div class="bg-white rounded-xl shadow-md border border-gray-200 relative z-10">
@@ -310,7 +316,8 @@
                             <option value="수정 완료">수정 완료</option>
                             <option value="수정 확인">수정 확인</option>
                             <option value="보류/패스">보류/패스</option>
-                            <option value="서버수정 요청중">서버수정 요청중</option>
+                            <option value="서버 수정 요청">서버 수정 요청</option>
+                            <option value="서버 수정 완료">서버 수정 완료</option>
                         </select>
                         <select id="mobileContentFilter" onchange="syncFilters('content')" class="mobile-filter-select">
                             <option value="all">콘텐츠: 전체</option>
@@ -573,9 +580,9 @@
             </div>
             <div class="p-5 bg-slate-50 border-t flex justify-between gap-3">
                 <button onclick="closeModal('devProcessModal')" class="bg-slate-200 text-slate-600 px-4 py-2 rounded-xl font-bold hover:bg-slate-300 transition text-sm">취소</button>
-                <div class="flex gap-2">
+                <div id="dev-process-action-btns" class="flex gap-2">
                     <button onclick="submitDevProcess('보류/패스')" class="bg-gray-500 text-white px-4 py-2 rounded-xl font-bold hover:bg-gray-600 transition text-sm">보류/패스</button>
-                    <button onclick="submitDevProcess('서버수정 요청중')" class="bg-purple-500 text-white px-4 py-2 rounded-xl font-bold hover:bg-purple-600 transition text-sm">서버수정 요청중</button>
+                    <button onclick="submitDevProcess('서버 수정 요청')" class="bg-purple-500 text-white px-4 py-2 rounded-xl font-bold hover:bg-purple-600 transition text-sm">서버 수정 요청</button>
                     <button onclick="submitDevProcess('수정 완료')" class="bg-blue-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-blue-700 transition text-sm shadow-md shadow-blue-100">수정 완료</button>
                 </div>
             </div>

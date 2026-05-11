@@ -471,7 +471,7 @@ table td:nth-child(8) {
 .state-filter-btn[data-state="수정 완료"].active   { background: #eff6ff;  color: #1d4ed8; border-color: #60a5fa; }
 .state-filter-btn[data-state="수정 확인"].active   { background: #f0fdf4;  color: #15803d; border-color: #4ade80; }
 .state-filter-btn[data-state="보류/패스"].active   { background: #f8fafc;  color: #475569; border-color: #94a3b8; }
-.state-filter-btn[data-state="서버수정 요청중"].active { background: #faf5ff; color: #7e22ce; border-color: #c084fc; }
+.state-filter-btn[data-state="서버 수정 요청"].active { background: #faf5ff; color: #7e22ce; border-color: #c084fc; }
 
 .state-count {
     display: inline-block;

@@ -490,7 +490,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if(s === '수정 완료') return '<span class="whitespace-nowrap inline-block bg-blue-100 text-blue-700 px-3 py-1.5 rounded-md text-[11px] font-black border border-blue-200">수정 완료</span>';
         if(s === '수정 확인') return '<span class="whitespace-nowrap inline-block bg-green-100 text-green-700 px-3 py-1.5 rounded-md text-[11px] font-black border border-green-200">수정 확인</span>';
         if(s === '보류/패스') return '<span class="whitespace-nowrap inline-block bg-gray-100 text-gray-600 px-3 py-1.5 rounded-md text-[11px] font-black border border-gray-300">보류/패스</span>';
-        if(s === '서버수정 요청중') return '<span class="whitespace-nowrap inline-block bg-purple-100 text-purple-700 px-3 py-1.5 rounded-md text-[11px] font-black border border-purple-200">서버수정 요청중</span>';
+        if(s === '서버 수정 요청') return '<span class="whitespace-nowrap inline-block bg-purple-100 text-purple-700 px-3 py-1.5 rounded-md text-[11px] font-black border border-purple-200">서버 수정 요청</span>';
+        if(s === '서버 수정 완료') return '<span class="whitespace-nowrap inline-block bg-teal-100 text-teal-700 px-3 py-1.5 rounded-md text-[11px] font-black border border-teal-200">서버 수정 완료</span>';
         return `<span class="whitespace-nowrap inline-block bg-slate-50 text-slate-500 px-3 py-1.5 rounded-md text-[11px] font-bold border border-slate-200">${s || '신규 등록'}</span>`;
     }
 
@@ -580,7 +581,7 @@ function updateQAInformationUI(qaInfo) {
 }
 
 function updateDashboard(logs) {
-    let counts = {'수정 필요':0, '수정 완료':0, '수정 확인':0, '보류/패스':0, '서버수정 요청중':0};
+    let counts = {'수정 필요':0, '수정 완료':0, '수정 확인':0, '보류/패스':0, '서버 수정 요청':0, '서버 수정 완료':0};
     logs.forEach(log => { 
         const s = (log.state || log.status || '').trim(); 
         if(counts[s] !== undefined) counts[s]++; 
@@ -589,7 +590,9 @@ function updateDashboard(logs) {
     document.getElementById('cntFixed').innerText = counts['수정 완료'];
     document.getElementById('cntVerified').innerText = counts['수정 확인']; 
     document.getElementById('cntHold').innerText = counts['보류/패스'];
-    document.getElementById('cntServerRequest').innerText = counts['서버수정 요청중'];
+    document.getElementById('cntServerRequest').innerText = counts['서버 수정 요청'];
+    const cntServerDone = document.getElementById('cntServerDone');
+    if (cntServerDone) cntServerDone.innerText = counts['서버 수정 완료'];
     // 전역 변수에 카운트 저장
     window.statusCounts = counts;
 
@@ -600,12 +603,14 @@ function updateDashboard(logs) {
     const scntVerified = document.getElementById('scnt-verified');
     const scntHold = document.getElementById('scnt-hold');
     const scntServer = document.getElementById('scnt-server');
+    const scntServerDone = document.getElementById('scnt-server-done');
     if (scntAll) scntAll.textContent = logs.length;
     if (scntRevision) scntRevision.textContent = counts['수정 필요'];
     if (scntFixed) scntFixed.textContent = counts['수정 완료'];
     if (scntVerified) scntVerified.textContent = counts['수정 확인'];
     if (scntHold) scntHold.textContent = counts['보류/패스'];
-    if (scntServer) scntServer.textContent = counts['서버수정 요청중'];
+    if (scntServer) scntServer.textContent = counts['서버 수정 요청'];
+    if (scntServerDone) scntServerDone.textContent = counts['서버 수정 완료'];
 
     // 대시보드 분석 업데이트
     updateDashboardAnalytics(logs);
@@ -1026,13 +1031,18 @@ function renderTable() {
             : `<button onclick="openAddEditImageModal('${log.id}', null)" class="text-slate-500 hover:text-slate-700 text-[10px] font-bold border border-dashed border-slate-300 px-2 py-1 rounded-md transition shadow-inner">+추가</button>`;
 
         let actionButtons = '';
-        if (currentState === '수정 필요' || currentState === '서버수정 요청중') {
-            actionButtons += `<button onclick="openDevProcessModal('${log.id}')" class="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 border border-indigo-200 px-2 py-1.5 rounded shadow-sm text-[10px] font-black transition w-full mb-1">상태 변경</button>`;
+        if (currentState === '수정 필요') {
+            actionButtons += `<button onclick="openDevProcessModal('${log.id}', '수정 필요')" class="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 border border-indigo-200 px-2 py-1.5 rounded shadow-sm text-[10px] font-black transition w-full mb-1">상태 변경</button>`;
+        } else if (currentState === '서버 수정 요청') {
+            actionButtons += `<button onclick="directUpdateState('${log.id}', '서버 수정 완료')" class="bg-teal-100 text-teal-700 hover:bg-teal-200 border border-teal-200 px-2 py-1.5 rounded shadow-sm text-[10px] font-black transition w-full mb-1">서버 수정 완료</button>`;
         } else if (currentState === '수정 완료') {
             actionButtons += `<button onclick="directUpdateState('${log.id}', '수정 확인')" class="bg-green-100 text-green-700 hover:bg-green-200 border border-green-200 px-2 py-1.5 rounded shadow-sm text-[10px] font-black transition w-full mb-1">수정 확인</button>`;
             actionButtons += `<button onclick="openReRequestModal('${log.id}')" class="bg-orange-100 text-orange-700 hover:bg-orange-200 border border-orange-200 px-2 py-1.5 rounded shadow-sm text-[10px] font-black transition w-full">재수정요청</button>`;
         } else if (currentState === '보류/패스' || currentState === '수정 확인') {
             actionButtons += `<button onclick="openReRequestModal('${log.id}')" class="bg-orange-100 text-orange-700 hover:bg-orange-200 border border-orange-200 px-2 py-1.5 rounded shadow-sm text-[10px] font-black transition w-full">재수정요청</button>`;
+        } else if (currentState === '서버 수정 완료') {
+            actionButtons += `<button onclick="directUpdateState('${log.id}', '수정 완료')" class="bg-blue-100 text-blue-700 hover:bg-blue-200 border border-blue-200 px-2 py-1.5 rounded shadow-sm text-[10px] font-black transition w-full mb-1">수정 완료</button>`;
+            actionButtons += `<button onclick="directUpdateState('${log.id}', '서버 수정 요청')" class="bg-purple-100 text-purple-700 hover:bg-purple-200 border border-purple-200 px-2 py-1.5 rounded shadow-sm text-[10px] font-black transition w-full">서버 수정 요청</button>`;
         }
 
         // 콘텐츠 정보 생성 (current_scene, current_popup)
@@ -1108,13 +1118,18 @@ function renderTable() {
             card.className = 'mobile-card';
 
             let mobileActionButtons = '';
-            if (currentState === '수정 필요' || currentState === '서버수정 요청중') {
-                mobileActionButtons += `<button onclick="openDevProcessModal('${log.id}')" class="bg-indigo-100 text-indigo-700 border border-indigo-200">상태 변경</button>`;
+            if (currentState === '수정 필요') {
+                mobileActionButtons += `<button onclick="openDevProcessModal('${log.id}', '수정 필요')" class="bg-indigo-100 text-indigo-700 border border-indigo-200">상태 변경</button>`;
+            } else if (currentState === '서버 수정 요청') {
+                mobileActionButtons += `<button onclick="directUpdateState('${log.id}', '서버 수정 완료')" class="bg-teal-100 text-teal-700 border border-teal-200">서버 수정 완료</button>`;
             } else if (currentState === '수정 완료') {
                 mobileActionButtons += `<button onclick="directUpdateState('${log.id}', '수정 확인')" class="bg-green-100 text-green-700 border border-green-200">수정 확인</button>`;
                 mobileActionButtons += `<button onclick="openReRequestModal('${log.id}')" class="bg-orange-100 text-orange-700 border border-orange-200">재수정요청</button>`;
             } else if (currentState === '보류/패스' || currentState === '수정 확인') {
                 mobileActionButtons += `<button onclick="openReRequestModal('${log.id}')" class="bg-orange-100 text-orange-700 border border-orange-200">재수정요청</button>`;
+            } else if (currentState === '서버 수정 완료') {
+                mobileActionButtons += `<button onclick="directUpdateState('${log.id}', '수정 완료')" class="bg-blue-100 text-blue-700 border border-blue-200">수정 완료</button>`;
+                mobileActionButtons += `<button onclick="directUpdateState('${log.id}', '서버 수정 요청')" class="bg-purple-100 text-purple-700 border border-purple-200">서버 수정 요청</button>`;
             }
 
             let mobileImageBtn = log.image_url 
@@ -1492,8 +1507,10 @@ async function openDetailModal(logId) {
     const currentState = (log.state || log.status || '').trim();
     let actionButtonsHtml = '';
 
-    if (currentState === '수정 필요' || currentState === '서버수정 요청중') {
-        actionButtonsHtml = `<button onclick="openDevProcessModal('${log.id}')" class="bg-indigo-600 text-white px-5 py-2 rounded-xl font-bold hover:bg-indigo-700 transition text-sm shadow-md"><i class="fas fa-check-circle mr-1"></i>상태 변경</button>`;
+    if (currentState === '수정 필요') {
+        actionButtonsHtml = `<button onclick="openDevProcessModal('${log.id}', '수정 필요')" class="bg-indigo-600 text-white px-5 py-2 rounded-xl font-bold hover:bg-indigo-700 transition text-sm shadow-md"><i class="fas fa-check-circle mr-1"></i>상태 변경</button>`;
+    } else if (currentState === '서버 수정 요청') {
+        actionButtonsHtml = `<button onclick="directUpdateStateFromModal('${log.id}', '서버 수정 완료')" class="bg-teal-600 text-white px-5 py-2 rounded-xl font-bold hover:bg-teal-700 transition text-sm shadow-md"><i class="fas fa-server mr-1"></i>서버 수정 완료</button>`;
     } else if (currentState === '수정 완료') {
         actionButtonsHtml = `
             <button onclick="directUpdateStateFromModal('${log.id}', '수정 확인')" class="bg-green-600 text-white px-5 py-2 rounded-xl font-bold hover:bg-green-700 transition text-sm shadow-md"><i class="fas fa-check-double mr-1"></i>수정 확인</button>
@@ -1501,6 +1518,11 @@ async function openDetailModal(logId) {
         `;
     } else if (currentState === '보류/패스' || currentState === '수정 확인') {
         actionButtonsHtml = `<button onclick="openReRequestModal('${log.id}')" class="bg-orange-500 text-white px-5 py-2 rounded-xl font-bold hover:bg-orange-600 transition text-sm shadow-md"><i class="fas fa-exclamation-triangle mr-1"></i>재수정요청</button>`;
+    } else if (currentState === '서버 수정 완료') {
+        actionButtonsHtml = `
+            <button onclick="directUpdateStateFromModal('${log.id}', '수정 완료')" class="bg-blue-600 text-white px-5 py-2 rounded-xl font-bold hover:bg-blue-700 transition text-sm shadow-md"><i class="fas fa-check mr-1"></i>수정 완료</button>
+            <button onclick="directUpdateStateFromModal('${log.id}', '서버 수정 요청')" class="bg-purple-500 text-white px-5 py-2 rounded-xl font-bold hover:bg-purple-600 transition text-sm shadow-md"><i class="fas fa-server mr-1"></i>서버 수정 요청</button>
+        `;
     }
     actionButtonsContainer.innerHTML = actionButtonsHtml;
 
@@ -1843,10 +1865,21 @@ async function submitUpdateImage() {
     } catch (e) { alert('작업 실패: ' + e.message); } finally { btn.innerText = '이미지 저장'; btn.disabled = false; }
 }
 
-async function openDevProcessModal(logId) {
+async function openDevProcessModal(logId, fromState = '수정 필요') {
     const log = await findLogById(logId); if (!log) return;
     document.getElementById('dev-process-log-id').value = logId;
     document.getElementById('dev-comment-text').value = log.developer_comment || '';
+
+    // 상태에 따라 버튼 동적 표시
+    const btnArea = document.getElementById('dev-process-action-btns');
+    if (btnArea) {
+        btnArea.innerHTML = `
+            <button onclick="submitDevProcess('보류/패스')" class="bg-gray-500 text-white px-4 py-2 rounded-xl font-bold hover:bg-gray-600 transition text-sm">보류/패스</button>
+            <button onclick="submitDevProcess('서버 수정 요청')" class="bg-purple-500 text-white px-4 py-2 rounded-xl font-bold hover:bg-purple-600 transition text-sm">서버 수정 요청</button>
+            <button onclick="submitDevProcess('수정 완료')" class="bg-blue-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-blue-700 transition text-sm shadow-md shadow-blue-100">수정 완료</button>
+        `;
+    }
+
     openModal('devProcessModal');
 }
 
@@ -1857,8 +1890,8 @@ async function submitDevProcess(targetState) {
     // 코멘트가 비어있으면 상태값을 기본 코멘트로 사용
     let finalComment = comment || targetState;
 
-    // 수정완료, 보류/패스, 서버수정 요청중 상태인 경우 bundleCode 추가
-    if ((targetState === '수정 완료' || targetState === '보류/패스' || targetState === '서버수정 요청중') && currentBundleCode) {
+    // 수정완료, 보류/패스, 서버 수정 요청 상태인 경우 bundleCode 추가
+    if ((targetState === '수정 완료' || targetState === '보류/패스' || targetState === '서버 수정 요청') && currentBundleCode) {
         if (!comment) {
             // 코멘트가 비어있으면 기본 메시지 + 번들 코드
             finalComment = `${targetState} (${currentBundleCode})`;
@@ -1974,7 +2007,7 @@ function analyzeAuthorStats(logs) {
                     '수정 완료': 0,
                     '수정 확인': 0,
                     '보류/패스': 0,
-                    '서버수정 요청중': 0
+                    '서버 수정 요청': 0
                 }
             };
         }
@@ -2017,7 +2050,8 @@ function renderStatusChart(logs) {
         '수정 완료': 0,
         '수정 확인': 0,
         '보류/패스': 0,
-        '서버수정 요청중': 0
+        '서버 수정 요청': 0,
+        '서버 수정 완료': 0
     };
 
     logs.forEach(log => {
@@ -2038,12 +2072,13 @@ function renderStatusChart(logs) {
             datasets: [{
                 data: Object.values(statusCounts),
                 backgroundColor: [
-                    'rgba(251, 146, 60, 0.8)',  // 수정 필요
-                    'rgba(59, 130, 246, 0.8)',  // 수정 완료
-                    'rgba(34, 197, 94, 0.8)',   // 수정 확인
-                    'rgba(156, 163, 175, 0.8)', // 보류/패스
-                    'rgba(168, 85, 247, 0.8)'   // 서버수정 요청중
-                ],
+                        'rgba(251, 146, 60, 0.8)',  // 수정 필요
+                        'rgba(59, 130, 246, 0.8)',  // 수정 완료
+                        'rgba(34, 197, 94, 0.8)',   // 수정 확인
+                        'rgba(156, 163, 175, 0.8)', // 보류/패스
+                        'rgba(168, 85, 247, 0.8)',  // 서버 수정 요청
+                        'rgba(20, 184, 166, 0.8)'   // 서버 수정 완료
+                    ],
                 borderWidth: 2,
                 borderColor: '#fff'
             }]
