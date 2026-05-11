@@ -2482,32 +2482,77 @@ function renderCountryDataUI(payload) {
     showCountryMdTab(tabOrder[0]);
 }
 
+function _renderIdList(ids, colorCls = 'bg-indigo-50 text-indigo-700') {
+    if (!ids || ids.length === 0) return '<span class="text-slate-300 text-xs">-</span>';
+    return `<div class="flex flex-wrap gap-0.5 justify-center">${ids.map(id =>
+        `<span class="inline-block px-1 py-0.5 rounded text-[10px] font-mono font-bold ${colorCls}">${id}</span>`
+    ).join('')}</div>`;
+}
+
 const COUNTRY_TAB_CONFIG = {
     supremeChapter: {
         label: '대단원',
-        getData: p => p.nationalCurriculumMasterData?.nationalSupremeChapters ?? [],
+        getData: p => {
+            const chapters = p.nationalCurriculumMasterData?.nationalChapters ?? [];
+            const stages   = p.nationalCurriculumMasterData?.nationalStages ?? [];
+            return (p.nationalCurriculumMasterData?.nationalSupremeChapters ?? []).map(sc => {
+                const myChapters = chapters.filter(c => c.nationalSupremeChapterId === sc.nationalSupremeChapterId);
+                const myChapterIds = new Set(myChapters.map(c => c.nationalChapterId));
+                const myStages = stages.filter(s => myChapterIds.has(s.nationalChapterId));
+                return { ...sc, _chapters: myChapters, _stages: myStages };
+            });
+        },
         columns: [
-            { label: 'ID',       key: 'nationalSupremeChapterId', cls: 'text-center font-mono text-xs font-bold text-indigo-700' },
-            { label: '레벨',     key: 'level',                    cls: 'text-center' },
-            { label: '순서',     key: 'sequence',                 cls: 'text-center' },
+            { label: 'ID',        key: 'nationalSupremeChapterId', cls: 'text-center font-mono text-xs font-bold text-indigo-700' },
+            { label: '레벨',      key: 'level',                    cls: 'text-center font-bold' },
+            { label: '순서',      key: 'sequence',                 cls: 'text-center' },
+            { label: '소단원 수', key: row => `<span class="font-bold text-blue-600">${row._chapters.length}</span>`, cls: 'text-center' },
+            { label: '소단원 목록', key: row => _renderIdList(row._chapters.map(c => c.nationalChapterId), 'bg-blue-50 text-blue-700'), cls: 'text-center' },
+            { label: '스테이지 수', key: row => `<span class="font-bold text-emerald-600">${row._stages.length}</span>`, cls: 'text-center' },
+            { label: '스테이지 목록', key: row => _renderIdList(row._stages.map(s => s.nationalStageId), 'bg-emerald-50 text-emerald-700'), cls: 'text-center' },
             { label: 'Translation Key', key: row => row.translation?.translationKey ?? '-', cls: 'text-center font-mono text-xs text-slate-500 break-all' },
         ]
     },
     chapter: {
         label: '소단원',
-        getData: p => p.nationalCurriculumMasterData?.nationalChapters ?? [],
+        getData: p => {
+            const supremeChapters = p.nationalCurriculumMasterData?.nationalSupremeChapters ?? [];
+            const stages          = p.nationalCurriculumMasterData?.nationalStages ?? [];
+            const scMap = Object.fromEntries(supremeChapters.map(sc => [sc.nationalSupremeChapterId, sc]));
+            return (p.nationalCurriculumMasterData?.nationalChapters ?? []).map(c => {
+                const parent   = scMap[c.nationalSupremeChapterId] ?? null;
+                const myStages = stages.filter(s => s.nationalChapterId === c.nationalChapterId);
+                return { ...c, _parent: parent, _stages: myStages };
+            });
+        },
         columns: [
-            { label: '소단원 ID',   key: 'nationalChapterId',         cls: 'text-center font-mono text-xs font-bold text-indigo-700' },
-            { label: '대단원 ID',   key: 'nationalSupremeChapterId',  cls: 'text-center font-mono text-xs' },
-            { label: '순서',        key: 'sequence',                  cls: 'text-center' },
+            { label: '소단원 ID', key: 'nationalChapterId',        cls: 'text-center font-mono text-xs font-bold text-indigo-700' },
+            { label: '레벨',      key: row => row._parent?.level ?? '-', cls: 'text-center font-bold text-purple-600' },
+            { label: '대단원 ID', key: 'nationalSupremeChapterId', cls: 'text-center font-mono text-xs' },
+            { label: '대단원 명', key: row => row._parent?.translation?.translationKey ?? '-', cls: 'text-center text-xs text-slate-500' },
+            { label: '순서',      key: 'sequence',                 cls: 'text-center' },
+            { label: '스테이지 수', key: row => `<span class="font-bold text-emerald-600">${row._stages.length}</span>`, cls: 'text-center' },
+            { label: '스테이지 목록', key: row => _renderIdList(row._stages.map(s => s.nationalStageId), 'bg-emerald-50 text-emerald-700'), cls: 'text-center' },
             { label: 'Translation Key', key: row => row.translation?.translationKey ?? '-', cls: 'text-center font-mono text-xs text-slate-500 break-all' },
         ]
     },
     stage: {
         label: '스테이지',
-        getData: p => p.nationalCurriculumMasterData?.nationalStages ?? [],
+        getData: p => {
+            const supremeChapters = p.nationalCurriculumMasterData?.nationalSupremeChapters ?? [];
+            const chapters        = p.nationalCurriculumMasterData?.nationalChapters ?? [];
+            const scMap = Object.fromEntries(supremeChapters.map(sc => [sc.nationalSupremeChapterId, sc]));
+            const cMap  = Object.fromEntries(chapters.map(c => [c.nationalChapterId, c]));
+            return (p.nationalCurriculumMasterData?.nationalStages ?? []).map(s => {
+                const chapter      = cMap[s.nationalChapterId] ?? null;
+                const supremeChap  = chapter ? (scMap[chapter.nationalSupremeChapterId] ?? null) : null;
+                return { ...s, _chapter: chapter, _supremeChapter: supremeChap };
+            });
+        },
         columns: [
             { label: '국가스테이지 ID', key: 'nationalStageId',   cls: 'text-center font-mono text-xs font-bold text-indigo-700' },
+            { label: '레벨',            key: row => row._supremeChapter?.level ?? '-', cls: 'text-center font-bold text-purple-600' },
+            { label: '대단원 ID',       key: row => row._supremeChapter?.nationalSupremeChapterId ?? '-', cls: 'text-center font-mono text-xs' },
             { label: '소단원 ID',       key: 'nationalChapterId', cls: 'text-center font-mono text-xs' },
             { label: '순서',            key: 'sequence',          cls: 'text-center' },
             { label: '스테이지 ID',     key: 'stageId',           cls: 'text-center font-mono text-xs text-blue-600' },
@@ -2553,7 +2598,9 @@ function filterCountryMdTable() {
     const filtered = q ? countryMdAllRows.filter(row =>
         cfg.columns.some(col => {
             const val = typeof col.key === 'function' ? col.key(row) : row[col.key];
-            return String(val ?? '').toLowerCase().includes(q);
+            // HTML 태그 제거 후 검색
+            const text = String(val ?? '').replace(/<[^>]*>/g, ' ').toLowerCase();
+            return text.includes(q);
         })
     ) : countryMdAllRows;
 
