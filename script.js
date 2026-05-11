@@ -2279,6 +2279,12 @@ let masterDataCache = {}; // { ko: data, en: data }
 let currentMdTab = 'translation';
 let mdAllRows = []; // 현재 탭의 전체 행 데이터
 
+let currentMasterMode = 'language'; // 'language' | 'country'
+let currentCountryCode = 'KR';
+let countryDataCache = {}; // { KR: data, EN: data, JP: data }
+let currentCountryTab = '';
+let countryMdAllRows = [];
+
 const MASTER_API_BASE = 'https://dev-v3-api.1promath.com';
 
 async function loadMasterData(lang = 'ko', forceRefresh = false) {
@@ -2338,7 +2344,228 @@ async function loadMasterData(lang = 'ko', forceRefresh = false) {
     }
 }
 
-function renderMasterDataUI(payload) {
+function refreshMasterData() {
+    if (currentMasterMode === 'language') {
+        loadMasterData(currentMasterLang, true);
+    } else {
+        loadCountryMasterData(currentCountryCode, true);
+    }
+}
+
+function switchMasterMode(mode) {
+    currentMasterMode = mode;
+    const langGroup = document.getElementById('md-lang-btn-group');
+    const countryGroup = document.getElementById('md-country-btn-group');
+    const langContent = document.getElementById('md-content');
+    const countryContent = document.getElementById('md-country-content');
+    const versionBar = document.getElementById('md-version-bar');
+    const loading = document.getElementById('md-loading');
+
+    document.getElementById('md-mode-language').classList.toggle('active', mode === 'language');
+    document.getElementById('md-mode-country').classList.toggle('active', mode === 'country');
+
+    if (mode === 'language') {
+        langGroup.classList.remove('hidden');
+        countryGroup.classList.add('hidden');
+        countryContent.classList.add('hidden');
+        loading.classList.add('hidden');
+        // 기존 언어 데이터가 캐시에 있으면 바로 표시
+        if (masterDataCache[currentMasterLang]) {
+            langContent.classList.remove('hidden');
+            versionBar.classList.remove('hidden');
+        } else {
+            langContent.classList.add('hidden');
+        }
+    } else {
+        langGroup.classList.add('hidden');
+        countryGroup.classList.remove('hidden');
+        langContent.classList.add('hidden');
+        versionBar.classList.add('hidden');
+        loading.classList.add('hidden');
+        // 기존 국가 데이터가 캐시에 있으면 바로 표시
+        if (countryDataCache[currentCountryCode]) {
+            countryContent.classList.remove('hidden');
+        } else {
+            countryContent.classList.add('hidden');
+            loadCountryMasterData(currentCountryCode);
+        }
+    }
+}
+
+async function loadCountryMasterData(countryCode = 'KR', forceRefresh = false) {
+    currentCountryCode = countryCode;
+
+    document.querySelectorAll('#md-country-btn-group .md-lang-btn').forEach(b => b.classList.remove('active'));
+    const activeBtn = document.getElementById(`md-country-${countryCode}`);
+    if (activeBtn) activeBtn.classList.add('active');
+
+    if (!forceRefresh && countryDataCache[countryCode]) {
+        renderCountryDataUI(countryDataCache[countryCode]);
+        return;
+    }
+
+    document.getElementById('md-loading').classList.remove('hidden');
+    document.getElementById('md-country-content').classList.add('hidden');
+    document.getElementById('md-version-bar').classList.add('hidden');
+
+    try {
+        const now = new Date();
+        const offsetMin = -now.getTimezoneOffset();
+        const sign = offsetMin >= 0 ? '+' : '-';
+        const absMin = Math.abs(offsetMin);
+        const pad2 = n => String(n).padStart(2, '0');
+        const offsetStr = offsetMin === 0
+            ? '+00:00'
+            : `${sign}${pad2(Math.floor(absMin / 60))}:${pad2(absMin % 60)}`;
+        const clientDatetime = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(now.getDate())}` +
+            `T${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}${offsetStr}`;
+        const timezoneIdentifier = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+        const res = await fetch(`${MASTER_API_BASE}/api/v3/app-init/master-data/country-codes/${countryCode}`, {
+            headers: {
+                'Client-Datetime': clientDatetime,
+                'Timezone-Identifier': timezoneIdentifier,
+                'App-Version': '3.0.0',
+                'Platform': 'android'
+            }
+        });
+
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.message || `HTTP ${res.status}`);
+        }
+
+        const json = await res.json();
+        const payload = json.data;
+        countryDataCache[countryCode] = payload;
+        renderCountryDataUI(payload);
+    } catch (e) {
+        document.getElementById('md-loading').classList.add('hidden');
+        showToast('국가 코드 데이터 로드 실패: ' + e.message, 'error');
+    }
+}
+
+function renderCountryDataUI(payload) {
+    document.getElementById('md-loading').classList.add('hidden');
+
+    // payload에서 배열 데이터를 가진 키를 탭으로 구성
+    const tabsContainer = document.getElementById('md-country-tabs');
+    tabsContainer.innerHTML = '';
+
+    const tabKeys = Object.keys(payload).filter(k => Array.isArray(payload[k]) && payload[k].length > 0);
+
+    if (tabKeys.length === 0) {
+        // 배열이 없으면 key-value 테이블로 렌더
+        countryMdAllRows = Object.entries(payload).map(([k, v]) => ({ key: k, value: typeof v === 'object' ? JSON.stringify(v) : String(v ?? '-') }));
+        currentCountryTab = '__kv__';
+        renderCountryTable(countryMdAllRows, [
+            { label: 'Key', key: 'key', cls: 'font-mono text-xs text-indigo-700 font-bold' },
+            { label: 'Value', key: 'value', cls: 'text-slate-700 text-xs break-all' },
+        ]);
+    } else {
+        // 탭 버튼 생성
+        tabKeys.forEach((key, idx) => {
+            const cnt = payload[key].length;
+            const btn = document.createElement('button');
+            btn.className = 'md-tab-btn' + (idx === 0 ? ' active' : '');
+            btn.id = `md-country-tab-${key}`;
+            btn.innerHTML = `${key} <span class="md-tab-count">${cnt.toLocaleString()}</span>`;
+            btn.onclick = () => showCountryMdTab(key, payload);
+            tabsContainer.appendChild(btn);
+        });
+
+        // 첫 번째 탭 표시
+        showCountryMdTab(tabKeys[0], payload);
+    }
+
+    document.getElementById('md-country-search').value = '';
+    document.getElementById('md-country-content').classList.remove('hidden');
+}
+
+function showCountryMdTab(tabKey, payload) {
+    currentCountryTab = tabKey;
+    document.querySelectorAll('#md-country-tabs .md-tab-btn').forEach(b => b.classList.remove('active'));
+    const btn = document.getElementById(`md-country-tab-${tabKey}`);
+    if (btn) btn.classList.add('active');
+
+    const cached = countryDataCache[currentCountryCode];
+    const source = payload ?? cached;
+    if (!source) return;
+
+    const rows = source[tabKey] ?? [];
+    countryMdAllRows = rows;
+    document.getElementById('md-country-search').value = '';
+
+    // 컬럼은 첫 번째 row의 key에서 동적으로 구성
+    const columns = rows.length > 0
+        ? Object.keys(rows[0]).map(k => ({ label: k, key: k, cls: 'text-xs text-slate-700 break-all' }))
+        : [];
+
+    renderCountryTable(countryMdAllRows, columns);
+}
+
+function filterCountryMdTable() {
+    const q = document.getElementById('md-country-search').value.toLowerCase().trim();
+    const cached = countryDataCache[currentCountryCode];
+    if (!cached) return;
+
+    let columns;
+    if (currentCountryTab === '__kv__') {
+        columns = [
+            { label: 'Key', key: 'key', cls: '' },
+            { label: 'Value', key: 'value', cls: '' },
+        ];
+    } else {
+        const rows = cached[currentCountryTab] ?? [];
+        columns = rows.length > 0 ? Object.keys(rows[0]).map(k => ({ label: k, key: k, cls: '' })) : [];
+    }
+
+    const filtered = q ? countryMdAllRows.filter(row =>
+        columns.some(col => {
+            const val = typeof col.key === 'function' ? col.key(row) : row[col.key];
+            return String(val ?? '').toLowerCase().includes(q);
+        })
+    ) : countryMdAllRows;
+
+    renderCountryTable(filtered, columns);
+}
+
+function renderCountryTable(rows, columns) {
+    const thead = document.getElementById('md-country-thead');
+    const tbody = document.getElementById('md-country-tbody');
+    const countEl = document.getElementById('md-country-row-count');
+
+    thead.innerHTML = '<tr>' + columns.map(c =>
+        `<th class="px-4 py-3 font-bold border-b whitespace-nowrap">${c.label}</th>`
+    ).join('') + '</tr>';
+
+    if (rows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${columns.length}" class="text-center py-10 text-gray-400">결과 없음</td></tr>`;
+        countEl.textContent = '0건';
+        return;
+    }
+
+    const MAX_RENDER = 500;
+    const displayRows = rows.slice(0, MAX_RENDER);
+
+    tbody.innerHTML = displayRows.map((row, i) =>
+        '<tr class="hover:bg-slate-50/50 transition">' +
+        columns.map(col => {
+            const raw = typeof col.key === 'function' ? col.key(row, i) : row[col.key];
+            const val = raw !== null && raw !== undefined
+                ? (typeof raw === 'object' ? JSON.stringify(raw) : raw)
+                : '-';
+            return `<td class="px-4 py-2.5 border-b border-gray-100 ${col.cls ?? ''}">${val}</td>`;
+        }).join('') +
+        '</tr>'
+    ).join('');
+
+    countEl.textContent = rows.length > MAX_RENDER
+        ? `${rows.length.toLocaleString()}건 중 ${MAX_RENDER}건 표시`
+        : `${rows.length.toLocaleString()}건`;
+}
+
+
     document.getElementById('md-loading').classList.add('hidden');
 
     const { masterData, appConfig } = payload;

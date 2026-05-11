@@ -380,12 +380,28 @@
                         <p class="text-sm text-gray-500">서버에서 내려오는 마스터 DB를 조회합니다.</p>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
-                        <!-- 언어 선택 -->
+                        <!-- API 모드 토글 -->
                         <div class="flex items-center bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+                            <button onclick="switchMasterMode('language')" id="md-mode-language" class="md-lang-btn active px-4 py-2 text-sm font-bold transition">
+                                <i class="fas fa-language mr-1"></i>언어 코드
+                            </button>
+                            <button onclick="switchMasterMode('country')" id="md-mode-country" class="md-lang-btn px-4 py-2 text-sm font-bold transition">
+                                <i class="fas fa-globe mr-1"></i>국가 코드
+                            </button>
+                        </div>
+                        <!-- 언어 선택 버튼 그룹 -->
+                        <div id="md-lang-btn-group" class="flex items-center bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
                             <button onclick="loadMasterData('ko')" id="md-lang-ko" class="md-lang-btn active px-4 py-2 text-sm font-bold transition">🇰🇷 KO</button>
                             <button onclick="loadMasterData('en')" id="md-lang-en" class="md-lang-btn px-4 py-2 text-sm font-bold transition">🇺🇸 EN</button>
+                            <button onclick="loadMasterData('ja')" id="md-lang-ja" class="md-lang-btn px-4 py-2 text-sm font-bold transition">🇯🇵 JA</button>
                         </div>
-                        <button onclick="loadMasterData(currentMasterLang, true)" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-emerald-700 shadow-md transition">
+                        <!-- 국가 코드 버튼 그룹 -->
+                        <div id="md-country-btn-group" class="hidden flex items-center bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+                            <button onclick="loadCountryMasterData('KR')" id="md-country-KR" class="md-lang-btn px-4 py-2 text-sm font-bold transition">🇰🇷 KR</button>
+                            <button onclick="loadCountryMasterData('EN')" id="md-country-EN" class="md-lang-btn px-4 py-2 text-sm font-bold transition">🇺🇸 EN</button>
+                            <button onclick="loadCountryMasterData('JP')" id="md-country-JP" class="md-lang-btn px-4 py-2 text-sm font-bold transition">🇯🇵 JP</button>
+                        </div>
+                        <button onclick="refreshMasterData()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-emerald-700 shadow-md transition">
                             <i class="fas fa-sync-alt mr-2"></i>새로고침
                         </button>
                     </div>
@@ -429,6 +445,29 @@
                         <table class="w-full text-left border-collapse text-sm" id="md-table">
                             <thead id="md-thead" class="bg-slate-50 text-gray-500 text-xs uppercase sticky top-0"></thead>
                             <tbody id="md-tbody" class="divide-y divide-gray-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 국가 코드 데이터 영역 -->
+                <div id="md-country-content" class="hidden">
+                    <!-- 카테고리 탭 -->
+                    <div class="flex flex-wrap gap-1.5 mb-4" id="md-country-tabs"></div>
+
+                    <!-- 검색 -->
+                    <div class="mb-3 flex gap-2">
+                        <div class="relative flex-1 max-w-sm">
+                            <input type="text" id="md-country-search" placeholder="검색..." oninput="filterCountryMdTable()" class="w-full bg-white border border-gray-300 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
+                            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                        </div>
+                        <span id="md-country-row-count" class="text-xs text-slate-400 self-center"></span>
+                    </div>
+
+                    <!-- 테이블 -->
+                    <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm" id="md-country-table">
+                            <thead id="md-country-thead" class="bg-slate-50 text-gray-500 text-xs uppercase sticky top-0"></thead>
+                            <tbody id="md-country-tbody" class="divide-y divide-gray-100"></tbody>
                         </table>
                     </div>
                 </div>
