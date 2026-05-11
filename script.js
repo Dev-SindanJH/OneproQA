@@ -1416,7 +1416,7 @@ async function openDetailModal(logId) {
                         WEAPON: '무기',
                     };
                     const TYPE1_ORDER = ['HAT', 'HEAD_ACCESSORIES', 'TOP', 'SUIT', 'PANTS', 'BACK_ACCESSORIES', 'WEAPON'];
-
+                const CHARACTER_NAME = ['에러', '뚜이', '나누', '고고', '배로', '라니', '마크'];
                     const renderItemId = id => {
                         const type = avatarItemTypeMap[id];
                         if (type === 'REWARD') {
@@ -1454,7 +1454,7 @@ async function openDetailModal(logId) {
                     const charRows = chars.map(c => `
                         <div class="bg-slate-50 border border-slate-100 rounded p-2 space-y-0.5">
                             <div class="flex items-center gap-1.5 mb-0.5">
-                                <span class="text-[10px] font-black text-slate-600">ID ${c.friendsAvatarCharacterId}</span>
+                                <span class="text-[10px] font-black text-slate-600">${CHARACTER_NAME[c.friendsAvatarCharacterId]}</span>
                                 ${c.isOwned ? '<span class="text-[8px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-black border border-green-200">보유</span>' : '<span class="text-[8px] bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded font-black border border-slate-200">미보유</span>'}
                             </div>
                             <div class="text-[10px] text-slate-500 leading-relaxed">보유 아이템: ${renderItemList(c.ownedFriendsAvatarItemIds)}</div>
