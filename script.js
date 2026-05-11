@@ -2797,6 +2797,22 @@ function renderMasterDataUI(payload) {
     showMdTab(currentMdTab);
 }
 
+// 아바타 아이템 이미지 경로 생성
+function getAvatarItemImagePath(item) {
+    const type1 = item.type1;
+    const id = item.friendsAvatarItemId;
+    const TYPE1_PATH = {
+        'BACK_ACCESSORIES': `Avatar/BACK_ACCESSORIES/AccB${id}/accB_${id}_Icon.png`,
+        'HAT':              `Avatar/HAT/Hat${id}/hat_${id}_Icon.png`,
+        'HEAD_ACCESSORIES': `Avatar/HEAD_ACCESSORIES/AccH${id}/accH_${id}_Icon.png`,
+        'PANTS':            `Avatar/PANTS/Pants${id}/pants_${id}_Icon.png`,
+        'SUIT':             `Avatar/SUIT/Suit${id}/suit_${id}_Icon.png`,
+        'TOP':              `Avatar/TOP/Top${id}/top_${id}_Icon.png`,
+        'WEAPON':           `Avatar/WEAPON/Weapon${id}/weapon_${id}_Icon.png`,
+    };
+    return TYPE1_PATH[type1] ?? null;
+}
+
 const MD_TAB_CONFIG = {
     translation: {
         getData: md => md.translationMasterData?.translations ?? [],
@@ -2876,6 +2892,11 @@ const MD_TAB_CONFIG = {
     avataritem: {
         getData: md => md.friendsAvatarMasterData?.friendsAvatarItems ?? [],
         columns: [
+            { label: '이미지', key: row => {
+                const src = getAvatarItemImagePath(row);
+                if (!src) return '<span class="text-slate-300 text-xs">-</span>';
+                return `<img src="${src}" alt="${row.friendsAvatarItemId}" class="w-12 h-12 object-contain mx-auto rounded" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span class="text-slate-300 text-xs hidden">없음</span>`;
+            }, cls: 'text-center w-16' },
             { label: 'ID', key: 'friendsAvatarItemId', cls: 'text-center font-mono text-xs' },
             { label: 'Type1', key: 'type1', cls: 'text-center text-xs' },
             { label: 'Type2', key: 'type2', cls: 'text-center text-xs' },
