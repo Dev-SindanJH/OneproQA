@@ -2566,6 +2566,8 @@ function renderCountryTable(rows, columns) {
 }
 
 
+function renderMasterDataUI(payload) {
+
     document.getElementById('md-loading').classList.add('hidden');
 
     const { masterData, appConfig } = payload;
