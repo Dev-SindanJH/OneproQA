@@ -1392,6 +1392,7 @@ async function openDetailModal(logId) {
 
                     // 마스터 데이터에서 아바타 아이템 타입 맵 생성 (ko 우선, 없으면 다른 언어 사용)
                     const avatarItemTypeMap = {};
+                    const avatarItemType1Map = {};
                     const langOrder = ['ko', 'en', 'ja'];
                     for (const lang of langOrder) {
                         const cached = masterDataCache[lang];
@@ -1399,10 +1400,22 @@ async function openDetailModal(logId) {
                             const items = cached.masterData?.friendsAvatarMasterData?.friendsAvatarItems ?? [];
                             items.forEach(item => {
                                 avatarItemTypeMap[item.friendsAvatarItemId] = item.itemInfoType2;
+                                avatarItemType1Map[item.friendsAvatarItemId] = item.type1;
                             });
                             if (Object.keys(avatarItemTypeMap).length > 0) break;
                         }
                     }
+
+                    const TYPE1_KO = {
+                        BACK_ACCESSORIES: '등 악세서리',
+                        HAT: '모자',
+                        HEAD_ACCESSORIES: '머리 악세서리',
+                        PANTS: '하의',
+                        SUIT: '한 벌옷',
+                        TOP: '상의',
+                        WEAPON: '무기',
+                    };
+                    const TYPE1_ORDER = ['HAT', 'HEAD_ACCESSORIES', 'TOP', 'SUIT', 'PANTS', 'BACK_ACCESSORIES', 'WEAPON'];
 
                     const renderItemId = id => {
                         const type = avatarItemTypeMap[id];
@@ -1414,7 +1427,28 @@ async function openDetailModal(logId) {
 
                     const renderItemList = ids => {
                         if (!Array.isArray(ids) || ids.length === 0) return '-';
-                        return ids.map(renderItemId).join('<span class="text-slate-300">, </span>');
+                        const groups = {};
+                        const unknownIds = [];
+                        ids.forEach(id => {
+                            const t1 = avatarItemType1Map[id];
+                            if (t1) {
+                                if (!groups[t1]) groups[t1] = [];
+                                groups[t1].push(id);
+                            } else {
+                                unknownIds.push(id);
+                            }
+                        });
+                        const hasGroups = Object.keys(groups).length > 0;
+                        if (!hasGroups) return ids.map(renderItemId).join('<span class="text-slate-300">, </span>');
+                        const sep = '<span class="text-slate-300">, </span>';
+                        const lines = [];
+                        const orderedKeys = [...TYPE1_ORDER.filter(k => groups[k]), ...Object.keys(groups).filter(k => !TYPE1_ORDER.includes(k))];
+                        orderedKeys.forEach(t1 => {
+                            const label = TYPE1_KO[t1] || t1;
+                            lines.push(`<span class="text-slate-400 font-bold">${label}:</span> ${groups[t1].map(renderItemId).join(sep)}`);
+                        });
+                        if (unknownIds.length > 0) lines.push(unknownIds.map(renderItemId).join(sep));
+                        return lines.join('<br>');
                     };
 
                     const charRows = chars.map(c => `
