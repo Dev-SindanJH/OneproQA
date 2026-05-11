@@ -311,6 +311,11 @@ function showSection(sectionId) {
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     document.getElementById('nav-' + sectionId).classList.add('active');
 
+    // 마스터 데이터 탭 첫 진입 시 자동 로드
+    if (sectionId === 'masterdata' && !masterDataCache[currentMasterLang]) {
+        loadMasterData(currentMasterLang);
+    }
+
     // 모바일에서 섹션 전환 시 사이드바 자동 닫기
     if (window.innerWidth < 768) {
         const sidebar = document.getElementById('sidebar');
@@ -335,6 +340,11 @@ function openModal(id) {
 function closeModal(id) {
     const modal = document.getElementById(id);
     modal.classList.add('hidden');
+
+    if (id === 'detailModal') {
+        const loginPanel = document.getElementById('modal-login-info-section');
+        if (loginPanel) loginPanel.classList.add('hidden');
+    }
 
     if (id === 'writeModal') {
         document.getElementById('write-scene-input').value = '';
@@ -679,7 +689,7 @@ async function fetchLogs(forceRefresh = false) {
 
     let query = supabaseClient
         .from('qa_logs')
-        .select('id,user_name,state,current_scene,current_popup,user_description,developer_comment,created_at,updated_at,image_url,is_delete,inAppLogs');
+        .select('id,user_name,state,current_scene,current_popup,user_description,developer_comment,created_at,updated_at,image_url,is_delete,inAppLogs,login_info');
 
     // 필터 적용
     query = applyFiltersToQuery(query, currentFilters);
@@ -1250,6 +1260,159 @@ async function openDetailModal(logId) {
         imageSection.classList.remove('hidden');
     } else {
         imageSection.classList.add('hidden');
+    }
+
+    // 로그인 정보 표시
+    const loginInfoSection = document.getElementById('modal-login-info-section');
+    const loginInfoBody = document.getElementById('modal-login-info-body');
+    let info = log.login_info;
+    if (typeof info === 'string') {
+        try { info = JSON.parse(info); } catch(e) { info = null; }
+    }
+    if (info && typeof info === 'object') {
+        const acc = info.account || null;
+        const license = info.license || null;
+        const profiles = Array.isArray(info.profiles) ? info.profiles : [];
+        const mainProfileId = info.mainProfileId ?? null;
+        const school = info.school || null;
+        const classInfo = info.classInfo || null;
+
+        const NULL_TEXT = '<span class="text-slate-300 italic">null</span>';
+        const fv = v => (v === null || v === undefined) ? NULL_TEXT : `<span class="font-mono text-slate-700 break-all">${v}</span>`;
+        const row = (label, val) => `
+            <div class="flex flex-col gap-0.5">
+                <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">${label}</span>
+                <span class="text-[11px]">${fv(val)}</span>
+            </div>`;
+
+        // 라이선스 타입 이름 매핑
+        const LICENSE_TYPE_MAP = {
+            '-1': 'Unknown', '0': 'None',
+            '1': '일반 결제', '11': '최고관리자 지급', '12': '서포터즈', '13': '이벤트 지급',
+            '21': 'SKT 제휴', '31': '공동구매(유저)', '32': '공동구매(관리자)', '33': '이벤트 공동구매',
+            '41': '쿠폰 이용권', '42': '전화번호 등록', '43': '7일 무료체험',
+            '51': '회원가입 프로모션', '100': '학계/학교 라이선스'
+        };
+        const GAME_CENTER_LOCK_MAP = { '0': '잠금 해제', '1': '잠금', '2': '오늘학습 후 오픈' };
+        const LOCK_MAP = { '0': '잠금 해제', '1': '잠금' };
+
+        // 계정 섹션
+        const accSection = acc ? `
+            <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Account</div>
+            <div class="bg-white border border-slate-200 rounded-lg p-3 space-y-1.5 mb-3">
+                <div class="flex flex-col gap-0.5">
+                    <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">AccountID</span>
+                    <span class="text-[11px] flex items-center gap-1.5">
+                        ${fv(acc.accountId)}
+                        ${acc.isGuestAccount === true ? '<span class="text-[8px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded font-black border border-orange-200">게스트계정</span>' : ''}
+                    </span>
+                </div>
+                ${row('이름', acc.name)}
+                ${row('아이디(이메일)', acc.id)}
+                ${row('비밀번호', acc.password)}
+                ${row('전화번호', acc.phoneNumber)}
+                ${row('가용 프로필 수', acc.availableProfileCount)}
+                ${row('대표 프로필ID', mainProfileId)}
+            </div>` : `<div class="text-[10px] text-slate-300 italic mb-3">account: null</div>`;
+
+        // 라이선스 섹션
+        let licenseSection = '';
+        if (license) {
+            const typeKey = String(license.type ?? '');
+            const typeName = LICENSE_TYPE_MAP[typeKey] ?? `타입 ${typeKey}`;
+            const remSec = license.remainingSeconds ?? null;
+            let remText = null;
+            if (remSec !== null) {
+                const d = Math.floor(remSec / 86400);
+                const h = Math.floor((remSec % 86400) / 3600);
+                const m = Math.floor((remSec % 3600) / 60);
+                remText = `${d}일 ${h}시간 ${m}분 (${remSec.toLocaleString()}초)`;
+            }
+            licenseSection = `
+            <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">License</div>
+            <div class="bg-white border border-slate-200 rounded-lg p-3 space-y-1.5 mb-3">
+                ${row('타입', license.type !== undefined && license.type !== null ? `${license.type} (${typeName})` : null)}
+                ${row('남은 시간', remText)}
+            </div>`;
+        } else {
+            licenseSection = `<div class="text-[10px] text-slate-300 italic mb-3">license: null</div>`;
+        }
+
+        // 학교 / 반 섹션
+        const schoolSection = `
+            <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">School / Class</div>
+            <div class="bg-white border border-slate-200 rounded-lg p-3 space-y-1.5 mb-3">
+                ${school ? `
+                    ${row('학교ID', school.schoolId)}
+                    ${row('학교명', school.name)}` : `<div class="text-[10px] text-slate-300 italic">school: null</div>`}
+                ${classInfo ? `
+                    <div class="border-t border-slate-100 pt-1.5 mt-1.5"></div>
+                    ${row('반ID', classInfo.classId)}
+                    ${row('반명', classInfo.name)}
+                    ${row('학년', classInfo.grade)}` : `<div class="text-[10px] text-slate-300 italic">classInfo: null</div>`}
+            </div>`;
+
+        // 프로필 섹션
+        const profileCards = profiles.map(p => {
+            const isMain = p.profileId === mainProfileId;
+            const gcLock = GAME_CENTER_LOCK_MAP[String(p.gameCenterLock ?? '')] ?? String(p.gameCenterLock ?? null);
+            const dailyLock = LOCK_MAP[String(p.dailyStageCountLock ?? p.dailyStageCountLock === 0 ? p.dailyStageCountLock : '')] ?? null;
+            const rnLock = LOCK_MAP[String(p.reviewNoteAccuracyLock ?? '')] ?? null;
+            const pushDaysText = Array.isArray(p.pushDays) && p.pushDays.length > 0 ? p.pushDays.join(', ') : (p.pushDays === null ? null : '[]');
+            return `<div class="bg-white border ${isMain ? 'border-blue-300 ring-1 ring-blue-200' : 'border-slate-200'} rounded-lg p-2.5 space-y-1">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-[11px] font-black text-slate-700">${p.name ?? '<span class="text-slate-300">null</span>'}</span>
+                    ${isMain ? '<span class="text-[8px] bg-blue-500 text-white px-1.5 py-0.5 rounded font-black">대표</span>' : ''}
+                </div>
+                ${row('profileId', p.profileId)}
+                ${row('코드', p.code)}
+                ${row('전화번호', p.phoneNumber)}
+                ${row('이메일', p.email)}
+                ${row('비밀번호', p.password)}
+                ${row('학습리포트', p.isLearningReportEnabled === true ? '활성' : p.isLearningReportEnabled === false ? '비활성' : null)}
+                ${row('레벨 범위', p.minLevel !== undefined ? `${p.minLevel} ~ ${p.maxLevel}` : null)}
+                ${row('국가 챕터ID', p.nationalChapterId)}
+                ${row('ShowingLevel', p.ShowingLevel ?? p.level)}
+                ${row('ChapterNumber', p.ChapterNumber ?? p.chapterNumber)}
+                ${row('일학습 현황', p.dailyStageCurrentCount !== undefined ? `${p.dailyStageCurrentCount} / ${p.dailyStageTargetCount} (최대 ${p.MaxDailyStudyTargetCount ?? 20})` : null)}
+                ${row('일학습 잠금', dailyLock ?? (p.dailyStageCountLock !== undefined ? String(p.dailyStageCountLock) : null))}
+                ${row('코인', p.coin !== undefined ? p.coin.toLocaleString() : null)}
+                ${row('대표 아바타ID', p.mainFriendsAvatarCharacterId)}
+                ${row('게임센터 잠금', gcLock)}
+                ${row('오답노트 정확도', p.reviewNoteAccuracy !== undefined ? `${p.reviewNoteAccuracy}%` : null)}
+                ${row('오답노트 잠금', rnLock ?? (p.reviewNoteAccuracyLock !== undefined ? String(p.reviewNoteAccuracyLock) : null))}
+                ${row('타이틀ID', p.titleId)}
+                ${row('국가코드', p.countryCode)}
+                ${row('푸시 알림', p.isPushEnabled === true ? '활성' : p.isPushEnabled === false ? '비활성' : null)}
+                ${row('푸시 요일', pushDaysText)}
+                ${row('푸시 시간', p.pushTime)}
+                ${(() => {
+                    const chars = Array.isArray(p.friendsAvatarCharacters) ? p.friendsAvatarCharacters : [];
+                    if (chars.length === 0) return '';
+                    const charRows = chars.map(c => `
+                        <div class="bg-slate-50 border border-slate-100 rounded p-2 space-y-0.5">
+                            <div class="flex items-center gap-1.5 mb-0.5">
+                                <span class="text-[10px] font-black text-slate-600">ID ${c.friendsAvatarCharacterId}</span>
+                                ${c.isOwned ? '<span class="text-[8px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-black border border-green-200">보유</span>' : '<span class="text-[8px] bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded font-black border border-slate-200">미보유</span>'}
+                            </div>
+                            <div class="text-[10px] text-slate-500">보유 아이템: ${Array.isArray(c.ownedFriendsAvatarItemIds) && c.ownedFriendsAvatarItemIds.length > 0 ? c.ownedFriendsAvatarItemIds.join(', ') : '-'}</div>
+                            <div class="text-[10px] text-slate-500">착용 아이템: ${Array.isArray(c.equippedFriendsAvatarItemIds) && c.equippedFriendsAvatarItemIds.length > 0 ? c.equippedFriendsAvatarItemIds.join(', ') : '-'}</div>
+                        </div>`).join('');
+                    return `<div class="flex flex-col gap-0.5"><span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">아바타 캐릭터 (${chars.length}개)</span><div class="space-y-1 mt-0.5">${charRows}</div></div>`;
+                })()}
+            </div>`;
+        }).join('');
+
+        loginInfoBody.innerHTML = `
+            ${accSection}
+            ${licenseSection}
+            ${schoolSection}
+            <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Profiles (${profiles.length}개)</div>
+            <div class="space-y-2">${profiles.length > 0 ? profileCards : '<div class="text-[10px] text-slate-300 italic">프로필 없음</div>'}</div>
+        `;
+        loginInfoSection.classList.remove('hidden');
+    } else {
+        loginInfoSection.classList.add('hidden');
     }
 
     // 개발자 코멘트 표시
@@ -2054,4 +2217,333 @@ window.onload = async () => {
 
     await fetchLogsCount(); // 총 개수 로드
     await fetchLogs(); // 첫 페이지 로드
+
+    // 로그인 정보 패널 드래그 이동
+    initLoginInfoPanelDrag();
 };
+
+function toggleLoginInfoPanel() {
+    const panel = document.getElementById('modal-login-info-section');
+    if (!panel) return;
+    panel.classList.toggle('hidden');
+}
+
+function initLoginInfoPanelDrag() {
+    const panel = document.getElementById('modal-login-info-section');
+    const handle = document.getElementById('login-info-drag-handle');
+    if (!panel || !handle) return;
+
+    let isDragging = false;
+    let startX, startY, startLeft, startTop;
+
+    handle.addEventListener('mousedown', (e) => {
+        // transform을 제거하고 실제 좌표로 고정
+        const rect = panel.getBoundingClientRect();
+        panel.style.left = rect.left + 'px';
+        panel.style.top = rect.top + 'px';
+        panel.style.transform = 'none';
+
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        startLeft = rect.left;
+        startTop = rect.top;
+        e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        let newLeft = startLeft + dx;
+        let newTop = startTop + dy;
+
+        // 화면 경계 제한
+        const panelW = panel.offsetWidth;
+        const panelH = panel.offsetHeight;
+        newLeft = Math.max(0, Math.min(window.innerWidth - panelW, newLeft));
+        newTop = Math.max(0, Math.min(window.innerHeight - panelH, newTop));
+
+        panel.style.left = newLeft + 'px';
+        panel.style.top = newTop + 'px';
+    });
+
+    document.addEventListener('mouseup', () => {
+        isDragging = false;
+    });
+}
+
+/** 마스터 데이터 **/
+let currentMasterLang = 'ko';
+let masterDataCache = {}; // { ko: data, en: data }
+let currentMdTab = 'translation';
+let mdAllRows = []; // 현재 탭의 전체 행 데이터
+
+const MASTER_API_BASE = 'https://dev-v3-api.1promath.com';
+// Cloudflare Worker 배포 후 아래 URL을 실제 Worker URL로 교체하세요.
+// 배포 방법: cloudflare-worker.js 파일 참조
+// 예: 'https://my-proxy.username.workers.dev'
+const MASTER_PROXY_URL = '';
+
+async function loadMasterData(lang = 'ko', forceRefresh = false) {
+    currentMasterLang = lang;
+
+    // 언어 버튼 active 상태
+    document.querySelectorAll('.md-lang-btn').forEach(b => b.classList.remove('active'));
+    const activeBtn = document.getElementById(`md-lang-${lang}`);
+    if (activeBtn) activeBtn.classList.add('active');
+
+    // 캐시 확인
+    if (!forceRefresh && masterDataCache[lang]) {
+        renderMasterDataUI(masterDataCache[lang]);
+        return;
+    }
+
+    // 로딩 표시
+    document.getElementById('md-loading').classList.remove('hidden');
+    document.getElementById('md-content').classList.add('hidden');
+    document.getElementById('md-version-bar').classList.add('hidden');
+
+    try {
+        if (!MASTER_PROXY_URL) {
+            throw new Error('MASTER_PROXY_URL이 설정되지 않았습니다. cloudflare-worker.js를 배포하고 script.js의 MASTER_PROXY_URL을 설정해주세요.');
+        }
+        const res = await fetch(`${MASTER_PROXY_URL}?lang=${lang}`);
+
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.message || `HTTP ${res.status}`);
+        }
+
+        const json = await res.json();
+        const payload = { masterData: json.data.masterData, appConfig: json.data.appConfig };
+        masterDataCache[lang] = payload;
+        renderMasterDataUI(payload);
+    } catch (e) {
+        document.getElementById('md-loading').classList.add('hidden');
+        showToast('마스터 데이터 로드 실패: ' + e.message, 'error');
+    }
+}
+
+function renderMasterDataUI(payload) {
+    document.getElementById('md-loading').classList.add('hidden');
+
+    const { masterData, appConfig } = payload;
+
+    // 버전 바 업데이트
+    const versionBar = document.getElementById('md-version-bar');
+    const sections = [
+        { key: 'translationMasterData', label: '번역' },
+        { key: 'stageMasterData', label: '스테이지' },
+        { key: 'titleMasterData', label: '타이틀' },
+        { key: 'rewardMasterData', label: '보상' },
+        { key: 'videoMasterData', label: '비디오' },
+        { key: 'inAppProductMasterData', label: '인앱결제' },
+        { key: 'conceptNoteMasterData', label: '개념노트' },
+        { key: 'friendsAvatarMasterData', label: '아바타' },
+        { key: 'badWordMasterData', label: '금지어' },
+    ];
+    const versionHtml = sections.map(s => {
+        const v = masterData[s.key]?.masterDataVersion;
+        return v !== undefined ? `<span class="bg-slate-100 px-2 py-0.5 rounded font-mono text-[11px]"><span class="font-bold text-slate-600">${s.label}</span> v${v}</span>` : '';
+    }).filter(Boolean).join('');
+    versionBar.innerHTML = `<i class="fas fa-tag text-slate-400"></i><span class="font-bold text-slate-600">버전</span>${versionHtml}` +
+        (appConfig ? `<span class="ml-auto text-slate-400">Addressable: <span class="font-mono font-bold text-slate-600">${appConfig.addressableVersion}</span></span>` : '');
+    versionBar.classList.remove('hidden');
+
+    // 카운트 뱃지 업데이트
+    const counts = {
+        translation: masterData.translationMasterData?.translations?.length ?? 0,
+        stage: masterData.stageMasterData?.stages?.length ?? 0,
+        title: masterData.titleMasterData?.titles?.length ?? 0,
+        reward: masterData.rewardMasterData?.rewards?.length ?? 0,
+        video: masterData.videoMasterData?.videos?.length ?? 0,
+        inappproduct: masterData.inAppProductMasterData?.inAppProducts?.length ?? 0,
+        conceptnote: masterData.conceptNoteMasterData?.conceptNotes?.length ?? 0,
+        avataritem: masterData.friendsAvatarMasterData?.friendsAvatarItems?.length ?? 0,
+        avatarset: masterData.friendsAvatarMasterData?.friendsAvatarSets?.length ?? 0,
+        badword: masterData.badWordMasterData?.words?.length ?? 0,
+    };
+    Object.entries(counts).forEach(([tab, cnt]) => {
+        const el = document.getElementById(`mdcnt-${tab}`);
+        if (el) el.textContent = cnt.toLocaleString();
+    });
+
+    document.getElementById('md-content').classList.remove('hidden');
+    document.getElementById('md-search').value = '';
+    showMdTab(currentMdTab);
+}
+
+const MD_TAB_CONFIG = {
+    translation: {
+        getData: md => md.translationMasterData?.translations ?? [],
+        columns: [
+            { label: 'Translation Key', key: 'translationKey', cls: 'font-mono text-xs text-indigo-700 break-all' },
+            { label: 'Value', key: 'value', cls: 'text-slate-700' },
+        ]
+    },
+    stage: {
+        getData: md => md.stageMasterData?.stages ?? [],
+        columns: [
+            { label: 'ID', key: 'stageId', cls: 'text-center font-mono text-xs' },
+            { label: 'Code', key: 'code', cls: 'font-mono text-xs text-indigo-700' },
+            { label: '문제 수', key: 'problemCount', cls: 'text-center' },
+            { label: 'Sec 1%', key: 'second1', cls: 'text-center text-xs' },
+            { label: 'Sec 10%', key: 'second10', cls: 'text-center text-xs' },
+            { label: 'Sec 30%', key: 'second30', cls: 'text-center text-xs' },
+            { label: 'Sec 50%', key: 'second50', cls: 'text-center text-xs' },
+            { label: 'Pen', key: 'penType', cls: 'text-center text-xs' },
+            { label: 'Input', key: 'inputType', cls: 'text-center text-xs' },
+            { label: 'Prefab', key: 'prefab', cls: 'font-mono text-xs text-slate-500' },
+        ]
+    },
+    title: {
+        getData: md => md.titleMasterData?.titles ?? [],
+        columns: [
+            { label: 'ID', key: 'titleId', cls: 'text-center font-mono text-xs' },
+            { label: 'Code', key: 'code', cls: 'font-mono text-xs text-indigo-700 break-all' },
+            { label: '카테고리', key: 'category', cls: 'text-center text-xs' },
+            { label: '등급', key: 'grade', cls: 'text-center text-xs' },
+            { label: 'Target', key: 'targetCount', cls: 'text-center text-xs' },
+            { label: 'Thumbnail', key: 'thumbnailImage', cls: 'font-mono text-xs text-slate-500' },
+            { label: 'Translation Key', key: row => row.nameTranslation?.translationKey ?? '-', cls: 'font-mono text-xs text-slate-500 break-all' },
+        ]
+    },
+    reward: {
+        getData: md => md.rewardMasterData?.rewards ?? [],
+        columns: [
+            { label: 'ID', key: 'rewardId', cls: 'text-center font-mono text-xs' },
+            { label: 'Code', key: 'code', cls: 'font-mono text-xs text-indigo-700 break-all' },
+            { label: 'Type', key: 'type', cls: 'text-center text-xs' },
+            { label: 'Thumbnail', key: 'thumbnailImage', cls: 'font-mono text-xs text-slate-500' },
+            { label: 'Icon', key: 'rewardIcon', cls: 'font-mono text-xs text-slate-500' },
+            { label: '랭킹', key: row => row.isRankEligible ? '✅' : '❌', cls: 'text-center' },
+        ]
+    },
+    video: {
+        getData: md => md.videoMasterData?.videos ?? [],
+        columns: [
+            { label: 'ID', key: 'videoId', cls: 'text-center font-mono text-xs' },
+            { label: 'Level', key: 'level', cls: 'text-center' },
+            { label: 'Seq', key: 'sequence', cls: 'text-center' },
+            { label: '제목', key: 'title', cls: 'text-slate-700' },
+            { label: '길이(초)', key: 'durationSeconds', cls: 'text-center text-xs' },
+            { label: 'Thumbnail', key: 'thumbnailImage', cls: 'font-mono text-xs text-slate-500' },
+        ]
+    },
+    inappproduct: {
+        getData: md => md.inAppProductMasterData?.inAppProducts ?? [],
+        columns: [
+            { label: 'ID', key: 'inAppProductId', cls: 'text-center font-mono text-xs' },
+            { label: 'Product ID', key: 'productId', cls: 'font-mono text-xs text-indigo-700 break-all' },
+            { label: 'Android ID', key: 'androidProductId', cls: 'font-mono text-xs text-slate-500 break-all' },
+            { label: 'iOS ID', key: 'iosProductId', cls: 'font-mono text-xs text-slate-500 break-all' },
+            { label: '일수', key: 'days', cls: 'text-center font-bold' },
+        ]
+    },
+    conceptnote: {
+        getData: md => md.conceptNoteMasterData?.conceptNotes ?? [],
+        columns: [
+            { label: 'ID', key: 'conceptNoteId', cls: 'text-center font-mono text-xs' },
+            { label: 'Translation Key', key: row => row.translation?.translationKey ?? '-', cls: 'font-mono text-xs text-indigo-700' },
+            { label: '이미지 수', key: row => row.images?.length ?? 0, cls: 'text-center' },
+            { label: '이미지 목록', key: row => (row.images ?? []).join(', '), cls: 'font-mono text-xs text-slate-500' },
+        ]
+    },
+    avataritem: {
+        getData: md => md.friendsAvatarMasterData?.friendsAvatarItems ?? [],
+        columns: [
+            { label: 'ID', key: 'friendsAvatarItemId', cls: 'text-center font-mono text-xs' },
+            { label: 'Type1', key: 'type1', cls: 'text-xs' },
+            { label: 'Type2', key: 'type2', cls: 'text-xs' },
+            { label: 'ItemInfoType2', key: 'itemInfoType2', cls: 'text-center text-xs' },
+            { label: 'Character', key: 'friendsAvatarCharacterId', cls: 'text-center' },
+            { label: '가격', key: 'price', cls: 'text-center font-bold' },
+            { label: '출시 회차', key: 'releaseRound', cls: 'text-center text-xs' },
+            { label: 'File', key: 'fileName', cls: 'font-mono text-xs text-slate-500' },
+        ]
+    },
+    avatarset: {
+        getData: md => md.friendsAvatarMasterData?.friendsAvatarSets ?? [],
+        columns: [
+            { label: 'ID', key: 'friendsAvatarSetId', cls: 'text-center font-mono text-xs' },
+            { label: 'Type', key: 'type', cls: 'text-xs text-indigo-700' },
+            { label: 'ItemInfoType2', key: 'itemInfoType2', cls: 'text-center text-xs' },
+            { label: 'Character', key: 'friendsAvatarCharacterId', cls: 'text-center' },
+            { label: '출시 회차', key: 'releaseRound', cls: 'text-center text-xs' },
+            { label: '아이템 수', key: row => row.friendsAvatarItemIds?.length ?? 0, cls: 'text-center' },
+            { label: 'Translation Key', key: row => row.translation?.translationKey ?? '-', cls: 'font-mono text-xs text-slate-500' },
+        ]
+    },
+    badword: {
+        getData: md => (md.badWordMasterData?.words ?? []).map(w => ({ word: w })),
+        columns: [
+            { label: '#', key: (_, i) => i + 1, cls: 'text-center text-xs text-slate-400 w-12' },
+            { label: '금지어', key: 'word', cls: 'font-bold text-red-600' },
+        ]
+    },
+};
+
+function showMdTab(tab) {
+    currentMdTab = tab;
+    document.querySelectorAll('.md-tab-btn').forEach(b => b.classList.remove('active'));
+    const btn = document.getElementById(`mdtab-${tab}`);
+    if (btn) btn.classList.add('active');
+
+    const payload = masterDataCache[currentMasterLang];
+    if (!payload) return;
+
+    const config = MD_TAB_CONFIG[tab];
+    if (!config) return;
+
+    mdAllRows = config.getData(payload.masterData);
+    document.getElementById('md-search').value = '';
+    renderMdTable(mdAllRows, config.columns);
+}
+
+function filterMdTable() {
+    const q = document.getElementById('md-search').value.toLowerCase().trim();
+    const config = MD_TAB_CONFIG[currentMdTab];
+    if (!config) return;
+    const filtered = q ? mdAllRows.filter(row =>
+        config.columns.some(col => {
+            const val = typeof col.key === 'function' ? col.key(row, 0) : row[col.key];
+            return String(val ?? '').toLowerCase().includes(q);
+        })
+    ) : mdAllRows;
+    renderMdTable(filtered, config.columns);
+}
+
+function renderMdTable(rows, columns) {
+    const thead = document.getElementById('md-thead');
+    const tbody = document.getElementById('md-tbody');
+    const countEl = document.getElementById('md-row-count');
+
+    // 헤더
+    thead.innerHTML = '<tr>' + columns.map(c =>
+        `<th class="px-4 py-3 font-bold border-b whitespace-nowrap">${c.label}</th>`
+    ).join('') + '</tr>';
+
+    // 바디
+    if (rows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${columns.length}" class="text-center py-10 text-gray-400">결과 없음</td></tr>`;
+        countEl.textContent = '0건';
+        return;
+    }
+
+    const MAX_RENDER = 500;
+    const displayRows = rows.slice(0, MAX_RENDER);
+
+    tbody.innerHTML = displayRows.map((row, i) =>
+        '<tr class="hover:bg-slate-50/50 transition">' +
+        columns.map(col => {
+            const val = typeof col.key === 'function' ? col.key(row, i) : (row[col.key] ?? '-');
+            return `<td class="px-4 py-2.5 border-b border-gray-100 ${col.cls ?? ''}">${val}</td>`;
+        }).join('') +
+        '</tr>'
+    ).join('');
+
+    countEl.textContent = rows.length > MAX_RENDER
+        ? `${rows.length.toLocaleString()}건 중 ${MAX_RENDER}건 표시`
+        : `${rows.length.toLocaleString()}건`;
+}

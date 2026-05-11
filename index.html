@@ -39,6 +39,9 @@
                 <button onclick="showSection('dashboard')" id="nav-dashboard" class="nav-item whitespace-nowrap w-full flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-white transition">
                     <i class="fas fa-chart-line mr-3"></i> 대시보드
                 </button>
+                <button onclick="showSection('masterdata')" id="nav-masterdata" class="nav-item whitespace-nowrap w-full flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-white transition">
+                    <i class="fas fa-database mr-3"></i> 마스터 데이터
+                </button>
             </nav>
         </aside>
 
@@ -368,6 +371,68 @@
                     </div>
                 </div>
             </section>
+
+            <!-- ===== 마스터 데이터 섹션 ===== -->
+            <section id="masterdata" class="section">
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold mb-1 text-slate-800">마스터 데이터</h2>
+                        <p class="text-sm text-gray-500">서버에서 내려오는 마스터 DB를 조회합니다.</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <!-- 언어 선택 -->
+                        <div class="flex items-center bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+                            <button onclick="loadMasterData('ko')" id="md-lang-ko" class="md-lang-btn active px-4 py-2 text-sm font-bold transition">🇰🇷 KO</button>
+                            <button onclick="loadMasterData('en')" id="md-lang-en" class="md-lang-btn px-4 py-2 text-sm font-bold transition">🇺🇸 EN</button>
+                        </div>
+                        <button onclick="loadMasterData(currentMasterLang, true)" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-emerald-700 shadow-md transition">
+                            <i class="fas fa-sync-alt mr-2"></i>새로고침
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 버전/설정 정보 -->
+                <div id="md-version-bar" class="hidden bg-white rounded-xl border border-gray-100 shadow-sm px-5 py-3 mb-4 flex flex-wrap gap-4 items-center text-xs text-slate-500"></div>
+
+                <!-- 로딩 상태 -->
+                <div id="md-loading" class="bg-white rounded-xl border border-gray-100 shadow-sm p-16 text-center text-gray-400 hidden">
+                    <i class="fas fa-spinner fa-spin text-2xl mb-3 block"></i>마스터 데이터를 불러오는 중...
+                </div>
+
+                <!-- 데이터 영역 -->
+                <div id="md-content" class="hidden">
+                    <!-- 카테고리 탭 -->
+                    <div class="flex flex-wrap gap-1.5 mb-4">
+                        <button onclick="showMdTab('translation')"   id="mdtab-translation"   class="md-tab-btn active">번역 <span class="md-tab-count" id="mdcnt-translation"></span></button>
+                        <button onclick="showMdTab('stage')"         id="mdtab-stage"         class="md-tab-btn">스테이지 <span class="md-tab-count" id="mdcnt-stage"></span></button>
+                        <button onclick="showMdTab('title')"         id="mdtab-title"         class="md-tab-btn">타이틀 <span class="md-tab-count" id="mdcnt-title"></span></button>
+                        <button onclick="showMdTab('reward')"        id="mdtab-reward"        class="md-tab-btn">보상 <span class="md-tab-count" id="mdcnt-reward"></span></button>
+                        <button onclick="showMdTab('video')"         id="mdtab-video"         class="md-tab-btn">비디오 <span class="md-tab-count" id="mdcnt-video"></span></button>
+                        <button onclick="showMdTab('inappproduct')"  id="mdtab-inappproduct"  class="md-tab-btn">인앱결제 <span class="md-tab-count" id="mdcnt-inappproduct"></span></button>
+                        <button onclick="showMdTab('conceptnote')"   id="mdtab-conceptnote"   class="md-tab-btn">개념노트 <span class="md-tab-count" id="mdcnt-conceptnote"></span></button>
+                        <button onclick="showMdTab('avataritem')"    id="mdtab-avataritem"    class="md-tab-btn">아바타 아이템 <span class="md-tab-count" id="mdcnt-avataritem"></span></button>
+                        <button onclick="showMdTab('avatarset')"     id="mdtab-avatarset"     class="md-tab-btn">아바타 세트 <span class="md-tab-count" id="mdcnt-avatarset"></span></button>
+                        <button onclick="showMdTab('badword')"       id="mdtab-badword"       class="md-tab-btn">금지어 <span class="md-tab-count" id="mdcnt-badword"></span></button>
+                    </div>
+
+                    <!-- 검색 -->
+                    <div class="mb-3 flex gap-2">
+                        <div class="relative flex-1 max-w-sm">
+                            <input type="text" id="md-search" placeholder="검색..." oninput="filterMdTable()" class="w-full bg-white border border-gray-300 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
+                            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                        </div>
+                        <span id="md-row-count" class="text-xs text-slate-400 self-center"></span>
+                    </div>
+
+                    <!-- 테이블 -->
+                    <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm" id="md-table">
+                            <thead id="md-thead" class="bg-slate-50 text-gray-500 text-xs uppercase sticky top-0"></thead>
+                            <tbody id="md-tbody" class="divide-y divide-gray-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
         </main>
     </div>
 
@@ -383,39 +448,43 @@
                         ID: <span id="modal-id" class="text-gray-500"></span> | 작성자: <span id="modal-author" class="font-bold text-gray-600"></span> | 일시: <span id="modal-date"></span>
                     </p>
                 </div>
-                <button onclick="closeModal('detailModal')" class="text-gray-400 hover:text-red-500 text-2xl transition">&times;</button>
-            </div>
-            <div class="p-8 overflow-y-auto custom-scrollbar flex-1 bg-white">
-                <!-- 캡처 이미지 영역 -->
-                <div id="modal-image-section" class="mb-6 hidden">
-                    <h4 class="text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">캡처 이미지</h4>
-                    <div class="bg-slate-100 p-4 rounded-xl border border-slate-200">
-                        <img id="modal-image" src="" alt="캡처 이미지" class="max-w-full rounded-lg shadow-sm cursor-pointer hover:opacity-90 transition" onclick="openImageViewerFromModal()">
-                    </div>
-                </div>
-
-                <div class="mb-8">
-                    <h4 class="text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">검수 내용 (Description)</h4>
-                    <div id="modal-description" class="text-sm text-slate-700 bg-slate-50 p-5 rounded-xl border border-slate-200 leading-relaxed shadow-inner font-medium whitespace-pre-wrap"></div>
-                </div>
-
-                <!-- 개발자 코멘트 영역 -->
-                <div id="modal-dev-comment-section" class="mb-6 hidden">
-                    <h4 class="text-[10px] font-black text-blue-400 uppercase mb-2 tracking-widest">개발자 코멘트</h4>
-                    <div id="modal-dev-comment" class="text-sm text-blue-700 bg-blue-50 p-5 rounded-xl border border-blue-200 leading-relaxed font-medium whitespace-pre-wrap"></div>
-                </div>
-
-                <div class="bg-slate-50 p-6 rounded-xl border border-slate-100">
-                    <h4 class="text-[12px] font-black text-indigo-500 uppercase mb-4 tracking-widest">
-                        <i class="fas fa-history mr-1"></i> 인앱 로그 타임라인 (In-App Activity)
-                    </h4>
-                    <div id="modal-timeline" class="space-y-1 relative before:absolute before:inset-y-0 before:left-[11px] before:w-0.5 before:bg-slate-200">
-                    </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="toggleLoginInfoPanel()" class="bg-slate-700 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-slate-800 transition text-xs shadow"><i class="fas fa-user-circle mr-1"></i>로그인 정보</button>
+                    <button onclick="closeModal('detailModal')" class="text-gray-400 hover:text-red-500 text-2xl transition">&times;</button>
                 </div>
             </div>
-            <div class="p-5 bg-slate-50 border-t flex justify-between gap-3 flex-shrink-0">
-                <div id="modal-action-buttons" class="flex gap-2"></div>
-                <button onclick="closeModal('detailModal')" class="bg-slate-200 text-slate-600 px-6 py-2 rounded-xl font-bold hover:bg-slate-300 transition">닫기</button>
+            <div class="flex-1 overflow-y-auto custom-scrollbar bg-white">
+                <div class="p-8">
+                    <!-- 캡처 이미지 영역 -->
+                    <div id="modal-image-section" class="mb-6 hidden">
+                        <h4 class="text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">캡처 이미지</h4>
+                        <div class="bg-slate-100 p-4 rounded-xl border border-slate-200">
+                            <img id="modal-image" src="" alt="캡처 이미지" class="max-w-full rounded-lg shadow-sm cursor-pointer hover:opacity-90 transition" onclick="openImageViewerFromModal()">
+                        </div>
+                    </div>
+
+                    <div class="mb-8">
+                        <h4 class="text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">검수 내용 (Description)</h4>
+                        <div id="modal-description" class="text-sm text-slate-700 bg-slate-50 p-5 rounded-xl border border-slate-200 leading-relaxed shadow-inner font-medium whitespace-pre-wrap"></div>
+                    </div>
+
+                    <!-- 개발자 코멘트 영역 -->
+                    <div id="modal-dev-comment-section" class="mb-6 hidden">
+                        <h4 class="text-[10px] font-black text-blue-400 uppercase mb-2 tracking-widest">개발자 코멘트</h4>
+                        <div id="modal-dev-comment" class="text-sm text-blue-700 bg-blue-50 p-5 rounded-xl border border-blue-200 leading-relaxed font-medium whitespace-pre-wrap"></div>
+                    </div>
+
+                    <div class="bg-slate-50 p-6 rounded-xl border border-slate-100">
+                        <h4 class="text-[12px] font-black text-indigo-500 uppercase mb-4 tracking-widest">
+                            <i class="fas fa-history mr-1"></i> 인앱 로그 타임라인 (In-App Activity)
+                        </h4>
+                        <div id="modal-timeline" class="space-y-1 relative before:absolute before:inset-y-0 before:left-[11px] before:w-0.5 before:bg-slate-200">
+                        </div>
+                        </div>
+                    </div>
+                    <div class="p-5 bg-slate-50 border-t flex justify-between gap-3 flex-shrink-0">
+                            <div id="modal-action-buttons" class="flex gap-2"></div>
+                        <button onclick="closeModal('detailModal')" class="bg-slate-200 text-slate-600 px-6 py-2 rounded-xl font-bold hover:bg-slate-300 transition">닫기</button>
             </div>
         </div>
     </div>
@@ -695,6 +764,19 @@
                 <button onclick="closeModal('addEditImageModal')" class="bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg font-bold hover:bg-slate-300 transition text-xs">취소</button>
                 <button id="aei-save-btn" onclick="submitUpdateImage()" class="bg-blue-600 text-white px-5 py-1.5 rounded-lg font-bold shadow hover:bg-blue-700 transition text-xs">이미지 저장</button>
             </div>
+        </div>
+    </div>
+
+    <!-- 독립 로그인 정보 패널 -->
+    <div id="modal-login-info-section" class="hidden fixed w-96 max-h-[85vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden" style="z-index: 100002; left: 16px; top: 50%; transform: translateY(-50%)">
+        <div id="login-info-drag-handle" class="p-4 bg-slate-800 flex-shrink-0 flex items-center justify-between cursor-move select-none">
+            <h4 class="text-[11px] font-black text-slate-300 uppercase tracking-widest flex items-center gap-2">
+                <i class="fas fa-grip-vertical text-slate-500 mr-1"></i><i class="fas fa-user-circle text-slate-400"></i> 로그인 정보
+            </h4>
+            <button onclick="document.getElementById('modal-login-info-section').classList.add('hidden')" class="text-slate-400 hover:text-white transition text-lg leading-none">&times;</button>
+        </div>
+        <div class="flex-1 overflow-y-auto custom-scrollbar p-4 bg-slate-50">
+            <div class="space-y-2" id="modal-login-info-body"></div>
         </div>
     </div>
 

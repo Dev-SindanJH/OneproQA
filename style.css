@@ -662,3 +662,49 @@ canvas {
         font-size: 14px;
     }
 }
+
+/* ===== 마스터 데이터 ===== */
+.md-lang-btn {
+    background: white;
+    color: #64748b;
+}
+.md-lang-btn.active {
+    background: #1e40af;
+    color: white;
+}
+.md-lang-btn:hover:not(.active) {
+    background: #f1f5f9;
+}
+
+.md-tab-btn {
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    border: 1px solid #e2e8f0;
+    background: white;
+    color: #64748b;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+.md-tab-btn:hover:not(.active) {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+.md-tab-btn.active {
+    background: #1e40af;
+    color: white;
+    border-color: #1e40af;
+}
+.md-tab-count {
+    display: inline-block;
+    background: rgba(255,255,255,0.25);
+    border-radius: 999px;
+    padding: 0 6px;
+    font-size: 10px;
+    margin-left: 2px;
+}
+.md-tab-btn:not(.active) .md-tab-count {
+    background: #f1f5f9;
+    color: #94a3b8;
+}
