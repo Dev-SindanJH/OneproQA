@@ -2490,7 +2490,7 @@ const COUNTRY_TAB_CONFIG = {
             { label: 'ID',       key: 'nationalSupremeChapterId', cls: 'text-center font-mono text-xs font-bold text-indigo-700' },
             { label: '레벨',     key: 'level',                    cls: 'text-center' },
             { label: '순서',     key: 'sequence',                 cls: 'text-center' },
-            { label: 'Translation Key', key: row => row.translation?.translationKey ?? '-', cls: 'font-mono text-xs text-slate-500 break-all' },
+            { label: 'Translation Key', key: row => row.translation?.translationKey ?? '-', cls: 'text-center font-mono text-xs text-slate-500 break-all' },
         ]
     },
     chapter: {
@@ -2500,7 +2500,7 @@ const COUNTRY_TAB_CONFIG = {
             { label: '소단원 ID',   key: 'nationalChapterId',         cls: 'text-center font-mono text-xs font-bold text-indigo-700' },
             { label: '대단원 ID',   key: 'nationalSupremeChapterId',  cls: 'text-center font-mono text-xs' },
             { label: '순서',        key: 'sequence',                  cls: 'text-center' },
-            { label: 'Translation Key', key: row => row.translation?.translationKey ?? '-', cls: 'font-mono text-xs text-slate-500 break-all' },
+            { label: 'Translation Key', key: row => row.translation?.translationKey ?? '-', cls: 'text-center font-mono text-xs text-slate-500 break-all' },
         ]
     },
     stage: {
@@ -2511,7 +2511,7 @@ const COUNTRY_TAB_CONFIG = {
             { label: '소단원 ID',       key: 'nationalChapterId', cls: 'text-center font-mono text-xs' },
             { label: '순서',            key: 'sequence',          cls: 'text-center' },
             { label: '스테이지 ID',     key: 'stageId',           cls: 'text-center font-mono text-xs text-blue-600' },
-            { label: 'Translation Key', key: row => row.translation?.translationKey ?? '-', cls: 'font-mono text-xs text-slate-500 break-all' },
+            { label: 'Translation Key', key: row => row.translation?.translationKey ?? '-', cls: 'text-center font-mono text-xs text-slate-500 break-all' },
         ]
     },
     levelTest: {
@@ -2522,8 +2522,8 @@ const COUNTRY_TAB_CONFIG = {
             { label: 'Logic ID',   key: 'logicId',           cls: 'text-center font-mono text-xs' },
             { label: '정확도',     key: 'accuracy',          cls: 'text-center' },
             { label: 'Prefab ID',  key: 'prefabId',          cls: 'text-center font-mono text-xs' },
-            { label: '등급 조건',  key: row => (row.gradeConditions ?? []).join(', '), cls: 'text-xs text-slate-500' },
-            { label: 'Translation Key', key: row => row.translation?.translationKey ?? '-', cls: 'font-mono text-xs text-slate-500 break-all' },
+            { label: '등급 조건',  key: row => (row.gradeConditions ?? []).join(', '), cls: 'text-center text-xs text-slate-500' },
+            { label: 'Translation Key', key: row => row.translation?.translationKey ?? '-', cls: 'text-center font-mono text-xs text-slate-500 break-all' },
         ]
     },
 };
@@ -2650,15 +2650,15 @@ const MD_TAB_CONFIG = {
     translation: {
         getData: md => md.translationMasterData?.translations ?? [],
         columns: [
-            { label: 'Translation Key', key: 'translationKey', cls: 'font-mono text-xs text-indigo-700 break-all' },
-            { label: 'Value', key: 'value', cls: 'text-slate-700' },
+            { label: 'Translation Key', key: 'translationKey', cls: 'text-center font-mono text-xs text-indigo-700 break-all' },
+            { label: 'Value', key: 'value', cls: 'text-center text-slate-700' },
         ]
     },
     stage: {
         getData: md => md.stageMasterData?.stages ?? [],
         columns: [
             { label: 'ID', key: 'stageId', cls: 'text-center font-mono text-xs' },
-            { label: 'Code', key: 'code', cls: 'font-mono text-xs text-indigo-700' },
+            { label: 'Code', key: 'code', cls: 'text-center font-mono text-xs text-indigo-700' },
             { label: '문제 수', key: 'problemCount', cls: 'text-center' },
             { label: 'Sec 1%', key: 'second1', cls: 'text-center text-xs' },
             { label: 'Sec 10%', key: 'second10', cls: 'text-center text-xs' },
@@ -2666,29 +2666,29 @@ const MD_TAB_CONFIG = {
             { label: 'Sec 50%', key: 'second50', cls: 'text-center text-xs' },
             { label: 'Pen', key: 'penType', cls: 'text-center text-xs' },
             { label: 'Input', key: 'inputType', cls: 'text-center text-xs' },
-            { label: 'Prefab', key: 'prefab', cls: 'font-mono text-xs text-slate-500' },
+            { label: 'Prefab', key: 'prefab', cls: 'text-center font-mono text-xs text-slate-500' },
         ]
     },
     title: {
         getData: md => md.titleMasterData?.titles ?? [],
         columns: [
             { label: 'ID', key: 'titleId', cls: 'text-center font-mono text-xs' },
-            { label: 'Code', key: 'code', cls: 'font-mono text-xs text-indigo-700 break-all' },
+            { label: 'Code', key: 'code', cls: 'text-center font-mono text-xs text-indigo-700 break-all' },
             { label: '카테고리', key: 'category', cls: 'text-center text-xs' },
             { label: '등급', key: 'grade', cls: 'text-center text-xs' },
             { label: 'Target', key: 'targetCount', cls: 'text-center text-xs' },
-            { label: 'Thumbnail', key: 'thumbnailImage', cls: 'font-mono text-xs text-slate-500' },
-            { label: 'Translation Key', key: row => row.nameTranslation?.translationKey ?? '-', cls: 'font-mono text-xs text-slate-500 break-all' },
+            { label: 'Thumbnail', key: 'thumbnailImage', cls: 'text-center font-mono text-xs text-slate-500' },
+            { label: 'Translation Key', key: row => row.nameTranslation?.translationKey ?? '-', cls: 'text-center font-mono text-xs text-slate-500 break-all' },
         ]
     },
     reward: {
         getData: md => md.rewardMasterData?.rewards ?? [],
         columns: [
             { label: 'ID', key: 'rewardId', cls: 'text-center font-mono text-xs' },
-            { label: 'Code', key: 'code', cls: 'font-mono text-xs text-indigo-700 break-all' },
+            { label: 'Code', key: 'code', cls: 'text-center font-mono text-xs text-indigo-700 break-all' },
             { label: 'Type', key: 'type', cls: 'text-center text-xs' },
-            { label: 'Thumbnail', key: 'thumbnailImage', cls: 'font-mono text-xs text-slate-500' },
-            { label: 'Icon', key: 'rewardIcon', cls: 'font-mono text-xs text-slate-500' },
+            { label: 'Thumbnail', key: 'thumbnailImage', cls: 'text-center font-mono text-xs text-slate-500' },
+            { label: 'Icon', key: 'rewardIcon', cls: 'text-center font-mono text-xs text-slate-500' },
             { label: '랭킹', key: row => row.isRankEligible ? '✅' : '❌', cls: 'text-center' },
         ]
     },
@@ -2698,18 +2698,18 @@ const MD_TAB_CONFIG = {
             { label: 'ID', key: 'videoId', cls: 'text-center font-mono text-xs' },
             { label: 'Level', key: 'level', cls: 'text-center' },
             { label: 'Seq', key: 'sequence', cls: 'text-center' },
-            { label: '제목', key: 'title', cls: 'text-slate-700' },
+            { label: '제목', key: 'title', cls: 'text-center text-slate-700' },
             { label: '길이(초)', key: 'durationSeconds', cls: 'text-center text-xs' },
-            { label: 'Thumbnail', key: 'thumbnailImage', cls: 'font-mono text-xs text-slate-500' },
+            { label: 'Thumbnail', key: 'thumbnailImage', cls: 'text-center font-mono text-xs text-slate-500' },
         ]
     },
     inappproduct: {
         getData: md => md.inAppProductMasterData?.inAppProducts ?? [],
         columns: [
             { label: 'ID', key: 'inAppProductId', cls: 'text-center font-mono text-xs' },
-            { label: 'Product ID', key: 'productId', cls: 'font-mono text-xs text-indigo-700 break-all' },
-            { label: 'Android ID', key: 'androidProductId', cls: 'font-mono text-xs text-slate-500 break-all' },
-            { label: 'iOS ID', key: 'iosProductId', cls: 'font-mono text-xs text-slate-500 break-all' },
+            { label: 'Product ID', key: 'productId', cls: 'text-center font-mono text-xs text-indigo-700 break-all' },
+            { label: 'Android ID', key: 'androidProductId', cls: 'text-center font-mono text-xs text-slate-500 break-all' },
+            { label: 'iOS ID', key: 'iosProductId', cls: 'text-center font-mono text-xs text-slate-500 break-all' },
             { label: '일수', key: 'days', cls: 'text-center font-bold' },
         ]
     },
@@ -2717,41 +2717,41 @@ const MD_TAB_CONFIG = {
         getData: md => md.conceptNoteMasterData?.conceptNotes ?? [],
         columns: [
             { label: 'ID', key: 'conceptNoteId', cls: 'text-center font-mono text-xs' },
-            { label: 'Translation Key', key: row => row.translation?.translationKey ?? '-', cls: 'font-mono text-xs text-indigo-700' },
+            { label: 'Translation Key', key: row => row.translation?.translationKey ?? '-', cls: 'text-center font-mono text-xs text-indigo-700' },
             { label: '이미지 수', key: row => row.images?.length ?? 0, cls: 'text-center' },
-            { label: '이미지 목록', key: row => (row.images ?? []).join(', '), cls: 'font-mono text-xs text-slate-500' },
+            { label: '이미지 목록', key: row => (row.images ?? []).join(', '), cls: 'text-center font-mono text-xs text-slate-500' },
         ]
     },
     avataritem: {
         getData: md => md.friendsAvatarMasterData?.friendsAvatarItems ?? [],
         columns: [
             { label: 'ID', key: 'friendsAvatarItemId', cls: 'text-center font-mono text-xs' },
-            { label: 'Type1', key: 'type1', cls: 'text-xs' },
-            { label: 'Type2', key: 'type2', cls: 'text-xs' },
+            { label: 'Type1', key: 'type1', cls: 'text-center text-xs' },
+            { label: 'Type2', key: 'type2', cls: 'text-center text-xs' },
             { label: 'ItemInfoType2', key: 'itemInfoType2', cls: 'text-center text-xs' },
             { label: 'Character', key: 'friendsAvatarCharacterId', cls: 'text-center' },
             { label: '가격', key: 'price', cls: 'text-center font-bold' },
             { label: '출시 회차', key: 'releaseRound', cls: 'text-center text-xs' },
-            { label: 'File', key: 'fileName', cls: 'font-mono text-xs text-slate-500' },
+            { label: 'File', key: 'fileName', cls: 'text-center font-mono text-xs text-slate-500' },
         ]
     },
     avatarset: {
         getData: md => md.friendsAvatarMasterData?.friendsAvatarSets ?? [],
         columns: [
             { label: 'ID', key: 'friendsAvatarSetId', cls: 'text-center font-mono text-xs' },
-            { label: 'Type', key: 'type', cls: 'text-xs text-indigo-700' },
+            { label: 'Type', key: 'type', cls: 'text-center text-xs text-indigo-700' },
             { label: 'ItemInfoType2', key: 'itemInfoType2', cls: 'text-center text-xs' },
             { label: 'Character', key: 'friendsAvatarCharacterId', cls: 'text-center' },
             { label: '출시 회차', key: 'releaseRound', cls: 'text-center text-xs' },
             { label: '아이템 수', key: row => row.friendsAvatarItemIds?.length ?? 0, cls: 'text-center' },
-            { label: 'Translation Key', key: row => row.translation?.translationKey ?? '-', cls: 'font-mono text-xs text-slate-500' },
+            { label: 'Translation Key', key: row => row.translation?.translationKey ?? '-', cls: 'text-center font-mono text-xs text-slate-500' },
         ]
     },
     badword: {
         getData: md => (md.badWordMasterData?.words ?? []).map(w => ({ word: w })),
         columns: [
             { label: '#', key: (_, i) => i + 1, cls: 'text-center text-xs text-slate-400 w-12' },
-            { label: '금지어', key: 'word', cls: 'font-bold text-red-600' },
+            { label: '금지어', key: 'word', cls: 'text-center font-bold text-red-600' },
         ]
     },
 };
