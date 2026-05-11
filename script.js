@@ -1389,14 +1389,42 @@ async function openDetailModal(logId) {
                 ${(() => {
                     const chars = Array.isArray(p.friendsAvatarCharacters) ? p.friendsAvatarCharacters : [];
                     if (chars.length === 0) return '';
+
+                    // 마스터 데이터에서 아바타 아이템 타입 맵 생성 (ko 우선, 없으면 다른 언어 사용)
+                    const avatarItemTypeMap = {};
+                    const langOrder = ['ko', 'en', 'ja'];
+                    for (const lang of langOrder) {
+                        const cached = masterDataCache[lang];
+                        if (cached) {
+                            const items = cached.masterData?.friendsAvatarMasterData?.friendsAvatarItems ?? [];
+                            items.forEach(item => {
+                                avatarItemTypeMap[item.friendsAvatarItemId] = item.itemInfoType2;
+                            });
+                            if (Object.keys(avatarItemTypeMap).length > 0) break;
+                        }
+                    }
+
+                    const renderItemId = id => {
+                        const type = avatarItemTypeMap[id];
+                        if (type === 'REWARD') {
+                            return `<span class="font-mono font-bold" style="color:#e91e8c" title="REWARD">${id}</span>`;
+                        }
+                        return `<span class="font-mono text-slate-700">${id}</span>`;
+                    };
+
+                    const renderItemList = ids => {
+                        if (!Array.isArray(ids) || ids.length === 0) return '-';
+                        return ids.map(renderItemId).join('<span class="text-slate-300">, </span>');
+                    };
+
                     const charRows = chars.map(c => `
                         <div class="bg-slate-50 border border-slate-100 rounded p-2 space-y-0.5">
                             <div class="flex items-center gap-1.5 mb-0.5">
                                 <span class="text-[10px] font-black text-slate-600">ID ${c.friendsAvatarCharacterId}</span>
                                 ${c.isOwned ? '<span class="text-[8px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-black border border-green-200">보유</span>' : '<span class="text-[8px] bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded font-black border border-slate-200">미보유</span>'}
                             </div>
-                            <div class="text-[10px] text-slate-500">보유 아이템: ${Array.isArray(c.ownedFriendsAvatarItemIds) && c.ownedFriendsAvatarItemIds.length > 0 ? c.ownedFriendsAvatarItemIds.join(', ') : '-'}</div>
-                            <div class="text-[10px] text-slate-500">착용 아이템: ${Array.isArray(c.equippedFriendsAvatarItemIds) && c.equippedFriendsAvatarItemIds.length > 0 ? c.equippedFriendsAvatarItemIds.join(', ') : '-'}</div>
+                            <div class="text-[10px] text-slate-500 leading-relaxed">보유 아이템: ${renderItemList(c.ownedFriendsAvatarItemIds)}</div>
+                            <div class="text-[10px] text-slate-500 leading-relaxed">착용 아이템: ${renderItemList(c.equippedFriendsAvatarItemIds)}</div>
                         </div>`).join('');
                     return `<div class="flex flex-col gap-0.5"><span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">아바타 캐릭터 (${chars.length}개)</span><div class="space-y-1 mt-0.5">${charRows}</div></div>`;
                 })()}
