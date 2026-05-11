@@ -2280,10 +2280,6 @@ let currentMdTab = 'translation';
 let mdAllRows = []; // 현재 탭의 전체 행 데이터
 
 const MASTER_API_BASE = 'https://dev-v3-api.1promath.com';
-// Cloudflare Worker 배포 후 아래 URL을 실제 Worker URL로 교체하세요.
-// 배포 방법: cloudflare-worker.js 파일 참조
-// 예: 'https://my-proxy.username.workers.dev'
-const MASTER_PROXY_URL = '';
 
 async function loadMasterData(lang = 'ko', forceRefresh = false) {
     currentMasterLang = lang;
@@ -2305,10 +2301,27 @@ async function loadMasterData(lang = 'ko', forceRefresh = false) {
     document.getElementById('md-version-bar').classList.add('hidden');
 
     try {
-        if (!MASTER_PROXY_URL) {
-            throw new Error('MASTER_PROXY_URL이 설정되지 않았습니다. cloudflare-worker.js를 배포하고 script.js의 MASTER_PROXY_URL을 설정해주세요.');
-        }
-        const res = await fetch(`${MASTER_PROXY_URL}?lang=${lang}`);
+        const now = new Date();
+        const offsetMin = -now.getTimezoneOffset(); // UTC+9 → 540
+        const sign = offsetMin >= 0 ? '+' : '-';
+        const absMin = Math.abs(offsetMin);
+        const pad2 = n => String(n).padStart(2, '0');
+        const offsetStr = offsetMin === 0
+            ? '+00:00'
+            : `${sign}${pad2(Math.floor(absMin / 60))}:${pad2(absMin % 60)}`;
+        const clientDatetime = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(now.getDate())}` +
+            `T${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}${offsetStr}`;
+
+        const timezoneIdentifier = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+        const res = await fetch(`${MASTER_API_BASE}/api/v3/app-init/language-codes/${lang}`, {
+            headers: {
+                'Client-Datetime': clientDatetime,
+                'Timezone-Identifier': timezoneIdentifier,
+                'App-Version': '3.0.0',
+                'Platform': 'android'
+            }
+        });
 
         if (!res.ok) {
             const err = await res.json();
