@@ -591,8 +591,9 @@ function updateDashboard(logs) {
     document.getElementById('cntVerified').innerText = counts['수정 확인']; 
     document.getElementById('cntHold').innerText = counts['보류/패스'];
     document.getElementById('cntServerRequest').innerText = counts['서버 수정 요청'];
-    const cntServerDone = document.getElementById('cntServerDone');
-    if (cntServerDone) cntServerDone.innerText = counts['서버 수정 완료'];
+    document.getElementById('cntServerDone').innerText = counts['서버 수정 완료'];
+    //const cntServerDone = document.getElementById('cntServerDone');
+    //if (cntServerDone) cntServerDone.innerText = counts['서버 수정 완료'];
     // 전역 변수에 카운트 저장
     window.statusCounts = counts;
 
@@ -1034,7 +1035,7 @@ function renderTable() {
         if (currentState === '수정 필요') {
             actionButtons += `<button onclick="openDevProcessModal('${log.id}', '수정 필요')" class="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 border border-indigo-200 px-2 py-1.5 rounded shadow-sm text-[10px] font-black transition w-full mb-1">상태 변경</button>`;
         } else if (currentState === '서버 수정 요청') {
-            actionButtons += `<button onclick="directUpdateState('${log.id}', '서버 수정 완료')" class="bg-teal-100 text-teal-700 hover:bg-teal-200 border border-teal-200 px-2 py-1.5 rounded shadow-sm text-[10px] font-black transition w-full mb-1">서버 수정 완료</button>`;
+            actionButtons += `<button onclick="openDevProcessModal('${log.id}', '서버 수정 요청')" class="bg-teal-100 text-teal-700 hover:bg-teal-200 border border-teal-200 px-2 py-1.5 rounded shadow-sm text-[10px] font-black transition w-full mb-1">서버 수정 완료</button>`;
         } else if (currentState === '수정 완료') {
             actionButtons += `<button onclick="directUpdateState('${log.id}', '수정 확인')" class="bg-green-100 text-green-700 hover:bg-green-200 border border-green-200 px-2 py-1.5 rounded shadow-sm text-[10px] font-black transition w-full mb-1">수정 확인</button>`;
             actionButtons += `<button onclick="openReRequestModal('${log.id}')" class="bg-orange-100 text-orange-700 hover:bg-orange-200 border border-orange-200 px-2 py-1.5 rounded shadow-sm text-[10px] font-black transition w-full">재수정요청</button>`;
@@ -1121,7 +1122,7 @@ function renderTable() {
             if (currentState === '수정 필요') {
                 mobileActionButtons += `<button onclick="openDevProcessModal('${log.id}', '수정 필요')" class="bg-indigo-100 text-indigo-700 border border-indigo-200">상태 변경</button>`;
             } else if (currentState === '서버 수정 요청') {
-                mobileActionButtons += `<button onclick="directUpdateState('${log.id}', '서버 수정 완료')" class="bg-teal-100 text-teal-700 border border-teal-200">서버 수정 완료</button>`;
+                mobileActionButtons += `<button onclick="openDevProcessModal('${log.id}', '서버 수정 요청')" class="bg-teal-100 text-teal-700 border border-teal-200">서버 수정 완료</button>`;
             } else if (currentState === '수정 완료') {
                 mobileActionButtons += `<button onclick="directUpdateState('${log.id}', '수정 확인')" class="bg-green-100 text-green-700 border border-green-200">수정 확인</button>`;
                 mobileActionButtons += `<button onclick="openReRequestModal('${log.id}')" class="bg-orange-100 text-orange-700 border border-orange-200">재수정요청</button>`;
@@ -1510,7 +1511,7 @@ async function openDetailModal(logId) {
     if (currentState === '수정 필요') {
         actionButtonsHtml = `<button onclick="openDevProcessModal('${log.id}', '수정 필요')" class="bg-indigo-600 text-white px-5 py-2 rounded-xl font-bold hover:bg-indigo-700 transition text-sm shadow-md"><i class="fas fa-check-circle mr-1"></i>상태 변경</button>`;
     } else if (currentState === '서버 수정 요청') {
-        actionButtonsHtml = `<button onclick="directUpdateStateFromModal('${log.id}', '서버 수정 완료')" class="bg-teal-600 text-white px-5 py-2 rounded-xl font-bold hover:bg-teal-700 transition text-sm shadow-md"><i class="fas fa-server mr-1"></i>서버 수정 완료</button>`;
+        actionButtonsHtml = `<button onclick="closeModal('detailModal'); openDevProcessModal('${log.id}', '서버 수정 요청')" class="bg-teal-600 text-white px-5 py-2 rounded-xl font-bold hover:bg-teal-700 transition text-sm shadow-md"><i class="fas fa-server mr-1"></i>서버 수정 완료</button>`;
     } else if (currentState === '수정 완료') {
         actionButtonsHtml = `
             <button onclick="directUpdateStateFromModal('${log.id}', '수정 확인')" class="bg-green-600 text-white px-5 py-2 rounded-xl font-bold hover:bg-green-700 transition text-sm shadow-md"><i class="fas fa-check-double mr-1"></i>수정 확인</button>
@@ -1873,11 +1874,17 @@ async function openDevProcessModal(logId, fromState = '수정 필요') {
     // 상태에 따라 버튼 동적 표시
     const btnArea = document.getElementById('dev-process-action-btns');
     if (btnArea) {
-        btnArea.innerHTML = `
-            <button onclick="submitDevProcess('보류/패스')" class="bg-gray-500 text-white px-4 py-2 rounded-xl font-bold hover:bg-gray-600 transition text-sm">보류/패스</button>
-            <button onclick="submitDevProcess('서버 수정 요청')" class="bg-purple-500 text-white px-4 py-2 rounded-xl font-bold hover:bg-purple-600 transition text-sm">서버 수정 요청</button>
-            <button onclick="submitDevProcess('수정 완료')" class="bg-blue-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-blue-700 transition text-sm shadow-md shadow-blue-100">수정 완료</button>
-        `;
+        if (fromState === '서버 수정 요청') {
+            btnArea.innerHTML = `
+                <button onclick="submitDevProcess('서버 수정 완료')" class="bg-teal-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-teal-700 transition text-sm shadow-md">서버 수정 완료</button>
+            `;
+        } else {
+            btnArea.innerHTML = `
+                <button onclick="submitDevProcess('보류/패스')" class="bg-gray-500 text-white px-4 py-2 rounded-xl font-bold hover:bg-gray-600 transition text-sm">보류/패스</button>
+                <button onclick="submitDevProcess('서버 수정 요청')" class="bg-purple-500 text-white px-4 py-2 rounded-xl font-bold hover:bg-purple-600 transition text-sm">서버 수정 요청</button>
+                <button onclick="submitDevProcess('수정 완료')" class="bg-blue-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-blue-700 transition text-sm shadow-md shadow-blue-100">수정 완료</button>
+            `;
+        }
     }
 
     openModal('devProcessModal');

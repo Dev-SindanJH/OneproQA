@@ -528,15 +528,16 @@
                         </div>
                         </div>
                     </div>
-                    <div class="p-5 bg-slate-50 border-t flex justify-between gap-3 flex-shrink-0">
-                            <div id="modal-action-buttons" class="flex gap-2"></div>
-                        <button onclick="closeModal('detailModal')" class="bg-slate-200 text-slate-600 px-6 py-2 rounded-xl font-bold hover:bg-slate-300 transition">닫기</button>
-            </div>
-        </div>
-    </div>
+                                <div class="p-5 bg-slate-50 border-t flex justify-between gap-3 flex-shrink-0">
+                                    <div id="modal-action-buttons" class="flex gap-2"></div>
+                                    <button onclick="closeModal('detailModal')" class="bg-slate-200 text-slate-600 px-6 py-2 rounded-xl font-bold hover:bg-slate-300 transition">닫기</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-    <div id="requestModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100002]">
-        <div class="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
+                    <div id="requestModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100002]">
+                        <div class="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
             <div class="p-6 border-b bg-orange-50">
                 <h3 class="text-lg font-black text-orange-800"><i class="fas fa-exclamation-triangle mr-2"></i>재수정 요청 작성</h3>
                 <p class="text-xs text-orange-600 mt-1">상태를 '수정 필요'로 되돌립니다. 추가 요청사항을 남겨주세요.</p>
@@ -737,7 +738,7 @@
         </div>
     </div>
 
-    <div id="editDescModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[99999]">
+    <div id="editDescModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" style="z-index: 100002;">
         <div class="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
             <div class="p-6 border-b bg-blue-50 relative">
                 <h3 class="text-lg font-black text-blue-800"><i class="fas fa-edit mr-2"></i>검수 내용 수정</h3>
@@ -755,7 +756,7 @@
         </div>
     </div>
 
-    <div id="editDevCommentModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[99999]">
+    <div id="editDevCommentModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" style="z-index: 100002;">
         <div class="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
             <div class="p-6 border-b bg-indigo-50 relative">
                 <h3 class="text-lg font-black text-indigo-800"><i class="fas fa-comment-dots mr-2"></i>개발자 코멘트 수정</h3>
@@ -773,7 +774,7 @@
         </div>
     </div>
 
-    <div id="imageViewerModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[99999]">
+    <div id="imageViewerModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" style="z-index: 100002;">
         <div class="bg-white rounded-2xl w-full max-w-5xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
             <div class="p-4 border-b flex justify-between items-center bg-slate-50 relative">
                 <h3 class="text-sm font-bold text-slate-800">캡처 이미지 보기</h3>
@@ -789,7 +790,7 @@
         </div>
     </div>
 
-    <div id="addEditImageModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[99999]">
+    <div id="addEditImageModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" style="z-index: 100002;">
         <div class="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200 relative">
             <div class="p-4 border-b flex justify-between items-center bg-blue-50">
                 <h3 class="text-sm font-bold text-blue-800"><i class="fas fa-image mr-1"></i><span id="aei-title">이미지 관리</span></h3>
