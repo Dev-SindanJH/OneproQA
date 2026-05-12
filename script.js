@@ -1409,6 +1409,7 @@ async function openDetailModal(logId) {
                     // 마스터 데이터에서 아바타 아이템 타입 맵 생성 (ko 우선, 없으면 다른 언어 사용)
                     const avatarItemTypeMap = {};
                     const avatarItemType1Map = {};
+                    const avatarItemFileNameMap = {};
                     const langOrder = ['ko', 'en', 'ja'];
                     for (const lang of langOrder) {
                         const cached = masterDataCache[lang];
@@ -1417,6 +1418,7 @@ async function openDetailModal(logId) {
                             items.forEach(item => {
                                 avatarItemTypeMap[item.friendsAvatarItemId] = item.itemInfoType2;
                                 avatarItemType1Map[item.friendsAvatarItemId] = item.type1;
+                                avatarItemFileNameMap[item.friendsAvatarItemId] = item.fileName;
                             });
                             if (Object.keys(avatarItemTypeMap).length > 0) break;
                         }
@@ -1435,10 +1437,16 @@ async function openDetailModal(logId) {
                 const CHARACTER_NAME = ['에러', '뚜이', '나누', '고고', '배로', '라니', '마크'];
                     const renderItemId = id => {
                         const type = avatarItemTypeMap[id];
-                        if (type === 'REWARD') {
-                            return `<span class="font-mono font-bold" style="color:#e91e8c" title="REWARD">${id}</span>`;
+                        const type1 = avatarItemType1Map[id];
+                        const fileName = avatarItemFileNameMap[id];
+                        const imgPath = (type1 && fileName) ? getAvatarItemImagePath({ type1, fileName }) : null;
+                        const isReward = type === 'REWARD';
+                        const colorStyle = isReward ? ' style="color:#e91e8c"' : '';
+                        const colorCls = isReward ? 'font-bold' : '';
+                        if (imgPath) {
+                            return `<button class="font-mono text-[10px] ${colorCls} px-1 py-0.5 rounded hover:bg-slate-200 active:bg-slate-300 transition"${colorStyle} onmousedown="showAvatarItemPreview(event,'${imgPath}')" onmouseup="hideAvatarItemPreview()" onmouseleave="hideAvatarItemPreview()" ontouchstart="showAvatarItemPreview(event,'${imgPath}')" ontouchend="hideAvatarItemPreview()">${id}</button>`;
                         }
-                        return `<span class="font-mono text-slate-700">${id}</span>`;
+                        return `<span class="font-mono text-[10px] ${colorCls} text-slate-700"${colorStyle}>${id}</span>`;
                     };
 
                     const renderItemList = ids => {
@@ -2326,6 +2334,32 @@ window.onload = async () => {
     initLoginInfoPanelDrag();
 };
 
+function showAvatarItemPreview(event, src) {
+    let preview = document.getElementById('avatar-item-preview');
+    if (!preview) {
+        preview = document.createElement('div');
+        preview.id = 'avatar-item-preview';
+        preview.className = 'fixed pointer-events-none bg-white border border-slate-200 rounded-xl shadow-2xl p-2';
+        preview.style.zIndex = '2147483647';
+        preview.innerHTML = '<img class="w-32 h-32 object-contain" />';
+        document.body.appendChild(preview);
+    }
+    preview.querySelector('img').src = src;
+    const rect = event.target.getBoundingClientRect();
+    let left = rect.right + 8;
+    let top = rect.top;
+    if (left + 150 > window.innerWidth) left = rect.left - 150 - 8;
+    if (top + 150 > window.innerHeight) top = window.innerHeight - 160;
+    preview.style.left = left + 'px';
+    preview.style.top = top + 'px';
+    preview.classList.remove('hidden');
+}
+
+function hideAvatarItemPreview() {
+    const p = document.getElementById('avatar-item-preview');
+    if (p) p.classList.add('hidden');
+}
+
 function toggleLoginInfoPanel() {
     const panel = document.getElementById('modal-login-info-section');
     if (!panel) return;
@@ -2391,6 +2425,12 @@ let countryMdAllRows = [];
 
 const MASTER_API_BASE = 'https://dev-v3-api.1promath.com';
 
+function isLocalEnvironment() {
+    return window.location.protocol === 'file:' ||
+        window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1';
+}
+
 async function loadMasterData(lang = 'ko', forceRefresh = false) {
     currentMasterLang = lang;
 
@@ -2411,35 +2451,72 @@ async function loadMasterData(lang = 'ko', forceRefresh = false) {
     document.getElementById('md-version-bar').classList.add('hidden');
 
     try {
-        const now = new Date();
-        const offsetMin = -now.getTimezoneOffset(); // UTC+9 → 540
-        const sign = offsetMin >= 0 ? '+' : '-';
-        const absMin = Math.abs(offsetMin);
-        const pad2 = n => String(n).padStart(2, '0');
-        const offsetStr = offsetMin === 0
-            ? '+00:00'
-            : `${sign}${pad2(Math.floor(absMin / 60))}:${pad2(absMin % 60)}`;
-        const clientDatetime = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(now.getDate())}` +
-            `T${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}${offsetStr}`;
+        let payload;
 
-        const timezoneIdentifier = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (isLocalEnvironment()) {
+            console.log(`[로컬] MasterData 로컬 파일들에서 조립 로드 (lang: ${lang})`);
+            const fetchJson = async (path) => {
+                const r = await fetch(path);
+                if (!r.ok) { console.warn(`[로컬] 파일 없음: ${path}`); return null; }
+                return r.json();
+            };
+            const [translation, stage, avatar, badword, conceptnote, inappproduct, reward, title, video] = await Promise.all([
+                fetchJson(`MasterData/${lang}/TranslationMasterData.json`),
+                fetchJson(`MasterData/StageMasterData.json`),
+                fetchJson(`MasterData/FriendsAvatarMasterData.json`),
+                fetchJson(`MasterData/BadWordMasterData.json`),
+                fetchJson(`MasterData/ConceptNoteMasterData.json`),
+                fetchJson(`MasterData/InAppProductMasterData.json`),
+                fetchJson(`MasterData/RewardMasterData.json`),
+                fetchJson(`MasterData/TitleMasterData.json`),
+                fetchJson(`MasterData/VideoMasterData.json`),
+            ]);
+            payload = {
+                masterData: {
+                    translationMasterData: translation,
+                    stageMasterData: stage,
+                    friendsAvatarMasterData: avatar,
+                    badWordMasterData: badword,
+                    conceptNoteMasterData: conceptnote,
+                    inAppProductMasterData: inappproduct,
+                    rewardMasterData: reward,
+                    titleMasterData: title,
+                    videoMasterData: video,
+                },
+                appConfig: null
+            };
+        } else {
+            const now = new Date();
+            const offsetMin = -now.getTimezoneOffset(); // UTC+9 → 540
+            const sign = offsetMin >= 0 ? '+' : '-';
+            const absMin = Math.abs(offsetMin);
+            const pad2 = n => String(n).padStart(2, '0');
+            const offsetStr = offsetMin === 0
+                ? '+00:00'
+                : `${sign}${pad2(Math.floor(absMin / 60))}:${pad2(absMin % 60)}`;
+            const clientDatetime = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(now.getDate())}` +
+                `T${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}${offsetStr}`;
 
-        const res = await fetch(`${MASTER_API_BASE}/api/v3/app-init/language-codes/${lang}`, {
-            headers: {
-                'Client-Datetime': clientDatetime,
-                'Timezone-Identifier': timezoneIdentifier,
-                'App-Version': '3.0.0',
-                'Platform': 'android'
+            const timezoneIdentifier = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+            const res = await fetch(`${MASTER_API_BASE}/api/v3/app-init/language-codes/${lang}`, {
+                headers: {
+                    'Client-Datetime': clientDatetime,
+                    'Timezone-Identifier': timezoneIdentifier,
+                    'App-Version': '3.0.0',
+                    'Platform': 'android'
+                }
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.message || `HTTP ${res.status}`);
             }
-        });
 
-        if (!res.ok) {
-            const err = await res.json();
-            throw new Error(err.message || `HTTP ${res.status}`);
+            const json = await res.json();
+            payload = { masterData: json.data.masterData, appConfig: json.data.appConfig };
         }
 
-        const json = await res.json();
-        const payload = { masterData: json.data.masterData, appConfig: json.data.appConfig };
         masterDataCache[lang] = payload;
         renderMasterDataUI(payload);
     } catch (e) {
@@ -2513,34 +2590,54 @@ async function loadCountryMasterData(countryCode = 'KR', forceRefresh = false) {
     document.getElementById('md-version-bar').classList.add('hidden');
 
     try {
-        const now = new Date();
-        const offsetMin = -now.getTimezoneOffset();
-        const sign = offsetMin >= 0 ? '+' : '-';
-        const absMin = Math.abs(offsetMin);
-        const pad2 = n => String(n).padStart(2, '0');
-        const offsetStr = offsetMin === 0
-            ? '+00:00'
-            : `${sign}${pad2(Math.floor(absMin / 60))}:${pad2(absMin % 60)}`;
-        const clientDatetime = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(now.getDate())}` +
-            `T${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}${offsetStr}`;
-        const timezoneIdentifier = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        let payload;
 
-        const res = await fetch(`${MASTER_API_BASE}/api/v3/app-init/master-data/country-codes/${countryCode}`, {
-            headers: {
-                'Client-Datetime': clientDatetime,
-                'Timezone-Identifier': timezoneIdentifier,
-                'App-Version': '3.0.0',
-                'Platform': 'android'
+        if (isLocalEnvironment()) {
+            console.log(`[로컬] MasterData 국가 파일들에서 조립 로드 (country: ${countryCode})`);
+            const fetchJson = async (path) => {
+                const r = await fetch(path);
+                if (!r.ok) { console.warn(`[로컬] 파일 없음: ${path}`); return null; }
+                return r.json();
+            };
+            const [curriculum, levelTest] = await Promise.all([
+                fetchJson(`MasterData/${countryCode}/CurriculumMasterData.json`),
+                fetchJson(`MasterData/${countryCode}/LevelTestMasterData.json`),
+            ]);
+            payload = {
+                nationalCurriculumMasterData: curriculum,
+                nationalLevelTestCurriculumData: levelTest,
+            };
+        } else {
+            const now = new Date();
+            const offsetMin = -now.getTimezoneOffset();
+            const sign = offsetMin >= 0 ? '+' : '-';
+            const absMin = Math.abs(offsetMin);
+            const pad2 = n => String(n).padStart(2, '0');
+            const offsetStr = offsetMin === 0
+                ? '+00:00'
+                : `${sign}${pad2(Math.floor(absMin / 60))}:${pad2(absMin % 60)}`;
+            const clientDatetime = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(now.getDate())}` +
+                `T${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}${offsetStr}`;
+            const timezoneIdentifier = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+            const res = await fetch(`${MASTER_API_BASE}/api/v3/app-init/master-data/country-codes/${countryCode}`, {
+                headers: {
+                    'Client-Datetime': clientDatetime,
+                    'Timezone-Identifier': timezoneIdentifier,
+                    'App-Version': '3.0.0',
+                    'Platform': 'android'
+                }
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.message || `HTTP ${res.status}`);
             }
-        });
 
-        if (!res.ok) {
-            const err = await res.json();
-            throw new Error(err.message || `HTTP ${res.status}`);
+            const json = await res.json();
+            payload = json.data;
         }
 
-        const json = await res.json();
-        const payload = json.data;
         countryDataCache[countryCode] = payload;
         renderCountryDataUI(payload);
     } catch (e) {
@@ -2668,11 +2765,11 @@ const COUNTRY_TAB_CONFIG = {
         getData: p => p.nationalLevelTestCurriculumData?.levelTestCurriculums ?? [],
         columns: [
             { label: '소단원 ID',  key: 'nationalChapterId', cls: 'text-center font-mono text-xs font-bold text-indigo-700' },
-            { label: 'Logic ID',   key: 'logicId',           cls: 'text-center font-mono text-xs' },
-            { label: '정확도',     key: 'accuracy',          cls: 'text-center' },
-            { label: 'Prefab ID',  key: 'prefabId',          cls: 'text-center font-mono text-xs' },
+            { label: 'Logic ID',   key: 'logicId',           cls: 'text-center font-mono text-center text-xs ' },
+            { label: '정확도',     key: 'accuracy',          cls: 'text-center text-xs' },
+            { label: 'Prefab ID', key: 'prefabId', cls: 'text-center font-mono text-center text-xs' },
             { label: '등급 조건',  key: row => (row.gradeConditions ?? []).join(', '), cls: 'text-center text-xs text-slate-500' },
-            { label: 'Translation Key', key: row => row.translation?.translationKey ?? '-', cls: 'text-center font-mono text-xs text-slate-500 break-all' },
+            //{ label: 'Translation Key', key: row => row.translation?.translationKey ?? '-', cls: 'text-center font-mono text-xs text-slate-500 break-all' },
         ]
     },
 };
@@ -2818,8 +2915,8 @@ const MD_TAB_CONFIG = {
     translation: {
         getData: md => md.translationMasterData?.translations ?? [],
         columns: [
-            { label: 'Translation Key', key: 'translationKey', cls: 'text-center font-mono text-xs text-indigo-700 break-all' },
-            { label: 'Value', key: 'value', cls: 'text-center text-slate-700' },
+            { label: 'Translation Key', key: 'translationKey', cls: 'text-center font-mono text-xs text-indigo-700 break-all w-1/2' },
+            { label: 'Value', key: 'value', cls: 'text-center text-slate-700 w-1/2' },
         ]
     },
     stage: {
@@ -2841,23 +2938,23 @@ const MD_TAB_CONFIG = {
         getData: md => md.titleMasterData?.titles ?? [],
         columns: [
             { label: 'ID', key: 'titleId', cls: 'text-center font-mono text-xs' },
-            { label: 'Code', key: 'code', cls: 'text-center font-mono text-xs text-indigo-700 break-all' },
+            { label: 'Code', key: 'code', cls: 'text-center font-mono text-xs text-indigo-700 break-all min-w-[200px]' },
             { label: '카테고리', key: 'category', cls: 'text-center text-xs' },
             { label: '등급', key: 'grade', cls: 'text-center text-xs' },
             { label: 'Target', key: 'targetCount', cls: 'text-center text-xs' },
-            { label: 'Thumbnail', key: 'thumbnailImage', cls: 'text-center font-mono text-xs text-slate-500' },
-            { label: 'Translation Key', key: row => row.nameTranslation?.translationKey ?? '-', cls: 'text-center font-mono text-xs text-slate-500 break-all' },
+            { label: 'Thumbnail', key: row => `<div class="truncate" title="${row.thumbnailImage ?? ''}">${row.thumbnailImage ?? '-'}</div>`, cls: 'text-center font-mono text-xs text-slate-500', maxWidth: '100px' },
+            { label: 'Translation Key', key: row => `<div class="truncate" title="${row.nameTranslation?.translationKey ?? ''}">${row.nameTranslation?.translationKey ?? '-'}</div>`, cls: 'text-center font-mono text-xs text-slate-500', maxWidth: '160px' },
         ]
     },
     reward: {
         getData: md => md.rewardMasterData?.rewards ?? [],
         columns: [
             { label: 'ID', key: 'rewardId', cls: 'text-center font-mono text-xs' },
-            { label: 'Code', key: 'code', cls: 'text-center font-mono text-xs text-indigo-700 break-all' },
+            { label: 'Code', key: 'code', cls: 'text-center font-mono text-xs text-indigo-700 break-all min-w-[180px]' },
             { label: 'Type', key: 'type', cls: 'text-center text-xs' },
-            { label: 'Thumbnail', key: 'thumbnailImage', cls: 'text-center font-mono text-xs text-slate-500' },
-            { label: 'Icon', key: 'rewardIcon', cls: 'text-center font-mono text-xs text-slate-500' },
-            { label: '랭킹', key: row => row.isRankEligible ? '✅' : '❌', cls: 'text-center' },
+            { label: 'Frame', key: row => `<div class="truncate" title="${row.rewardFrame ?? ''}">${row.rewardFrame ?? '-'}</div>`, cls: 'text-center font-mono text-xs text-slate-500', maxWidth: '100px' },
+            { label: 'Icon', key: row => `<div class="truncate" title="${row.rewardIcon ?? ''}">${row.rewardIcon ?? '-'}</div>`, cls: 'text-center font-mono text-xs text-slate-500', maxWidth: '140px' },
+            { label: '랭킹', key: row => row.isRankEligible ? '✅' : '❌', cls: 'text-center', maxWidth: '100px' },
         ]
     },
     video: {
@@ -2866,9 +2963,9 @@ const MD_TAB_CONFIG = {
             { label: 'ID', key: 'videoId', cls: 'text-center font-mono text-xs' },
             { label: 'Level', key: 'level', cls: 'text-center' },
             { label: 'Seq', key: 'sequence', cls: 'text-center' },
-            { label: '제목', key: 'title', cls: 'text-center text-slate-700' },
+            { label: '제목', key: 'title', cls: 'text-center text-slate-700 min-w-[200px]' },
             { label: '길이(초)', key: 'durationSeconds', cls: 'text-center text-xs' },
-            { label: 'Thumbnail', key: 'thumbnailImage', cls: 'text-center font-mono text-xs text-slate-500' },
+            { label: 'Thumbnail', key: row => `<div class="truncate" title="${row.thumbnailImage ?? ''}">${row.thumbnailImage ?? '-'}</div>`, cls: 'text-center font-mono text-xs text-slate-500', maxWidth: '100px' },
         ]
     },
     inappproduct: {
@@ -2897,26 +2994,26 @@ const MD_TAB_CONFIG = {
                 const src = getAvatarItemImagePath(row);
                 if (!src) return '<span class="text-slate-300 text-xs">-</span>';
                 return `<img src="${src}" alt="${row.friendsAvatarItemId}" class="w-20 h-20 object-contain mx-auto rounded" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span class="text-slate-300 text-xs hidden">없음</span>`;
-            }, cls: 'text-center w-16' },
+            }, cls: 'text-center w-28' },
             { label: 'ID', key: 'friendsAvatarItemId', cls: 'text-center font-mono text-xs' },
-            { label: 'Type1', key: 'type1', cls: 'text-center text-xs' },
-            { label: 'Type2', key: 'type2', cls: 'text-center text-xs' },
+            { label: 'Type1', key: 'type1', cls: 'text-center text-xs', maxWidth: '100px' },
+            { label: 'Type2', key: 'type2', cls: 'text-center text-xs', maxWidth: '100px' },
             { label: 'ItemInfoType2', key: 'itemInfoType2', cls: 'text-center text-xs' },
-            { label: 'Character', key: 'friendsAvatarCharacterId', cls: 'text-center' },
+            { label: 'Character', key: 'friendsAvatarCharacterId', cls: 'text-center', maxWidth: '100px' },
             { label: '가격', key: 'price', cls: 'text-center font-bold' },
-            { label: '출시 회차', key: 'releaseRound', cls: 'text-center text-xs' },
-            { label: 'File', key: 'fileName', cls: 'text-center font-mono text-xs text-slate-500' },
+            { label: '출시 회차', key: 'releaseRound', cls: 'text-center text-xs', maxWidth: '50px' },
+            { label: 'File', key: 'fileName', cls: 'text-center font-mono text-xs text-slate-500', maxWidth: '50px' },
         ]
     },
     avatarset: {
         getData: md => md.friendsAvatarMasterData?.friendsAvatarSets ?? [],
         columns: [
             { label: 'ID', key: 'friendsAvatarSetId', cls: 'text-center font-mono text-xs' },
-            { label: 'Type', key: 'type', cls: 'text-center text-xs text-indigo-700' },
+            { label: 'Type', key: 'type', cls: 'text-center text-xs text-indigo-700', maxWidth: '50px' },
             { label: 'ItemInfoType2', key: 'itemInfoType2', cls: 'text-center text-xs' },
-            { label: 'Character', key: 'friendsAvatarCharacterId', cls: 'text-center' },
-            { label: '출시 회차', key: 'releaseRound', cls: 'text-center text-xs' },
-            { label: '아이템 수', key: row => row.friendsAvatarItemIds?.length ?? 0, cls: 'text-center' },
+            { label: 'Character', key: 'friendsAvatarCharacterId', cls: 'text-center', maxWidth: '50px' },
+            { label: '출시 회차', key: 'releaseRound', cls: 'text-center text-xs', maxWidth: '50px' },
+            { label: '아이템 수', key: row => row.friendsAvatarItemIds?.length ?? 0, cls: 'text-center', maxWidth: '50px' },
             { label: 'Translation Key', key: row => row.translation?.translationKey ?? '-', cls: 'text-center font-mono text-xs text-slate-500' },
         ]
     },
@@ -2960,13 +3057,26 @@ function filterMdTable() {
 }
 
 function renderMdTable(rows, columns) {
+    const table = document.getElementById('md-table');
     const thead = document.getElementById('md-thead');
     const tbody = document.getElementById('md-tbody');
     const countEl = document.getElementById('md-row-count');
 
+    // colgroup으로 컬럼 너비 고정 (table-layout: fixed 전제)
+    const existingColgroup = table.querySelector('colgroup');
+    if (existingColgroup) existingColgroup.remove();
+    const colgroup = document.createElement('colgroup');
+    columns.forEach(c => {
+        const col = document.createElement('col');
+        if (c.maxWidth) col.style.width = c.maxWidth;
+        colgroup.appendChild(col);
+    });
+    table.insertBefore(colgroup, thead);
+    table.style.tableLayout = 'fixed';
+
     // 헤더
     thead.innerHTML = '<tr>' + columns.map(c =>
-        `<th class="px-4 py-3 font-bold border-b whitespace-nowrap">${c.label}</th>`
+        `<th class="px-4 py-3 font-bold border-b whitespace-nowrap text-center overflow-hidden">${c.label}</th>`
     ).join('') + '</tr>';
 
     // 바디
@@ -2983,7 +3093,8 @@ function renderMdTable(rows, columns) {
         '<tr class="hover:bg-slate-50/50 transition">' +
         columns.map(col => {
             const val = typeof col.key === 'function' ? col.key(row, i) : (row[col.key] ?? '-');
-            return `<td class="px-4 py-2.5 border-b border-gray-100 ${col.cls ?? ''}">${val}</td>`;
+            const ovf = col.maxWidth ? ' style="overflow:hidden"' : '';
+            return `<td class="px-4 py-2.5 border-b border-gray-100 ${col.cls ?? ''}"${ovf}>${val}</td>`;
         }).join('') +
         '</tr>'
     ).join('');
