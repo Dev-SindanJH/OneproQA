@@ -1273,6 +1273,33 @@ async function findLogById(logId) {
     return error ? null : data;
 }
 
+function toggleLoginSection(id) {
+    const section = document.getElementById(`section-${id}`);
+    const chevron = document.getElementById(`chevron-${id}`);
+    if (!section) return;
+    const isHidden = section.classList.toggle('hidden');
+    if (chevron) chevron.style.transform = isHidden ? '' : 'rotate(180deg)';
+}
+
+function _renderProfileCard(idx) {
+    const cards = window._liProfileCards;
+    if (!cards || cards.length === 0) return;
+    idx = Math.max(0, Math.min(idx, cards.length - 1));
+    window._liProfileIdx = idx;
+    const slot = document.getElementById('li-profile-slot');
+    if (slot) slot.innerHTML = cards[idx];
+    const counter = document.getElementById('li-profile-counter');
+    if (counter) counter.textContent = `${idx + 1} / ${cards.length}`;
+    const prevBtn = document.getElementById('li-profile-prev');
+    const nextBtn = document.getElementById('li-profile-next');
+    if (prevBtn) prevBtn.disabled = idx === 0;
+    if (nextBtn) nextBtn.disabled = idx === cards.length - 1;
+}
+
+function navigateProfile(delta) {
+    _renderProfileCard((window._liProfileIdx ?? 0) + delta);
+}
+
 /**
  * 로그인 정보 패널에 데이터를 채우는 함수
  * @param {Object|string|null} loginInfoData - login_info 원시 데이터
@@ -1318,8 +1345,7 @@ function populateLoginInfoPanel(loginInfoData) {
 
     // 계정 섹션
     const accSection = acc ? `
-        <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Account</div>
-        <div class="bg-white border border-slate-200 rounded-lg p-3 space-y-1.5 mb-3">
+        <div class="bg-white border border-slate-200 rounded-lg p-3 space-y-1.5">
             <div class="flex flex-col gap-0.5">
                 <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">AccountID</span>
                 <span class="text-[11px] flex items-center gap-1.5">
@@ -1333,7 +1359,7 @@ function populateLoginInfoPanel(loginInfoData) {
             ${row('전화번호', acc.phoneNumber)}
             ${row('가용 프로필 수', acc.availableProfileCount)}
             ${row('대표 프로필ID', mainProfileId)}
-        </div>` : `<div class="text-[10px] text-slate-300 italic mb-3">account: null</div>`;
+        </div>` : `<div class="text-[10px] text-slate-300 italic">account: null</div>`;
 
     // 라이선스 섹션
     let licenseSection = '';
@@ -1349,19 +1375,17 @@ function populateLoginInfoPanel(loginInfoData) {
             remText = `${d}일 ${h}시간 ${m}분 (${remSec.toLocaleString()}초)`;
         }
         licenseSection = `
-        <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">License</div>
-        <div class="bg-white border border-slate-200 rounded-lg p-3 space-y-1.5 mb-3">
+        <div class="bg-white border border-slate-200 rounded-lg p-3 space-y-1.5">
             ${row('타입', license.type !== undefined && license.type !== null ? `${license.type} (${typeName})` : null)}
             ${row('남은 시간', remText)}
         </div>`;
     } else {
-        licenseSection = `<div class="text-[10px] text-slate-300 italic mb-3">license: null</div>`;
+        licenseSection = `<div class="text-[10px] text-slate-300 italic">license: null</div>`;
     }
 
     // 학교 / 반 섹션
     const schoolSection = `
-        <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">School / Class</div>
-        <div class="bg-white border border-slate-200 rounded-lg p-3 space-y-1.5 mb-3">
+        <div class="bg-white border border-slate-200 rounded-lg p-3 space-y-1.5">
             ${school ? `
                 ${row('학교ID', school.schoolId)}
                 ${row('학교명', school.name)}` : `<div class="text-[10px] text-slate-300 italic">school: null</div>`}
@@ -1373,7 +1397,7 @@ function populateLoginInfoPanel(loginInfoData) {
         </div>`;
 
     // 프로필 섹션
-    const profileCards = profiles.map(p => {
+    const profileCardArr = profiles.map(p => {
         const isMain = p.profileId === mainProfileId;
         const gcLock = GAME_CENTER_LOCK_MAP[String(p.gameCenterLock ?? '')] ?? String(p.gameCenterLock ?? null);
         const dailyLock = LOCK_MAP[String(p.dailyStageCountLock ?? p.dailyStageCountLock === 0 ? p.dailyStageCountLock : '')] ?? null;
@@ -1469,7 +1493,10 @@ function populateLoginInfoPanel(loginInfoData) {
                     <div class="bg-slate-50 border border-slate-100 rounded p-2 space-y-0.5">
                         <div class="flex items-center gap-1.5 mb-0.5">
                             <span class="text-[14px] font-black text-slate-600">${CHARACTER_NAME[c.friendsAvatarCharacterId]}</span>
-                            ${c.isOwned ? '<span class="text-[8px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-black border border-green-200">보유</span>' : '<span class="text-[8px] bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded font-black border border-slate-200">미보유</span>'}
+                            <div class="flex items-center gap-1">
+                                ${c.isOwned ? '<span class="text-[8px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-black border border-green-200">보유</span>' : '<span class="text-[8px] bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded font-black border border-slate-200">미보유</span>'}
+                                ${c.friendsAvatarCharacterId === p.mainFriendsAvatarCharacterId ? '<span class="text-[8px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded font-black border border-yellow-200">메인</span>' : ''}
+                            </div>
                         </div>
                         <br>
                         <div class="text-[12px] text-slate-500 leading-relaxed"><b>보유 아이템:</b><br> ${renderItemList(c.ownedFriendsAvatarItemIds)}</div>
@@ -1479,16 +1506,48 @@ function populateLoginInfoPanel(loginInfoData) {
                 return `<div class="flex flex-col gap-0.5"><span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">아바타 캐릭터 (${chars.length}개)</span><div class="space-y-1 mt-0.5">${charRows}</div></div>`;
             })()}
         </div>`;
-    }).join('');
+    });
 
-    loginInfoBody.innerHTML = `
-        ${accSection}
-        ${licenseSection}
-        ${schoolSection}
-        <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Profiles (${profiles.length}개)</div>
-        <div class="space-y-2">${profiles.length > 0 ? profileCards : '<div class="text-[10px] text-slate-300 italic">프로필 없음</div>'}</div>
-    `;
+    const _mkSec = (id, icon, title, content, open = false) => `
+        <div class="border border-slate-100 rounded-xl overflow-hidden mb-2">
+            <button onclick="toggleLoginSection('${id}')" class="w-full flex items-center justify-between px-3 py-2 bg-slate-50 hover:bg-slate-100 transition text-left">
+                <span class="flex items-center gap-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                    <i class="${icon}"></i>${title}
+                </span>
+                <i id="chevron-${id}" class="fas fa-chevron-down text-slate-400 text-[10px] transition-transform duration-200" style="${open ? 'transform:rotate(180deg)' : ''}"></i>
+            </button>
+            <div id="section-${id}" class="${open ? '' : 'hidden'} px-3 pt-2 pb-3">
+                ${content}
+            </div>
+        </div>`;
+
+    const profileCarouselHtml = profiles.length > 0 ? `
+        <div class="flex items-center gap-2 mb-3">
+            <button id="li-profile-prev" onclick="navigateProfile(-1)" class="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 disabled:opacity-30 transition" disabled>
+                <i class="fas fa-chevron-left text-[10px]"></i>
+            </button>
+            <span id="li-profile-counter" class="flex-1 text-center text-[11px] font-bold text-slate-500">1 / ${profiles.length}</span>
+            <button id="li-profile-next" onclick="navigateProfile(1)" class="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 disabled:opacity-30 transition" ${profiles.length <= 1 ? 'disabled' : ''}>
+                <i class="fas fa-chevron-right text-[10px]"></i>
+            </button>
+        </div>
+        <div id="li-profile-slot"></div>`
+        : '<div class="text-[10px] text-slate-300 italic">프로필 없음</div>';
+
+    loginInfoBody.innerHTML =
+        _mkSec('acc', 'fas fa-user text-blue-500', 'Account', accSection, true) +
+        _mkSec('lic', 'fas fa-id-card text-orange-500', 'License', licenseSection, false) +
+        _mkSec('sch', 'fas fa-school text-green-500', 'School / Class', schoolSection, false) +
+        _mkSec('pro', 'fas fa-users text-purple-500', `Profiles (${profiles.length}개)`, profileCarouselHtml, true);
+
     loginInfoSection.classList.remove('hidden');
+
+    window._liProfileCards = profileCardArr;
+    const mainProfileIdx = profiles.findIndex(p => p.profileId === mainProfileId);
+    window._liProfileIdx = 0;
+    if (profiles.length > 0) {
+        _renderProfileCard(mainProfileIdx >= 0 ? mainProfileIdx : 0);
+    }
 }
 
 /**
