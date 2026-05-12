@@ -3108,35 +3108,49 @@ function getAvatarItemImageCandidates(item) {
     const variants = (...bases) => bases.flatMap(b => [`${b}_Icon.png`, `${b}_icon.png`]);
     const MAP = {
         'BACK_ACCESSORIES': variants(
+            `Avatar/BACK_ACCESSORIES/AccB${f}/AccB_${f}`,
             `Avatar/BACK_ACCESSORIES/AccB${f}/accB_${f}`,
-            `Avatar/BACK_ACCESSORIES/accB${f}/accB_${f}`,
             `Avatar/BACK_ACCESSORIES/AccB${f}/accb_${f}`,
+            `Avatar/BACK_ACCESSORIES/accB${f}/AccB_${f}`,
+            `Avatar/BACK_ACCESSORIES/accB${f}/accB_${f}`,
             `Avatar/BACK_ACCESSORIES/accb${f}/accb_${f}`,
         ),
         'HAT': variants(
+            `Avatar/HAT/Hat${f}/Hat_${f}`,
             `Avatar/HAT/Hat${f}/hat_${f}`,
+            `Avatar/HAT/hat${f}/Hat_${f}`,
             `Avatar/HAT/hat${f}/hat_${f}`,
         ),
         'HEAD_ACCESSORIES': variants(
+            `Avatar/HEAD_ACCESSORIES/AccH${f}/AccH_${f}`,
             `Avatar/HEAD_ACCESSORIES/AccH${f}/accH_${f}`,
-            `Avatar/HEAD_ACCESSORIES/accH${f}/accH_${f}`,
             `Avatar/HEAD_ACCESSORIES/AccH${f}/acch_${f}`,
+            `Avatar/HEAD_ACCESSORIES/accH${f}/AccH_${f}`,
+            `Avatar/HEAD_ACCESSORIES/accH${f}/accH_${f}`,
             `Avatar/HEAD_ACCESSORIES/acch${f}/acch_${f}`,
         ),
         'PANTS': variants(
+            `Avatar/PANTS/Pants${f}/Pants_${f}`,
             `Avatar/PANTS/Pants${f}/pants_${f}`,
+            `Avatar/PANTS/pants${f}/Pants_${f}`,
             `Avatar/PANTS/pants${f}/pants_${f}`,
         ),
         'SUIT': variants(
+            `Avatar/SUIT/Suit${f}/Suit_${f}`,
             `Avatar/SUIT/Suit${f}/suit_${f}`,
+            `Avatar/SUIT/suit${f}/Suit_${f}`,
             `Avatar/SUIT/suit${f}/suit_${f}`,
         ),
         'TOP': variants(
+            `Avatar/TOP/Top${f}/Top_${f}`,
             `Avatar/TOP/Top${f}/top_${f}`,
+            `Avatar/TOP/top${f}/Top_${f}`,
             `Avatar/TOP/top${f}/top_${f}`,
         ),
         'WEAPON': variants(
+            `Avatar/WEAPON/Weapon${f}/Weapon_${f}`,
             `Avatar/WEAPON/Weapon${f}/weapon_${f}`,
+            `Avatar/WEAPON/weapon${f}/Weapon_${f}`,
             `Avatar/WEAPON/weapon${f}/weapon_${f}`,
         ),
     };
