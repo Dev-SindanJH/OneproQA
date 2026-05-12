@@ -1,3 +1,12 @@
+/* 로그인 정보 모달 폰트 크기 20% 확대 */
+#modal-login-info-body .text-\[8px\]  { font-size: 10px !important; }
+#modal-login-info-body .text-\[9px\]  { font-size: 11px !important; }
+#modal-login-info-body .text-\[10px\] { font-size: 12px !important; }
+#modal-login-info-body .text-\[11px\] { font-size: 13px !important; }
+#modal-login-info-body .text-\[12px\] { font-size: 14px !important; }
+#modal-login-info-body .text-xs       { font-size: 14px !important; }
+#modal-login-info-body .text-sm       { font-size: 17px !important; }
+
 /* 기본 섹션 및 내비게이션 스타일 */
 .section { display: none; }
 .section.active { display: block; }

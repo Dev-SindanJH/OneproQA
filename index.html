@@ -828,6 +828,22 @@
         </div>
     </div>
 
+    <!-- 스테이지 정보 모달 -->
+    <div id="stageInfoModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" style="z-index: 100003;">
+        <div class="bg-white rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="p-5 border-b bg-gradient-to-r from-blue-50 to-indigo-50 flex justify-between items-center flex-shrink-0">
+                <div>
+                    <h3 class="text-lg font-black text-blue-800 flex items-center gap-2">
+                        <i class="fas fa-layer-group text-blue-500"></i>스테이지 정보
+                    </h3>
+                    <p class="text-xs text-blue-400 font-mono mt-0.5" id="stage-modal-subtitle"></p>
+                </div>
+                <button onclick="closeModal('stageInfoModal')" class="text-gray-400 hover:text-red-500 transition text-2xl leading-none">&times;</button>
+            </div>
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6 bg-white" id="stage-modal-body"></div>
+        </div>
+    </div>
+
     <div id="toast-container"></div>
 
     <script src="cache-manager.js"></script>

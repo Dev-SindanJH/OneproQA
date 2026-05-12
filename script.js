@@ -1066,6 +1066,14 @@ function renderTable() {
                </div>` 
             : '-';
 
+        // 스테이지 ID 감지
+        const descStageId = extractStageId(log.user_description);
+        const stageBadgeHtml = descStageId
+            ? `<button onclick="openStageInfoModal(${descStageId})" class="mt-2 inline-flex items-center gap-1.5 bg-blue-50 text-blue-600 border border-blue-200 px-2.5 py-1 rounded-full text-[10px] font-bold hover:bg-blue-100 hover:border-blue-300 transition">
+                <i class="fas fa-layer-group text-[9px]"></i>stageId: ${descStageId}
+               </button>`
+            : '';
+
         // 데스크탑 테이블 행
         const tr = document.createElement('tr');
         tr.className = 'log-row hover:bg-blue-50/20 transition';
@@ -1083,7 +1091,10 @@ function renderTable() {
                     </span>
                 </div>
             </td>
-            <td class="px-4 py-4 font-semibold text-gray-700 text-center border-b border-gray-100">${authorName}</td>
+            <td class="px-4 py-4 font-semibold text-gray-700 text-center border-b border-gray-100">
+                <div>${authorName}</div>
+                ${log.login_info ? `<button onclick="openLoginInfoPanel('${log.id}')" class="mt-1.5 inline-flex items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full hover:bg-blue-100 transition whitespace-nowrap"><i class="fas fa-user-circle"></i>로그인정보</button>` : ''}
+            </td>
             <td class="px-4 py-4 text-center border-b border-gray-100">${getStateBadge(currentState)}</td>
             <td class="px-4 py-4 text-xs text-gray-600 text-center border-b border-gray-100">${contentText}</td>
             <td class="px-4 py-4 text-gray-600 border-b border-gray-100">
@@ -1094,6 +1105,7 @@ function renderTable() {
                     </div>
                     <button onclick="openEditDescModal('${log.id}')" class="text-slate-400 hover:text-blue-500 transition shrink-0 p-1 mt-0.5" title="내용 수정"><i class="fas fa-pencil-alt text-xs"></i></button>
                 </div>
+                ${stageBadgeHtml}
             </td>
             <td class="px-4 py-4 text-center border-b border-gray-100">${imageActionHtml}</td>
             <td class="px-4 py-4 text-gray-600 border-b border-gray-100 ${currentState === '수정 완료' ? 'cursor-pointer hover:bg-blue-50/30' : ''}" ${currentState === '수정 완료' ? `onclick="openDevCommentEditModal('${log.id}')" title="클릭하여 코멘트 수정"` : ''}>
@@ -1148,6 +1160,7 @@ function renderTable() {
                 <div class="mobile-card-body">
                     ${contentInfo.length > 0 ? `<div class="text-xs text-indigo-600 font-bold mb-2"><i class="fas fa-map-marker-alt mr-1"></i>${contentInfo.join(' / ')}</div>` : ''}
                     <div class="mobile-card-desc">${log.user_description || '-'}</div>
+                    ${descStageId ? `<button onclick="openStageInfoModal(${descStageId})" class="mt-2 inline-flex items-center gap-1.5 bg-blue-50 text-blue-600 border border-blue-200 px-2.5 py-1 rounded-full text-[10px] font-bold hover:bg-blue-100 transition"><i class="fas fa-layer-group text-[9px]"></i>stageId: ${descStageId}</button>` : ''}
                     <div class="mobile-card-meta">
                         <span class="mobile-card-meta-item" title="작성: ${formatKST(log.created_at)}"><i class="fas fa-calendar-alt"></i> ${formatRelativeTime(log.created_at)}</span>
                         ${log.updated_at ? `<span class="mobile-card-meta-item text-blue-500" title="업데이트: ${formatKST(log.updated_at)}"><i class="fas fa-sync-alt"></i> ${formatRelativeTime(log.updated_at)}</span>` : ''}
@@ -1158,6 +1171,7 @@ function renderTable() {
                         ${mobileImageBtn}
                         <button onclick="openDetailModal('${log.id}')" class="bg-slate-100 text-slate-600 border border-slate-200"><i class="fas fa-search-plus mr-1"></i>상세</button>
                         <button onclick="openEditDescModal('${log.id}')" class="bg-slate-100 text-slate-600 border border-slate-200"><i class="fas fa-pencil-alt mr-1"></i>수정</button>
+                        ${log.login_info ? `<button onclick="openLoginInfoPanel('${log.id}')" class="bg-blue-50 text-blue-700 border border-blue-200"><i class="fas fa-user-circle mr-1"></i>로그인정보</button>` : ''}
                     </div>
                 </div>
             `;
@@ -1256,6 +1270,233 @@ async function findLogById(logId) {
     return error ? null : data;
 }
 
+/**
+ * 로그인 정보 패널에 데이터를 채우는 함수
+ * @param {Object|string|null} loginInfoData - login_info 원시 데이터
+ */
+function populateLoginInfoPanel(loginInfoData) {
+    const loginInfoSection = document.getElementById('modal-login-info-section');
+    const loginInfoBody = document.getElementById('modal-login-info-body');
+
+    let info = loginInfoData;
+    if (typeof info === 'string') {
+        try { info = JSON.parse(info); } catch(e) { info = null; }
+    }
+
+    if (!info || typeof info !== 'object') {
+        loginInfoSection.classList.add('hidden');
+        return;
+    }
+
+    const acc = info.account || null;
+    const license = info.license || null;
+    const profiles = Array.isArray(info.profiles) ? info.profiles : [];
+    const mainProfileId = info.mainProfileId ?? null;
+    const school = info.school || null;
+    const classInfo = info.classInfo || null;
+
+    const NULL_TEXT = '<span class="text-slate-300 italic">null</span>';
+    const fv = v => (v === null || v === undefined) ? NULL_TEXT : `<span class="font-mono text-slate-700 break-all">${v}</span>`;
+    const row = (label, val) => `
+        <div class="flex flex-col gap-0.5">
+            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">${label}</span>
+            <span class="text-[11px]">${fv(val)}</span>
+        </div>`;
+
+    const LICENSE_TYPE_MAP = {
+        '-1': 'Unknown', '0': 'None',
+        '1': '일반 결제', '11': '최고관리자 지급', '12': '서포터즈', '13': '이벤트 지급',
+        '21': 'SKT 제휴', '31': '공동구매(유저)', '32': '공동구매(관리자)', '33': '이벤트 공동구매',
+        '41': '쿠폰 이용권', '42': '전화번호 등록', '43': '7일 무료체험',
+        '51': '회원가입 프로모션', '100': '학계/학교 라이선스'
+    };
+    const GAME_CENTER_LOCK_MAP = { '0': '잠금 해제', '1': '잠금', '2': '오늘학습 후 오픈' };
+    const LOCK_MAP = { '0': '잠금 해제', '1': '잠금' };
+
+    // 계정 섹션
+    const accSection = acc ? `
+        <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Account</div>
+        <div class="bg-white border border-slate-200 rounded-lg p-3 space-y-1.5 mb-3">
+            <div class="flex flex-col gap-0.5">
+                <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">AccountID</span>
+                <span class="text-[11px] flex items-center gap-1.5">
+                    ${fv(acc.accountId)}
+                    ${acc.isGuestAccount === true ? '<span class="text-[8px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded font-black border border-orange-200">게스트계정</span>' : ''}
+                </span>
+            </div>
+            ${row('이름', acc.name)}
+            ${row('아이디(이메일)', acc.id)}
+            ${row('비밀번호', acc.password)}
+            ${row('전화번호', acc.phoneNumber)}
+            ${row('가용 프로필 수', acc.availableProfileCount)}
+            ${row('대표 프로필ID', mainProfileId)}
+        </div>` : `<div class="text-[10px] text-slate-300 italic mb-3">account: null</div>`;
+
+    // 라이선스 섹션
+    let licenseSection = '';
+    if (license) {
+        const typeKey = String(license.type ?? '');
+        const typeName = LICENSE_TYPE_MAP[typeKey] ?? `타입 ${typeKey}`;
+        const remSec = license.remainingSeconds ?? null;
+        let remText = null;
+        if (remSec !== null) {
+            const d = Math.floor(remSec / 86400);
+            const h = Math.floor((remSec % 86400) / 3600);
+            const m = Math.floor((remSec % 3600) / 60);
+            remText = `${d}일 ${h}시간 ${m}분 (${remSec.toLocaleString()}초)`;
+        }
+        licenseSection = `
+        <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">License</div>
+        <div class="bg-white border border-slate-200 rounded-lg p-3 space-y-1.5 mb-3">
+            ${row('타입', license.type !== undefined && license.type !== null ? `${license.type} (${typeName})` : null)}
+            ${row('남은 시간', remText)}
+        </div>`;
+    } else {
+        licenseSection = `<div class="text-[10px] text-slate-300 italic mb-3">license: null</div>`;
+    }
+
+    // 학교 / 반 섹션
+    const schoolSection = `
+        <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">School / Class</div>
+        <div class="bg-white border border-slate-200 rounded-lg p-3 space-y-1.5 mb-3">
+            ${school ? `
+                ${row('학교ID', school.schoolId)}
+                ${row('학교명', school.name)}` : `<div class="text-[10px] text-slate-300 italic">school: null</div>`}
+            ${classInfo ? `
+                <div class="border-t border-slate-100 pt-1.5 mt-1.5"></div>
+                ${row('반ID', classInfo.classId)}
+                ${row('반명', classInfo.name)}
+                ${row('학년', classInfo.grade)}` : `<div class="text-[10px] text-slate-300 italic">classInfo: null</div>`}
+        </div>`;
+
+    // 프로필 섹션
+    const profileCards = profiles.map(p => {
+        const isMain = p.profileId === mainProfileId;
+        const gcLock = GAME_CENTER_LOCK_MAP[String(p.gameCenterLock ?? '')] ?? String(p.gameCenterLock ?? null);
+        const dailyLock = LOCK_MAP[String(p.dailyStageCountLock ?? p.dailyStageCountLock === 0 ? p.dailyStageCountLock : '')] ?? null;
+        const rnLock = LOCK_MAP[String(p.reviewNoteAccuracyLock ?? '')] ?? null;
+        const pushDaysText = Array.isArray(p.pushDays) && p.pushDays.length > 0 ? p.pushDays.join(', ') : (p.pushDays === null ? null : '[]');
+        return `<div class="bg-white border ${isMain ? 'border-blue-300 ring-1 ring-blue-200' : 'border-slate-200'} rounded-lg p-2.5 space-y-1">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-[11px] font-black text-slate-700">${p.name ?? '<span class="text-slate-300">null</span>'}</span>
+                ${isMain ? '<span class="text-[8px] bg-blue-500 text-white px-1.5 py-0.5 rounded font-black">대표</span>' : ''}
+            </div>
+            ${row('profileId', p.profileId)}
+            ${row('코드', p.code)}
+            ${row('전화번호', p.phoneNumber)}
+            ${row('이메일', p.email)}
+            ${row('비밀번호', p.password)}
+            ${row('학습리포트', p.isLearningReportEnabled === true ? '활성' : p.isLearningReportEnabled === false ? '비활성' : null)}
+            ${row('레벨 범위', p.minLevel !== undefined ? `${p.minLevel} ~ ${p.maxLevel}` : null)}
+            ${row('국가 챕터ID', p.nationalChapterId)}
+            ${row('ShowingLevel', p.ShowingLevel ?? p.level)}
+            ${row('ChapterNumber', p.ChapterNumber ?? p.chapterNumber)}
+            ${row('일학습 현황', p.dailyStageCurrentCount !== undefined ? `${p.dailyStageCurrentCount} / ${p.dailyStageTargetCount} (최대 ${p.MaxDailyStudyTargetCount ?? 20})` : null)}
+            ${row('일학습 잠금', dailyLock ?? (p.dailyStageCountLock !== undefined ? String(p.dailyStageCountLock) : null))}
+            ${row('코인', p.coin !== undefined ? p.coin.toLocaleString() : null)}
+            ${row('대표 아바타ID', p.mainFriendsAvatarCharacterId)}
+            ${row('게임센터 잠금', gcLock)}
+            ${row('오답노트 정확도', p.reviewNoteAccuracy !== undefined ? `${p.reviewNoteAccuracy}%` : null)}
+            ${row('오답노트 잠금', rnLock ?? (p.reviewNoteAccuracyLock !== undefined ? String(p.reviewNoteAccuracyLock) : null))}
+            ${row('타이틀ID', p.titleId)}
+            ${row('국가코드', p.countryCode)}
+            ${row('푸시 알림', p.isPushEnabled === true ? '활성' : p.isPushEnabled === false ? '비활성' : null)}
+            ${row('푸시 요일', pushDaysText)}
+            ${row('푸시 시간', p.pushTime)}
+            ${(() => {
+                const chars = Array.isArray(p.friendsAvatarCharacters) ? p.friendsAvatarCharacters : [];
+                if (chars.length === 0) return '';
+                const avatarItemTypeMap = {};
+                const avatarItemType1Map = {};
+                const avatarItemFileNameMap = {};
+                const langOrder = ['ko', 'en', 'ja'];
+                for (const lang of langOrder) {
+                    const cached = masterDataCache[lang];
+                    if (cached) {
+                        const items = cached.masterData?.friendsAvatarMasterData?.friendsAvatarItems ?? [];
+                        items.forEach(item => {
+                            avatarItemTypeMap[item.friendsAvatarItemId] = item.itemInfoType2;
+                            avatarItemType1Map[item.friendsAvatarItemId] = item.type1;
+                            avatarItemFileNameMap[item.friendsAvatarItemId] = item.fileName;
+                        });
+                        if (Object.keys(avatarItemTypeMap).length > 0) break;
+                    }
+                }
+                const TYPE1_KO = {
+                    BACK_ACCESSORIES: '등 악세서리', HAT: '모자', HEAD_ACCESSORIES: '머리 악세서리',
+                    PANTS: '하의', SUIT: '한 벌옷', TOP: '상의', WEAPON: '무기',
+                };
+                const TYPE1_ORDER = ['HAT', 'HEAD_ACCESSORIES', 'TOP', 'SUIT', 'PANTS', 'BACK_ACCESSORIES', 'WEAPON'];
+                const CHARACTER_NAME = ['에러', '뚜이', '나누', '고고', '배로', '라니', '마크'];
+                const renderItemId = id => {
+                    const type = avatarItemTypeMap[id];
+                    const type1 = avatarItemType1Map[id];
+                    const fileName = avatarItemFileNameMap[id];
+                    const imgPath = (type1 && fileName) ? getAvatarItemImagePath({ type1, fileName }) : null;
+                    const isReward = type === 'REWARD';
+                    const colorStyle = isReward ? ' style="color:#e91e8c"' : '';
+                    const colorCls = isReward ? 'font-bold' : '';
+                    if (imgPath) {
+                        return `<button class="font-mono text-[10px] ${colorCls} px-1 py-0.5 rounded hover:bg-slate-200 active:bg-slate-300 transition"${colorStyle} onmousedown="showAvatarItemPreview(event,'${imgPath}')" onmouseup="hideAvatarItemPreview()" onmouseleave="hideAvatarItemPreview()" ontouchstart="showAvatarItemPreview(event,'${imgPath}')" ontouchend="hideAvatarItemPreview()">${id}</button>`;
+                    }
+                    return `<span class="font-mono text-[10px] ${colorCls} text-slate-700"${colorStyle}>${id}</span>`;
+                };
+                const renderItemList = ids => {
+                    if (!Array.isArray(ids) || ids.length === 0) return '-';
+                    const groups = {};
+                    const unknownIds = [];
+                    ids.forEach(id => {
+                        const t1 = avatarItemType1Map[id];
+                        if (t1) { if (!groups[t1]) groups[t1] = []; groups[t1].push(id); }
+                        else { unknownIds.push(id); }
+                    });
+                    if (!Object.keys(groups).length) return ids.map(renderItemId).join('<span class="text-slate-300">, </span>');
+                    const sep = '<span class="text-slate-300">, </span>';
+                    const lines = [];
+                    const orderedKeys = [...TYPE1_ORDER.filter(k => groups[k]), ...Object.keys(groups).filter(k => !TYPE1_ORDER.includes(k))];
+                    orderedKeys.forEach(t1 => {
+                        lines.push(`<span class="text-slate-400 font-bold">${TYPE1_KO[t1] || t1}:</span> ${groups[t1].map(renderItemId).join(sep)}`);
+                    });
+                    if (unknownIds.length > 0) lines.push(unknownIds.map(renderItemId).join(sep));
+                    return lines.join('<br>');
+                };
+                const charRows = chars.map(c => `
+                    <div class="bg-slate-50 border border-slate-100 rounded p-2 space-y-0.5">
+                        <div class="flex items-center gap-1.5 mb-0.5">
+                            <span class="text-[10px] font-black text-slate-600">${CHARACTER_NAME[c.friendsAvatarCharacterId]}</span>
+                            ${c.isOwned ? '<span class="text-[8px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-black border border-green-200">보유</span>' : '<span class="text-[8px] bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded font-black border border-slate-200">미보유</span>'}
+                        </div>
+                        <div class="text-[10px] text-slate-500 leading-relaxed">보유 아이템: ${renderItemList(c.ownedFriendsAvatarItemIds)}</div>
+                        <div class="text-[10px] text-slate-500 leading-relaxed">착용 아이템: ${renderItemList(c.equippedFriendsAvatarItemIds)}</div>
+                    </div>`).join('');
+                return `<div class="flex flex-col gap-0.5"><span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">아바타 캐릭터 (${chars.length}개)</span><div class="space-y-1 mt-0.5">${charRows}</div></div>`;
+            })()}
+        </div>`;
+    }).join('');
+
+    loginInfoBody.innerHTML = `
+        ${accSection}
+        ${licenseSection}
+        ${schoolSection}
+        <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Profiles (${profiles.length}개)</div>
+        <div class="space-y-2">${profiles.length > 0 ? profileCards : '<div class="text-[10px] text-slate-300 italic">프로필 없음</div>'}</div>
+    `;
+    loginInfoSection.classList.remove('hidden');
+}
+
+/**
+ * 로그인 정보 패널만 독립적으로 여는 함수 (상세 모달 없이)
+ * @param {string} logId - 로그 ID
+ */
+async function openLoginInfoPanel(logId) {
+    const log = await findLogById(logId);
+    if (!log || !log.login_info) {
+        showToast('로그인 정보가 없습니다.', 'error');
+        return;
+    }
+    populateLoginInfoPanel(log.login_info);
+}
+
 /** 모달 비즈니스 로직 **/
 async function openDetailModal(logId) {
     const log = await findLogById(logId); 
@@ -1279,227 +1520,7 @@ async function openDetailModal(logId) {
     }
 
     // 로그인 정보 표시
-    const loginInfoSection = document.getElementById('modal-login-info-section');
-    const loginInfoBody = document.getElementById('modal-login-info-body');
-    let info = log.login_info;
-    if (typeof info === 'string') {
-        try { info = JSON.parse(info); } catch(e) { info = null; }
-    }
-    if (info && typeof info === 'object') {
-        const acc = info.account || null;
-        const license = info.license || null;
-        const profiles = Array.isArray(info.profiles) ? info.profiles : [];
-        const mainProfileId = info.mainProfileId ?? null;
-        const school = info.school || null;
-        const classInfo = info.classInfo || null;
-
-        const NULL_TEXT = '<span class="text-slate-300 italic">null</span>';
-        const fv = v => (v === null || v === undefined) ? NULL_TEXT : `<span class="font-mono text-slate-700 break-all">${v}</span>`;
-        const row = (label, val) => `
-            <div class="flex flex-col gap-0.5">
-                <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">${label}</span>
-                <span class="text-[11px]">${fv(val)}</span>
-            </div>`;
-
-        // 라이선스 타입 이름 매핑
-        const LICENSE_TYPE_MAP = {
-            '-1': 'Unknown', '0': 'None',
-            '1': '일반 결제', '11': '최고관리자 지급', '12': '서포터즈', '13': '이벤트 지급',
-            '21': 'SKT 제휴', '31': '공동구매(유저)', '32': '공동구매(관리자)', '33': '이벤트 공동구매',
-            '41': '쿠폰 이용권', '42': '전화번호 등록', '43': '7일 무료체험',
-            '51': '회원가입 프로모션', '100': '학계/학교 라이선스'
-        };
-        const GAME_CENTER_LOCK_MAP = { '0': '잠금 해제', '1': '잠금', '2': '오늘학습 후 오픈' };
-        const LOCK_MAP = { '0': '잠금 해제', '1': '잠금' };
-
-        // 계정 섹션
-        const accSection = acc ? `
-            <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Account</div>
-            <div class="bg-white border border-slate-200 rounded-lg p-3 space-y-1.5 mb-3">
-                <div class="flex flex-col gap-0.5">
-                    <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">AccountID</span>
-                    <span class="text-[11px] flex items-center gap-1.5">
-                        ${fv(acc.accountId)}
-                        ${acc.isGuestAccount === true ? '<span class="text-[8px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded font-black border border-orange-200">게스트계정</span>' : ''}
-                    </span>
-                </div>
-                ${row('이름', acc.name)}
-                ${row('아이디(이메일)', acc.id)}
-                ${row('비밀번호', acc.password)}
-                ${row('전화번호', acc.phoneNumber)}
-                ${row('가용 프로필 수', acc.availableProfileCount)}
-                ${row('대표 프로필ID', mainProfileId)}
-            </div>` : `<div class="text-[10px] text-slate-300 italic mb-3">account: null</div>`;
-
-        // 라이선스 섹션
-        let licenseSection = '';
-        if (license) {
-            const typeKey = String(license.type ?? '');
-            const typeName = LICENSE_TYPE_MAP[typeKey] ?? `타입 ${typeKey}`;
-            const remSec = license.remainingSeconds ?? null;
-            let remText = null;
-            if (remSec !== null) {
-                const d = Math.floor(remSec / 86400);
-                const h = Math.floor((remSec % 86400) / 3600);
-                const m = Math.floor((remSec % 3600) / 60);
-                remText = `${d}일 ${h}시간 ${m}분 (${remSec.toLocaleString()}초)`;
-            }
-            licenseSection = `
-            <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">License</div>
-            <div class="bg-white border border-slate-200 rounded-lg p-3 space-y-1.5 mb-3">
-                ${row('타입', license.type !== undefined && license.type !== null ? `${license.type} (${typeName})` : null)}
-                ${row('남은 시간', remText)}
-            </div>`;
-        } else {
-            licenseSection = `<div class="text-[10px] text-slate-300 italic mb-3">license: null</div>`;
-        }
-
-        // 학교 / 반 섹션
-        const schoolSection = `
-            <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">School / Class</div>
-            <div class="bg-white border border-slate-200 rounded-lg p-3 space-y-1.5 mb-3">
-                ${school ? `
-                    ${row('학교ID', school.schoolId)}
-                    ${row('학교명', school.name)}` : `<div class="text-[10px] text-slate-300 italic">school: null</div>`}
-                ${classInfo ? `
-                    <div class="border-t border-slate-100 pt-1.5 mt-1.5"></div>
-                    ${row('반ID', classInfo.classId)}
-                    ${row('반명', classInfo.name)}
-                    ${row('학년', classInfo.grade)}` : `<div class="text-[10px] text-slate-300 italic">classInfo: null</div>`}
-            </div>`;
-
-        // 프로필 섹션
-        const profileCards = profiles.map(p => {
-            const isMain = p.profileId === mainProfileId;
-            const gcLock = GAME_CENTER_LOCK_MAP[String(p.gameCenterLock ?? '')] ?? String(p.gameCenterLock ?? null);
-            const dailyLock = LOCK_MAP[String(p.dailyStageCountLock ?? p.dailyStageCountLock === 0 ? p.dailyStageCountLock : '')] ?? null;
-            const rnLock = LOCK_MAP[String(p.reviewNoteAccuracyLock ?? '')] ?? null;
-            const pushDaysText = Array.isArray(p.pushDays) && p.pushDays.length > 0 ? p.pushDays.join(', ') : (p.pushDays === null ? null : '[]');
-            return `<div class="bg-white border ${isMain ? 'border-blue-300 ring-1 ring-blue-200' : 'border-slate-200'} rounded-lg p-2.5 space-y-1">
-                <div class="flex items-center justify-between mb-1">
-                    <span class="text-[11px] font-black text-slate-700">${p.name ?? '<span class="text-slate-300">null</span>'}</span>
-                    ${isMain ? '<span class="text-[8px] bg-blue-500 text-white px-1.5 py-0.5 rounded font-black">대표</span>' : ''}
-                </div>
-                ${row('profileId', p.profileId)}
-                ${row('코드', p.code)}
-                ${row('전화번호', p.phoneNumber)}
-                ${row('이메일', p.email)}
-                ${row('비밀번호', p.password)}
-                ${row('학습리포트', p.isLearningReportEnabled === true ? '활성' : p.isLearningReportEnabled === false ? '비활성' : null)}
-                ${row('레벨 범위', p.minLevel !== undefined ? `${p.minLevel} ~ ${p.maxLevel}` : null)}
-                ${row('국가 챕터ID', p.nationalChapterId)}
-                ${row('ShowingLevel', p.ShowingLevel ?? p.level)}
-                ${row('ChapterNumber', p.ChapterNumber ?? p.chapterNumber)}
-                ${row('일학습 현황', p.dailyStageCurrentCount !== undefined ? `${p.dailyStageCurrentCount} / ${p.dailyStageTargetCount} (최대 ${p.MaxDailyStudyTargetCount ?? 20})` : null)}
-                ${row('일학습 잠금', dailyLock ?? (p.dailyStageCountLock !== undefined ? String(p.dailyStageCountLock) : null))}
-                ${row('코인', p.coin !== undefined ? p.coin.toLocaleString() : null)}
-                ${row('대표 아바타ID', p.mainFriendsAvatarCharacterId)}
-                ${row('게임센터 잠금', gcLock)}
-                ${row('오답노트 정확도', p.reviewNoteAccuracy !== undefined ? `${p.reviewNoteAccuracy}%` : null)}
-                ${row('오답노트 잠금', rnLock ?? (p.reviewNoteAccuracyLock !== undefined ? String(p.reviewNoteAccuracyLock) : null))}
-                ${row('타이틀ID', p.titleId)}
-                ${row('국가코드', p.countryCode)}
-                ${row('푸시 알림', p.isPushEnabled === true ? '활성' : p.isPushEnabled === false ? '비활성' : null)}
-                ${row('푸시 요일', pushDaysText)}
-                ${row('푸시 시간', p.pushTime)}
-                ${(() => {
-                    const chars = Array.isArray(p.friendsAvatarCharacters) ? p.friendsAvatarCharacters : [];
-                    if (chars.length === 0) return '';
-
-                    // 마스터 데이터에서 아바타 아이템 타입 맵 생성 (ko 우선, 없으면 다른 언어 사용)
-                    const avatarItemTypeMap = {};
-                    const avatarItemType1Map = {};
-                    const avatarItemFileNameMap = {};
-                    const langOrder = ['ko', 'en', 'ja'];
-                    for (const lang of langOrder) {
-                        const cached = masterDataCache[lang];
-                        if (cached) {
-                            const items = cached.masterData?.friendsAvatarMasterData?.friendsAvatarItems ?? [];
-                            items.forEach(item => {
-                                avatarItemTypeMap[item.friendsAvatarItemId] = item.itemInfoType2;
-                                avatarItemType1Map[item.friendsAvatarItemId] = item.type1;
-                                avatarItemFileNameMap[item.friendsAvatarItemId] = item.fileName;
-                            });
-                            if (Object.keys(avatarItemTypeMap).length > 0) break;
-                        }
-                    }
-
-                    const TYPE1_KO = {
-                        BACK_ACCESSORIES: '등 악세서리',
-                        HAT: '모자',
-                        HEAD_ACCESSORIES: '머리 악세서리',
-                        PANTS: '하의',
-                        SUIT: '한 벌옷',
-                        TOP: '상의',
-                        WEAPON: '무기',
-                    };
-                    const TYPE1_ORDER = ['HAT', 'HEAD_ACCESSORIES', 'TOP', 'SUIT', 'PANTS', 'BACK_ACCESSORIES', 'WEAPON'];
-                const CHARACTER_NAME = ['에러', '뚜이', '나누', '고고', '배로', '라니', '마크'];
-                    const renderItemId = id => {
-                        const type = avatarItemTypeMap[id];
-                        const type1 = avatarItemType1Map[id];
-                        const fileName = avatarItemFileNameMap[id];
-                        const imgPath = (type1 && fileName) ? getAvatarItemImagePath({ type1, fileName }) : null;
-                        const isReward = type === 'REWARD';
-                        const colorStyle = isReward ? ' style="color:#e91e8c"' : '';
-                        const colorCls = isReward ? 'font-bold' : '';
-                        if (imgPath) {
-                            return `<button class="font-mono text-[10px] ${colorCls} px-1 py-0.5 rounded hover:bg-slate-200 active:bg-slate-300 transition"${colorStyle} onmousedown="showAvatarItemPreview(event,'${imgPath}')" onmouseup="hideAvatarItemPreview()" onmouseleave="hideAvatarItemPreview()" ontouchstart="showAvatarItemPreview(event,'${imgPath}')" ontouchend="hideAvatarItemPreview()">${id}</button>`;
-                        }
-                        return `<span class="font-mono text-[10px] ${colorCls} text-slate-700"${colorStyle}>${id}</span>`;
-                    };
-
-                    const renderItemList = ids => {
-                        if (!Array.isArray(ids) || ids.length === 0) return '-';
-                        const groups = {};
-                        const unknownIds = [];
-                        ids.forEach(id => {
-                            const t1 = avatarItemType1Map[id];
-                            if (t1) {
-                                if (!groups[t1]) groups[t1] = [];
-                                groups[t1].push(id);
-                            } else {
-                                unknownIds.push(id);
-                            }
-                        });
-                        const hasGroups = Object.keys(groups).length > 0;
-                        if (!hasGroups) return ids.map(renderItemId).join('<span class="text-slate-300">, </span>');
-                        const sep = '<span class="text-slate-300">, </span>';
-                        const lines = [];
-                        const orderedKeys = [...TYPE1_ORDER.filter(k => groups[k]), ...Object.keys(groups).filter(k => !TYPE1_ORDER.includes(k))];
-                        orderedKeys.forEach(t1 => {
-                            const label = TYPE1_KO[t1] || t1;
-                            lines.push(`<span class="text-slate-400 font-bold">${label}:</span> ${groups[t1].map(renderItemId).join(sep)}`);
-                        });
-                        if (unknownIds.length > 0) lines.push(unknownIds.map(renderItemId).join(sep));
-                        return lines.join('<br>');
-                    };
-
-                    const charRows = chars.map(c => `
-                        <div class="bg-slate-50 border border-slate-100 rounded p-2 space-y-0.5">
-                            <div class="flex items-center gap-1.5 mb-0.5">
-                                <span class="text-[10px] font-black text-slate-600">${CHARACTER_NAME[c.friendsAvatarCharacterId]}</span>
-                                ${c.isOwned ? '<span class="text-[8px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-black border border-green-200">보유</span>' : '<span class="text-[8px] bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded font-black border border-slate-200">미보유</span>'}
-                            </div>
-                            <div class="text-[10px] text-slate-500 leading-relaxed">보유 아이템: ${renderItemList(c.ownedFriendsAvatarItemIds)}</div>
-                            <div class="text-[10px] text-slate-500 leading-relaxed">착용 아이템: ${renderItemList(c.equippedFriendsAvatarItemIds)}</div>
-                        </div>`).join('');
-                    return `<div class="flex flex-col gap-0.5"><span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">아바타 캐릭터 (${chars.length}개)</span><div class="space-y-1 mt-0.5">${charRows}</div></div>`;
-                })()}
-            </div>`;
-        }).join('');
-
-        loginInfoBody.innerHTML = `
-            ${accSection}
-            ${licenseSection}
-            ${schoolSection}
-            <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Profiles (${profiles.length}개)</div>
-            <div class="space-y-2">${profiles.length > 0 ? profileCards : '<div class="text-[10px] text-slate-300 italic">프로필 없음</div>'}</div>
-        `;
-        loginInfoSection.classList.remove('hidden');
-    } else {
-        loginInfoSection.classList.add('hidden');
-    }
+    populateLoginInfoPanel(log.login_info);
 
     // 개발자 코멘트 표시
     const devCommentSection = document.getElementById('modal-dev-comment-section');
@@ -2335,6 +2356,8 @@ window.onload = async () => {
 
     // 마스터 데이터 백그라운드 프리로드 (아바타 아이템 미리보기 등에 활용)
     loadMasterData('ko').catch(e => console.warn('마스터 데이터 프리로드 실패:', e));
+    // 국가 마스터 데이터 프리로드 (스테이지 정보 모달 활용)
+    loadCountryMasterData('KR').catch(e => console.warn('국가 마스터 데이터 프리로드 실패:', e));
 };
 
 function showAvatarItemPreview(event, src) {
@@ -2895,6 +2918,163 @@ function renderMasterDataUI(payload) {
     document.getElementById('md-content').classList.remove('hidden');
     document.getElementById('md-search').value = '';
     showMdTab(currentMdTab);
+}
+
+// 스테이지 ID 추출 (description에서 "(stageId: 40411)" 패턴 파싱)
+function extractStageId(text) {
+    if (!text) return null;
+    const match = text.match(/\(stageId:\s*(\d+)\)/i);
+    return match ? parseInt(match[1]) : null;
+}
+
+// 스테이지 정보 모달 열기
+function openStageInfoModal(stageId) {
+    const modal = document.getElementById('stageInfoModal');
+    const body = document.getElementById('stage-modal-body');
+    const subtitle = document.getElementById('stage-modal-subtitle');
+
+    subtitle.textContent = `stageId: ${stageId}`;
+    body.innerHTML = '<div class="text-center text-gray-400 py-10"><i class="fas fa-spinner fa-spin text-lg mr-2"></i>불러오는 중...</div>';
+    modal.classList.remove('hidden');
+
+    // 고정 스테이지 데이터 (language master — ko > en > ja 순으로 탐색)
+    let langStageData = null;
+    for (const lang of ['ko', 'en', 'ja']) {
+        const cache = masterDataCache[lang];
+        if (cache) {
+            const found = (cache.masterData?.stageMasterData?.stages ?? []).find(s => s.stageId === stageId);
+            if (found) { langStageData = found; break; }
+        }
+    }
+
+    // 국가별 스테이지 데이터 (stageId 필드 기준 매칭)
+    const countryLabels = { KR: '🇰🇷 KR (한국)', EN: '🇺🇸 EN (영어권)', JP: '🇯🇵 JP (일본)' };
+    const countryResults = [];
+    for (const [code, label] of Object.entries(countryLabels)) {
+        const cache = countryDataCache[code];
+        if (!cache) continue;
+        const allStages  = cache.nationalCurriculumMasterData?.nationalStages ?? [];
+        const chapters   = cache.nationalCurriculumMasterData?.nationalChapters ?? [];
+        const supremeChaps = cache.nationalCurriculumMasterData?.nationalSupremeChapters ?? [];
+        const found = allStages.find(s => s.stageId === stageId);
+        if (!found) continue;
+        const chapter      = chapters.find(c => c.nationalChapterId === found.nationalChapterId) ?? null;
+        const supremeChap  = chapter ? (supremeChaps.find(sc => sc.nationalSupremeChapterId === chapter.nationalSupremeChapterId) ?? null) : null;
+        countryResults.push({ code, label, stage: found, chapter, supremeChap });
+    }
+
+    // ─── 렌더링 ───────────────────────────────────────────────────────────
+    let html = '';
+
+    // ① 고정 스테이지 섹션
+    html += `
+    <div>
+        <h4 class="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+            <span class="inline-flex items-center justify-center w-5 h-5 bg-blue-100 rounded-full"><i class="fas fa-database text-blue-500 text-[9px]"></i></span>
+            고정 스테이지 마스터 데이터
+        </h4>`;
+    if (langStageData) {
+        html += `
+        <div class="bg-slate-50 rounded-2xl border border-slate-200 p-5">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                ${_stageField('Stage ID', langStageData.stageId, 'blue')}
+                ${_stageField('문제 수', langStageData.problemCount, 'indigo')}
+                ${_stageField('Pen Type', langStageData.penType ?? '-', 'slate')}
+                ${_stageField('Input Type', langStageData.inputType ?? '-', 'slate')}
+                ${_stageField('1% 제한시간', langStageData.second1 != null ? langStageData.second1 + 's' : '-', 'slate')}
+                ${_stageField('10% 제한시간', langStageData.second10 != null ? langStageData.second10 + 's' : '-', 'slate')}
+                ${_stageField('30% 제한시간', langStageData.second30 != null ? langStageData.second30 + 's' : '-', 'slate')}
+                ${_stageField('50% 제한시간', langStageData.second50 != null ? langStageData.second50 + 's' : '-', 'slate')}
+            </div>
+            <div class="flex flex-wrap gap-3 pt-3 border-t border-slate-200">
+                <div class="flex-1 min-w-0">
+                    <p class="text-[10px] text-slate-400 uppercase font-bold mb-1 tracking-wide">Code</p>
+                    <p class="font-mono text-xs text-indigo-700 bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-lg truncate">${langStageData.code ?? '-'}</p>
+                </div>
+                ${langStageData.prefab ? `
+                <div class="flex-1 min-w-0">
+                    <p class="text-[10px] text-slate-400 uppercase font-bold mb-1 tracking-wide">Prefab</p>
+                    <p class="font-mono text-xs text-purple-700 bg-purple-50 border border-purple-100 px-3 py-1.5 rounded-lg truncate">${langStageData.prefab}</p>
+                </div>` : ''}
+            </div>
+        </div>`;
+    } else {
+        html += `
+        <div class="bg-slate-50 rounded-2xl border border-dashed border-slate-300 p-6 text-center text-slate-400 text-sm">
+            <i class="fas fa-database mr-1 opacity-50"></i> 데이터 없음
+            <p class="text-xs mt-1 text-slate-300">언어 마스터 데이터가 로드되지 않았습니다.</p>
+        </div>`;
+    }
+    html += `</div>`;
+
+    // ② 국가별 스테이지 섹션
+    html += `
+    <div>
+        <h4 class="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+            <span class="inline-flex items-center justify-center w-5 h-5 bg-emerald-100 rounded-full"><i class="fas fa-globe text-emerald-500 text-[9px]"></i></span>
+            국가별 스테이지 데이터
+        </h4>`;
+    if (countryResults.length > 0) {
+        html += `<div class="space-y-3">`;
+        for (const { label, stage, chapter, supremeChap } of countryResults) {
+            const levelColor = { 1:'purple', 2:'blue', 3:'indigo', 4:'teal' }[supremeChap?.level] ?? 'slate';
+            html += `
+            <div class="bg-slate-50 rounded-2xl border border-slate-200 p-4">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="text-base font-black text-slate-700">${label}</span>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+                    ${_stageField('국가스테이지 ID', stage.nationalStageId, 'emerald')}
+                    ${_stageField('스테이지 ID', stage.stageId, 'blue')}
+                    ${supremeChap ? _stageField('대단원 ID', chapter?.nationalSupremeChapterId ?? '-', 'slate') : ''}
+                    ${chapter ? _stageField('소단원 ID', stage.nationalChapterId, 'slate') : ''}
+                    ${supremeChap ? _stageField('레벨', supremeChap.level +  ' 레벨', levelColor) : ''}
+                    ${supremeChap ? _stageField('대단원 순서', supremeChap.sequence ?? '-', 'slate') : ''}
+                    ${chapter ? _stageField('소단원 순서', chapter.sequence ?? '-', 'slate') : ''}
+                    ${_stageField('스테이지 순서', stage.sequence ?? '-', 'slate')}
+
+                </div>
+                ${stage.translation?.translationKey ? `
+                <div class="pt-3 border-t border-slate-200">
+                    <p class="text-[10px] text-slate-400 uppercase font-bold mb-1 tracking-wide">Translation Key</p>
+                    <p class="font-mono text-xs text-indigo-700 bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-lg inline-block">${stage.translation.translationKey}</p>
+                </div>` : ''}
+                ${supremeChap?.translation?.translationKey ? `
+                <div class="pt-2 mt-1">
+                    <p class="text-[10px] text-slate-400 uppercase font-bold mb-1 tracking-wide">대단원 명 (Translation Key)</p>
+                    <p class="font-mono text-xs text-purple-700 bg-purple-50 border border-purple-100 px-3 py-1.5 rounded-lg inline-block">${supremeChap.translation.translationKey}</p>
+                </div>` : ''}
+            </div>`;
+        }
+        html += `</div>`;
+    } else {
+        html += `
+        <div class="bg-slate-50 rounded-2xl border border-dashed border-slate-300 p-6 text-center text-slate-400 text-sm">
+            <i class="fas fa-globe mr-1 opacity-50"></i> 국가별 데이터 없음
+            <p class="text-xs mt-1 text-slate-300">국가 마스터 데이터가 로드되지 않았습니다.</p>
+        </div>`;
+    }
+    html += `</div>`;
+
+    body.innerHTML = html;
+}
+
+// 스테이지 정보 필드 카드 렌더링 헬퍼
+function _stageField(label, value, color = 'slate') {
+    const colorMap = {
+        blue:    'text-blue-700 bg-blue-50 border-blue-100',
+        indigo:  'text-indigo-700 bg-indigo-50 border-indigo-100',
+        emerald: 'text-emerald-700 bg-emerald-50 border-emerald-100',
+        purple:  'text-purple-700 bg-purple-50 border-purple-100',
+        teal:    'text-teal-700 bg-teal-50 border-teal-100',
+        slate:   'text-slate-700 bg-white border-slate-200',
+    };
+    const cls = colorMap[color] ?? colorMap.slate;
+    return `
+    <div class="flex flex-col gap-1">
+        <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wide truncate">${label}</p>
+        <p class="text-sm font-bold ${cls} border px-2.5 py-1.5 rounded-lg text-center">${value ?? '-'}</p>
+    </div>`;
 }
 
 // 아바타 아이템 이미지 경로 생성
