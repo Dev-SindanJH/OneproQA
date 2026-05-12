@@ -3104,15 +3104,41 @@ function getAvatarItemImageCandidates(item) {
     const type1 = item.type1;
     const f = item.fileName;
     if (!f) return [];
-    const both = b => [`${b}_Icon.png`, `${b}_icon.png`];
+    // 여러 경로 후보에서 _Icon.png / _icon.png 변형을 모두 생성
+    const variants = (...bases) => bases.flatMap(b => [`${b}_Icon.png`, `${b}_icon.png`]);
     const MAP = {
-        'BACK_ACCESSORIES': both(`Avatar/BACK_ACCESSORIES/AccB${f}/accB_${f}`),
-        'HAT':              both(`Avatar/HAT/Hat${f}/hat_${f}`),
-        'HEAD_ACCESSORIES': both(`Avatar/HEAD_ACCESSORIES/AccH${f}/accH_${f}`),
-        'PANTS':            both(`Avatar/PANTS/Pants${f}/pants_${f}`),
-        'SUIT':             both(`Avatar/SUIT/Suit${f}/suit_${f}`),
-        'TOP':              both(`Avatar/TOP/Top${f}/top_${f}`),
-        'WEAPON':           both(`Avatar/WEAPON/Weapon${f}/weapon_${f}`),
+        'BACK_ACCESSORIES': variants(
+            `Avatar/BACK_ACCESSORIES/AccB${f}/accB_${f}`,
+            `Avatar/BACK_ACCESSORIES/accB${f}/accB_${f}`,
+            `Avatar/BACK_ACCESSORIES/AccB${f}/accb_${f}`,
+            `Avatar/BACK_ACCESSORIES/accb${f}/accb_${f}`,
+        ),
+        'HAT': variants(
+            `Avatar/HAT/Hat${f}/hat_${f}`,
+            `Avatar/HAT/hat${f}/hat_${f}`,
+        ),
+        'HEAD_ACCESSORIES': variants(
+            `Avatar/HEAD_ACCESSORIES/AccH${f}/accH_${f}`,
+            `Avatar/HEAD_ACCESSORIES/accH${f}/accH_${f}`,
+            `Avatar/HEAD_ACCESSORIES/AccH${f}/acch_${f}`,
+            `Avatar/HEAD_ACCESSORIES/acch${f}/acch_${f}`,
+        ),
+        'PANTS': variants(
+            `Avatar/PANTS/Pants${f}/pants_${f}`,
+            `Avatar/PANTS/pants${f}/pants_${f}`,
+        ),
+        'SUIT': variants(
+            `Avatar/SUIT/Suit${f}/suit_${f}`,
+            `Avatar/SUIT/suit${f}/suit_${f}`,
+        ),
+        'TOP': variants(
+            `Avatar/TOP/Top${f}/top_${f}`,
+            `Avatar/TOP/top${f}/top_${f}`,
+        ),
+        'WEAPON': variants(
+            `Avatar/WEAPON/Weapon${f}/weapon_${f}`,
+            `Avatar/WEAPON/weapon${f}/weapon_${f}`,
+        ),
     };
     return MAP[type1] ?? [];
 }
