@@ -2372,10 +2372,23 @@ function showAvatarItemPreview(event, src) {
         preview.id = 'avatar-item-preview';
         preview.className = 'fixed pointer-events-none bg-white border border-slate-200 rounded-xl shadow-2xl p-2';
         preview.style.zIndex = '2147483647';
-        preview.innerHTML = '<img class="w-32 h-32 object-contain" onerror="if(!this.dataset.tried){this.dataset.tried=\'1\';this.src=this.src.replace(\'_Icon.png\',\'_icon.png\')}" />';
+        preview.innerHTML = '<img class="w-32 h-32 object-contain" />';
         document.body.appendChild(preview);
     }
-    preview.querySelector('img').src = src;
+    const img = preview.querySelector('img');
+    // src 기반으로 후보 배열 생성 (_Icon/_icon 양방향 포함)
+    const candidates = [src];
+    if (src.includes('_Icon.png')) candidates.push(src.replace('_Icon.png', '_icon.png'));
+    else if (src.includes('_icon.png')) candidates.push(src.replace('_icon.png', '_Icon.png'));
+    img.dataset.c = JSON.stringify(candidates);
+    img.dataset.ci = '0';
+    img.onerror = function() {
+        const ci = +this.dataset.ci + 1;
+        const ca = JSON.parse(this.dataset.c);
+        this.dataset.ci = ci;
+        if (ci < ca.length) this.src = ca[ci];
+    };
+    img.src = src;
     const rect = event.target.getBoundingClientRect();
     let left = rect.right + 8;
     let top = rect.top;
@@ -3086,21 +3099,27 @@ function _stageField(label, value, color = 'slate') {
     </div>`;
 }
 
-// 아바타 아이템 이미지 경로 생성
-function getAvatarItemImagePath(item) {
+// 아바타 아이템 이미지 경로 후보 목록 생성 (대소문자 변형 포함)
+function getAvatarItemImageCandidates(item) {
     const type1 = item.type1;
     const f = item.fileName;
-    if (!f) return null;
-    const TYPE1_PATH = {
-        'BACK_ACCESSORIES': `Avatar/BACK_ACCESSORIES/AccB${f}/accB_${f}_Icon.png`,
-        'HAT':              `Avatar/HAT/Hat${f}/hat_${f}_Icon.png`,
-        'HEAD_ACCESSORIES': `Avatar/HEAD_ACCESSORIES/AccH${f}/accH_${f}_Icon.png`,
-        'PANTS':            `Avatar/PANTS/Pants${f}/pants_${f}_Icon.png`,
-        'SUIT':             `Avatar/SUIT/Suit${f}/suit_${f}_Icon.png`,
-        'TOP':              `Avatar/TOP/Top${f}/top_${f}_Icon.png`,
-        'WEAPON':           `Avatar/WEAPON/Weapon${f}/weapon_${f}_Icon.png`,
+    if (!f) return [];
+    const both = b => [`${b}_Icon.png`, `${b}_icon.png`];
+    const MAP = {
+        'BACK_ACCESSORIES': both(`Avatar/BACK_ACCESSORIES/AccB${f}/accB_${f}`),
+        'HAT':              both(`Avatar/HAT/Hat${f}/hat_${f}`),
+        'HEAD_ACCESSORIES': both(`Avatar/HEAD_ACCESSORIES/AccH${f}/accH_${f}`),
+        'PANTS':            both(`Avatar/PANTS/Pants${f}/pants_${f}`),
+        'SUIT':             both(`Avatar/SUIT/Suit${f}/suit_${f}`),
+        'TOP':              both(`Avatar/TOP/Top${f}/top_${f}`),
+        'WEAPON':           both(`Avatar/WEAPON/Weapon${f}/weapon_${f}`),
     };
-    return TYPE1_PATH[type1] ?? null;
+    return MAP[type1] ?? [];
+}
+
+// 아바타 아이템 이미지 경로 생성 (첫 번째 후보 반환)
+function getAvatarItemImagePath(item) {
+    return getAvatarItemImageCandidates(item)[0] ?? null;
 }
 
 const MD_TAB_CONFIG = {
@@ -3183,9 +3202,10 @@ const MD_TAB_CONFIG = {
         getData: md => md.friendsAvatarMasterData?.friendsAvatarItems ?? [],
         columns: [
             { label: '이미지', key: row => {
-                const src = getAvatarItemImagePath(row);
-                if (!src) return '<span class="text-slate-300 text-xs">-</span>';
-                return `<img src="${src}" alt="${row.friendsAvatarItemId}" class="w-20 h-20 object-contain mx-auto rounded" onerror="if(!this.dataset.tried){this.dataset.tried='1';this.src=this.src.replace('_Icon.png','_icon.png')}else{this.style.display='none';this.nextElementSibling.style.display='inline'}"><span class="text-slate-300 text-xs hidden">없음</span>`;
+                const candidates = getAvatarItemImageCandidates(row);
+                if (!candidates.length) return '<span class="text-slate-300 text-xs">-</span>';
+                const cAttr = JSON.stringify(candidates).replace(/"/g, '&quot;');
+                return `<img src="${candidates[0]}" alt="${row.friendsAvatarItemId}" class="w-20 h-20 object-contain mx-auto rounded" data-c="${cAttr}" data-ci="0" onerror="var ci=+this.dataset.ci+1,ca=JSON.parse(this.dataset.c);this.dataset.ci=ci;if(ci<ca.length){this.src=ca[ci]}else{this.style.display='none';this.nextElementSibling.style.display='inline'}"><span class="text-slate-300 text-xs hidden">없음</span>`;
             }, cls: 'text-center w-28' },
             { label: 'ID', key: 'friendsAvatarItemId', cls: 'text-center font-mono text-xs' },
             { label: 'Type1', key: 'type1', cls: 'text-center text-xs', maxWidth: '100px' },
