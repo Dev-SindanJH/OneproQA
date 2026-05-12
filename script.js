@@ -2369,7 +2369,7 @@ function showAvatarItemPreview(event, src) {
         preview.id = 'avatar-item-preview';
         preview.className = 'fixed pointer-events-none bg-white border border-slate-200 rounded-xl shadow-2xl p-2';
         preview.style.zIndex = '2147483647';
-        preview.innerHTML = '<img class="w-32 h-32 object-contain" />';
+        preview.innerHTML = '<img class="w-32 h-32 object-contain" onerror="if(!this.dataset.tried){this.dataset.tried=\'1\';this.src=this.src.replace(\'_Icon.png\',\'_icon.png\')}" />';
         document.body.appendChild(preview);
     }
     preview.querySelector('img').src = src;
@@ -3178,7 +3178,7 @@ const MD_TAB_CONFIG = {
             { label: '이미지', key: row => {
                 const src = getAvatarItemImagePath(row);
                 if (!src) return '<span class="text-slate-300 text-xs">-</span>';
-                return `<img src="${src}" alt="${row.friendsAvatarItemId}" class="w-20 h-20 object-contain mx-auto rounded" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span class="text-slate-300 text-xs hidden">없음</span>`;
+                return `<img src="${src}" alt="${row.friendsAvatarItemId}" class="w-20 h-20 object-contain mx-auto rounded" onerror="if(!this.dataset.tried){this.dataset.tried='1';this.src=this.src.replace('_Icon.png','_icon.png')}else{this.style.display='none';this.nextElementSibling.style.display='inline'}"><span class="text-slate-300 text-xs hidden">없음</span>`;
             }, cls: 'text-center w-28' },
             { label: 'ID', key: 'friendsAvatarItemId', cls: 'text-center font-mono text-xs' },
             { label: 'Type1', key: 'type1', cls: 'text-center text-xs', maxWidth: '100px' },
