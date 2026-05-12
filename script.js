@@ -14,6 +14,7 @@ let currentPage = 1;
 const itemsPerPage = 10;
 let currentBundleCode = ''; // 현재 검수 번들 코드
 let currentAppVersion = ''; // 현재 앱 버전
+let currentServerInfo = 'dev'; // 현재 서버 환경: 'dev' | 'prod'
 let dateSortOrder = 'desc'; // 날짜 정렬 순서: 'asc' (오름차순), 'desc' (내림차순), 'none' (정렬 없음)
 
 // 현재 필터 상태 저장
@@ -554,6 +555,7 @@ function updateQAInformationUI(qaInfo) {
 
         // 서버 정보 및 다운로드 링크 설정
         const serverInfo = qaInfo.serverInfo || 'dev';
+        currentServerInfo = serverInfo;
         if (serverInfo === 'dev') {
             serverEl.innerText = '개발서버';
             serverEl.className = 'text-lg font-black text-orange-600';
@@ -571,6 +573,7 @@ function updateQAInformationUI(qaInfo) {
     } else {
         currentBundleCode = '';
         currentAppVersion = '3.0.0'; // 기본값
+        currentServerInfo = 'dev';
         versionEl.innerText = "없음"; 
         roundEl.innerText = "-"; 
         periodEl.innerText = "-";
@@ -2451,7 +2454,11 @@ let countryDataCache = {}; // { KR: data, EN: data, JP: data }
 let currentCountryTab = '';
 let countryMdAllRows = [];
 
-const MASTER_API_BASE = 'https://dev-v3-api.1promath.com';
+const MASTER_API_BASE_DEV  = 'https://dev-v3-api.1promath.com';
+const MASTER_API_BASE_PROD = 'https://v3-api.1promath.com';
+function getMasterApiBase() {
+    return currentServerInfo === 'prod' ? MASTER_API_BASE_PROD : MASTER_API_BASE_DEV;
+}
 
 function isLocalEnvironment() {
     return window.location.protocol === 'file:' ||
@@ -2527,7 +2534,7 @@ async function loadMasterData(lang = 'ko', forceRefresh = false) {
 
             const timezoneIdentifier = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-            const res = await fetch(`${MASTER_API_BASE}/api/v3/app-init/language-codes/${lang}`, {
+            const res = await fetch(`${getMasterApiBase()}/api/v3/app-init/language-codes/${lang}`, {
                 headers: {
                     'Client-Datetime': clientDatetime,
                     'Timezone-Identifier': timezoneIdentifier,
@@ -2648,7 +2655,7 @@ async function loadCountryMasterData(countryCode = 'KR', forceRefresh = false) {
                 `T${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}${offsetStr}`;
             const timezoneIdentifier = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-            const res = await fetch(`${MASTER_API_BASE}/api/v3/app-init/master-data/country-codes/${countryCode}`, {
+            const res = await fetch(`${getMasterApiBase()}/api/v3/app-init/master-data/country-codes/${countryCode}`, {
                 headers: {
                     'Client-Datetime': clientDatetime,
                     'Timezone-Identifier': timezoneIdentifier,
