@@ -1440,7 +1440,9 @@ function populateLoginInfoPanel(loginInfoData) {
                     const colorStyle = isReward ? ' style="color:#e91e8c"' : '';
                     const colorCls = isReward ? 'font-bold' : '';
                     if (imgPath) {
-                        return `<button class="font-mono text-[10px] ${colorCls} px-1 py-0.5 rounded hover:bg-slate-200 active:bg-slate-300 transition"${colorStyle} onmousedown="showAvatarItemPreview(event,'${imgPath}')" onmouseup="hideAvatarItemPreview()" onmouseleave="hideAvatarItemPreview()" ontouchstart="showAvatarItemPreview(event,'${imgPath}')" ontouchend="hideAvatarItemPreview()">${id}</button>`;
+                        const allCandidates = getAvatarItemImageCandidates({ type1, fileName });
+                        const cAttr = JSON.stringify(allCandidates).replace(/"/g, '&quot;');
+                        return `<button class="font-mono text-[10px] ${colorCls} px-1 py-0.5 rounded hover:bg-slate-200 active:bg-slate-300 transition"${colorStyle} onmousedown="showAvatarItemPreview(event,'${imgPath}','${cAttr}')" onmouseup="hideAvatarItemPreview()" onmouseleave="hideAvatarItemPreview()" ontouchstart="showAvatarItemPreview(event,'${imgPath}','${cAttr}')" ontouchend="hideAvatarItemPreview()">${id}</button>`;
                     }
                     return `<span class="font-mono text-[10px] ${colorCls} text-slate-700"${colorStyle}>${id}</span>`;
                 };
@@ -2365,7 +2367,7 @@ window.onload = async () => {
     loadCountryMasterData('KR').catch(e => console.warn('국가 마스터 데이터 프리로드 실패:', e));
 };
 
-function showAvatarItemPreview(event, src) {
+function showAvatarItemPreview(event, src, candidatesJson) {
     let preview = document.getElementById('avatar-item-preview');
     if (!preview) {
         preview = document.createElement('div');
@@ -2376,10 +2378,16 @@ function showAvatarItemPreview(event, src) {
         document.body.appendChild(preview);
     }
     const img = preview.querySelector('img');
-    // src 기반으로 후보 배열 생성 (_Icon/_icon 양방향 포함)
-    const candidates = [src];
-    if (src.includes('_Icon.png')) candidates.push(src.replace('_Icon.png', '_icon.png'));
-    else if (src.includes('_icon.png')) candidates.push(src.replace('_icon.png', '_Icon.png'));
+    // 전체 후보 배열 사용 (전달된 경우), 없으면 _Icon/_icon 양방향만
+    let candidates;
+    if (candidatesJson) {
+        try { candidates = JSON.parse(candidatesJson.replace(/&quot;/g, '"')); } catch(e) { candidates = null; }
+    }
+    if (!candidates || !candidates.length) {
+        candidates = [src];
+        if (src.includes('_Icon.png')) candidates.push(src.replace('_Icon.png', '_icon.png'));
+        else if (src.includes('_icon.png')) candidates.push(src.replace('_icon.png', '_Icon.png'));
+    }
     img.dataset.c = JSON.stringify(candidates);
     img.dataset.ci = '0';
     img.onerror = function() {
