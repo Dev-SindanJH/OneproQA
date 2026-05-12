@@ -1463,11 +1463,13 @@ function populateLoginInfoPanel(loginInfoData) {
                 const charRows = chars.map(c => `
                     <div class="bg-slate-50 border border-slate-100 rounded p-2 space-y-0.5">
                         <div class="flex items-center gap-1.5 mb-0.5">
-                            <span class="text-[10px] font-black text-slate-600">${CHARACTER_NAME[c.friendsAvatarCharacterId]}</span>
+                            <span class="text-[14px] font-black text-slate-600">${CHARACTER_NAME[c.friendsAvatarCharacterId]}</span>
                             ${c.isOwned ? '<span class="text-[8px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-black border border-green-200">보유</span>' : '<span class="text-[8px] bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded font-black border border-slate-200">미보유</span>'}
                         </div>
-                        <div class="text-[10px] text-slate-500 leading-relaxed">보유 아이템: ${renderItemList(c.ownedFriendsAvatarItemIds)}</div>
-                        <div class="text-[10px] text-slate-500 leading-relaxed">착용 아이템: ${renderItemList(c.equippedFriendsAvatarItemIds)}</div>
+                        <br>
+                        <div class="text-[12px] text-slate-500 leading-relaxed"><b>보유 아이템:</b><br> ${renderItemList(c.ownedFriendsAvatarItemIds)}</div>
+                        <br>
+                        <div class="text-[12px] text-slate-500 leading-relaxed"><b>착용 아이템:</b><br> ${renderItemList(c.equippedFriendsAvatarItemIds)}</div>
                     </div>`).join('');
                 return `<div class="flex flex-col gap-0.5"><span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">아바타 캐릭터 (${chars.length}개)</span><div class="space-y-1 mt-0.5">${charRows}</div></div>`;
             })()}
