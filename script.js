@@ -2332,6 +2332,9 @@ window.onload = async () => {
 
     // 로그인 정보 패널 드래그 이동
     initLoginInfoPanelDrag();
+
+    // 마스터 데이터 백그라운드 프리로드 (아바타 아이템 미리보기 등에 활용)
+    loadMasterData('ko').catch(e => console.warn('마스터 데이터 프리로드 실패:', e));
 };
 
 function showAvatarItemPreview(event, src) {
