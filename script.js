@@ -317,6 +317,11 @@ function showSection(sectionId) {
         loadMasterData(currentMasterLang);
     }
 
+    // 검수 계정 관리 탭 진입 시 자동 로드
+    if (sectionId === 'accounts') {
+        fetchAccounts();
+    }
+
     // 모바일에서 섹션 전환 시 사이드바 자동 닫기
     if (window.innerWidth < 768) {
         const sidebar = document.getElementById('sidebar');
@@ -480,6 +485,15 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             tooltip.style.left = `${rect.left}px`;
             tooltip.style.right = 'auto';
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            const detailModal = document.getElementById('detailModal');
+            if (detailModal && !detailModal.classList.contains('hidden')) {
+                closeModal('detailModal');
+            }
         }
     });
 });
@@ -2385,6 +2399,91 @@ function updateDashboardAnalytics(logs) {
     renderAuthorChart(logs);
     renderSceneChart(logs);
     renderPopupChart(logs);
+}
+
+/** 검수 계정 관리 함수 **/
+function openAddAccountModal() {
+    document.getElementById('account-login-id').value = '';
+    openModal('addAccountModal');
+}
+
+async function submitAddAccount() {
+    const loginId = document.getElementById('account-login-id').value.trim();
+
+    if (!loginId) {
+        showToast('로그인 ID를 입력해주세요.', 'error');
+        return;
+    }
+
+    const btn = document.getElementById('account-submit-btn');
+    btn.innerText = '등록 중...';
+    btn.disabled = true;
+
+    const { error } = await supabaseClient
+        .from('qa_accounts')
+        .insert([{ login_id: loginId }]);
+
+    btn.innerText = '등록하기';
+    btn.disabled = false;
+
+    if (error) {
+        showToast('등록 실패: ' + error.message, 'error');
+    } else {
+        showToast('계정이 등록되었습니다.');
+        closeModal('addAccountModal');
+        fetchAccounts();
+    }
+}
+
+async function deleteAccount(id) {
+    if (!confirm('이 계정을 삭제하시겠습니까?')) return;
+
+    const { error } = await supabaseClient
+        .from('qa_accounts')
+        .delete()
+        .eq('id', id);
+
+    if (error) {
+        showToast('삭제 실패: ' + error.message, 'error');
+    } else {
+        showToast('계정이 삭제되었습니다.');
+        fetchAccounts();
+    }
+}
+
+async function fetchAccounts() {
+    const tbody = document.getElementById('accountTableBody');
+    if (!tbody) return;
+
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>불러오는 중...</td></tr>';
+
+    const { data, error } = await supabaseClient
+        .from('qa_accounts')
+        .select('id,created_at,login_id')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-red-500">실패: ${error.message}</td></tr>`;
+        return;
+    }
+
+    if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-400">등록된 계정이 없습니다.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = data.map((acc, idx) => `
+        <tr class="hover:bg-blue-50/20 transition">
+            <td class="px-6 py-4 text-center text-xs text-slate-400 font-mono">${idx + 1}</td>
+            <td class="px-6 py-4 font-bold text-slate-700">${acc.login_id}</td>
+            <td class="px-6 py-4 text-center text-xs text-slate-500">${formatKST(acc.created_at)}</td>
+            <td class="px-6 py-4 text-center">
+                <button onclick="deleteAccount('${acc.id}')" class="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 px-3 py-1.5 rounded-lg text-xs font-bold transition">
+                    <i class="fas fa-trash-alt mr-1"></i>삭제
+                </button>
+            </td>
+        </tr>
+    `).join('');
 }
 
 // 초기 실행

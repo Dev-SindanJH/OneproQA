@@ -43,6 +43,9 @@
                 <button onclick="showSection('masterdata')" id="nav-masterdata" class="nav-item whitespace-nowrap w-full flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-white transition">
                     <i class="fas fa-database mr-3"></i> 마스터 데이터
                 </button>
+                <button onclick="showSection('accounts')" id="nav-accounts" class="nav-item whitespace-nowrap w-full flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-white transition">
+                    <i class="fas fa-user-shield mr-3"></i> 검수 계정 관리
+                </button>
             </nav>
         </aside>
 
@@ -380,6 +383,35 @@
                 </div>
             </section>
 
+            <!-- ===== 검수 계정 관리 섹션 ===== -->
+            <section id="accounts" class="section">
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold mb-1 text-slate-800">검수 계정 관리</h2>
+                        <p class="text-sm text-gray-500">검수에 사용되는 테스트 계정을 관리합니다.</p>
+                    </div>
+                    <button onclick="openAddAccountModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 shadow-md shadow-blue-200 transition">
+                        <i class="fas fa-plus mr-2"></i>계정 추가
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-sm" id="accountTable">
+                        <thead class="bg-slate-50 text-gray-500 text-xs uppercase">
+                            <tr>
+                                <th class="px-6 py-4 font-bold border-b text-center">번호</th>
+                                <th class="px-6 py-4 font-bold border-b">로그인 ID</th>
+                                <th class="px-6 py-4 font-bold border-b text-center">생성일</th>
+                                <th class="px-6 py-4 font-bold border-b text-center">관리</th>
+                            </tr>
+                        </thead>
+                        <tbody id="accountTableBody" class="divide-y divide-gray-100">
+                            <tr><td colspan="4" class="text-center py-8 text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>불러오는 중...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
             <!-- ===== 마스터 데이터 섹션 ===== -->
             <section id="masterdata" class="section">
                 <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
@@ -483,7 +515,27 @@
         </main>
     </div>
 
-    <div id="detailModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100000]" style="z-index: 100001;">
+    <!-- 계정 추가 모달 -->
+    <div id="addAccountModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100002]">
+        <div class="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div class="p-6 border-b bg-blue-50">
+                <h3 class="text-lg font-black text-blue-800"><i class="fas fa-user-plus mr-2"></i>검수 계정 추가</h3>
+                <p class="text-xs text-blue-600 mt-1">등록할 계정의 로그인 ID를 입력하세요.</p>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">로그인 ID</label>
+                    <input type="text" id="account-login-id" placeholder="로그인 ID를 입력하세요" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                </div>
+            </div>
+            <div class="p-5 bg-slate-50 border-t flex justify-end gap-3">
+                <button onclick="closeModal('addAccountModal')" class="bg-slate-200 text-slate-600 px-4 py-2 rounded-xl font-bold hover:bg-slate-300 transition text-sm">취소</button>
+                <button onclick="submitAddAccount()" id="account-submit-btn" class="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-blue-700 transition text-sm shadow-md">등록하기</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="detailModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" style="z-index: 100001;">
         <div class="bg-white rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
             <div class="p-6 border-b flex justify-between items-start bg-slate-50 flex-shrink-0">
                 <div>
