@@ -2633,6 +2633,64 @@ let countryDataCache = {}; // { KR: data, EN: data, JP: data }
 let currentCountryTab = '';
 let countryMdAllRows = [];
 
+const MD_PAGE_SIZE = 200;
+let mdCurrentPage = 1;
+let mdFilteredRows = [];
+let mdCurrentColumns = [];
+let mdInputSortDir = null; // null | 'asc' | 'desc'
+
+let countryMdCurrentPage = 1;
+let countryMdFilteredRows = [];
+let countryMdCurrentColumns = [];
+
+function toggleMdInputSort() {
+    if (mdInputSortDir === null || mdInputSortDir === 'desc') {
+        mdInputSortDir = 'asc';
+    } else {
+        mdInputSortDir = 'desc';
+    }
+    mdCurrentPage = 1;
+    _renderMdTableBody(mdFilteredRows, mdCurrentColumns);
+}
+
+function changeMdPage(page) {
+    mdCurrentPage = page;
+    _renderMdTableBody(mdFilteredRows, mdCurrentColumns);
+}
+
+function changeCountryMdPage(page) {
+    countryMdCurrentPage = page;
+    _renderCountryTableBody(countryMdFilteredRows, countryMdCurrentColumns);
+}
+
+function _buildMdPagination(containerId, total, currentPage, pageSize, changeFn) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+    if (total <= pageSize) return;
+    const totalPages = Math.ceil(total / pageSize);
+    const prevDis = currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-100';
+    container.innerHTML += `<button onclick="${changeFn}(${currentPage - 1})" class="px-3 py-1 rounded border border-gray-200 text-slate-600 text-xs font-bold ${prevDis}" ${currentPage === 1 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>`;
+    const maxV = 10;
+    const group = Math.ceil(currentPage / maxV);
+    const startP = (group - 1) * maxV + 1;
+    const endP = Math.min(startP + maxV - 1, totalPages);
+    if (startP > 1) {
+        container.innerHTML += `<button onclick="${changeFn}(1)" class="px-3 py-1 rounded border bg-white text-slate-600 border-gray-200 hover:bg-slate-50 text-xs font-bold transition">1</button>`;
+        if (startP > 2) container.innerHTML += `<span class="px-2 py-1 text-slate-400">...</span>`;
+    }
+    for (let i = startP; i <= endP; i++) {
+        const ac = i === currentPage ? 'bg-blue-500 text-white border-blue-500' : 'bg-white text-slate-600 border-gray-200 hover:bg-slate-50';
+        container.innerHTML += `<button onclick="${changeFn}(${i})" class="px-3 py-1 rounded border text-xs font-bold transition ${ac}">${i}</button>`;
+    }
+    if (endP < totalPages) {
+        if (endP < totalPages - 1) container.innerHTML += `<span class="px-2 py-1 text-slate-400">...</span>`;
+        container.innerHTML += `<button onclick="${changeFn}(${totalPages})" class="px-3 py-1 rounded border bg-white text-slate-600 border-gray-200 hover:bg-slate-50 text-xs font-bold transition">${totalPages}</button>`;
+    }
+    const nextDis = currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-100';
+    container.innerHTML += `<button onclick="${changeFn}(${currentPage + 1})" class="px-3 py-1 rounded border border-gray-200 text-slate-600 text-xs font-bold ${nextDis}" ${currentPage === totalPages ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
+}
+
 const MASTER_API_BASE_DEV  = 'https://dev-v3-api.1promath.com';
 const MASTER_API_BASE_PROD = 'https://v3-api.1promath.com';
 function getMasterApiBase() {
@@ -3019,31 +3077,43 @@ function filterCountryMdTable() {
         })
     ) : countryMdAllRows;
 
+    countryMdCurrentPage = 1;
     renderCountryTable(filtered, cfg.columns);
 }
 
 function renderCountryTable(rows, columns) {
+    countryMdFilteredRows = rows;
+    countryMdCurrentColumns = columns;
+    countryMdCurrentPage = 1;
+
     const thead = document.getElementById('md-country-thead');
-    const tbody = document.getElementById('md-country-tbody');
     const countEl = document.getElementById('md-country-row-count');
 
     thead.innerHTML = '<tr>' + columns.map(c =>
         `<th class="px-4 py-3 font-bold border-b whitespace-nowrap">${c.label}</th>`
     ).join('') + '</tr>';
 
+    countEl.textContent = `${rows.length.toLocaleString()}건`;
+    _renderCountryTableBody(rows, columns);
+}
+
+function _renderCountryTableBody(rows, columns) {
+    const tbody = document.getElementById('md-country-tbody');
+
     if (rows.length === 0) {
         tbody.innerHTML = `<tr><td colspan="${columns.length}" class="text-center py-10 text-gray-400">결과 없음</td></tr>`;
-        countEl.textContent = '0건';
+        document.getElementById('md-country-pagination').innerHTML = '';
         return;
     }
 
-    const MAX_RENDER = 500;
-    const displayRows = rows.slice(0, MAX_RENDER);
+    const start = (countryMdCurrentPage - 1) * MD_PAGE_SIZE;
+    const pageRows = rows.slice(start, start + MD_PAGE_SIZE);
+    const globalOffset = start;
 
-    tbody.innerHTML = displayRows.map((row, i) =>
+    tbody.innerHTML = pageRows.map((row, i) =>
         '<tr class="hover:bg-slate-50/50 transition">' +
         columns.map(col => {
-            const raw = typeof col.key === 'function' ? col.key(row, i) : row[col.key];
+            const raw = typeof col.key === 'function' ? col.key(row, globalOffset + i) : row[col.key];
             const val = raw !== null && raw !== undefined
                 ? (typeof raw === 'object' ? JSON.stringify(raw) : raw)
                 : '-';
@@ -3052,9 +3122,7 @@ function renderCountryTable(rows, columns) {
         '</tr>'
     ).join('');
 
-    countEl.textContent = rows.length > MAX_RENDER
-        ? `${rows.length.toLocaleString()}건 중 ${MAX_RENDER}건 표시`
-        : `${rows.length.toLocaleString()}건`;
+    _buildMdPagination('md-country-pagination', rows.length, countryMdCurrentPage, MD_PAGE_SIZE, 'changeCountryMdPage');
 }
 
 
@@ -3347,7 +3415,7 @@ const MD_TAB_CONFIG = {
             { label: 'Sec 30%', key: 'second30', cls: 'text-center text-xs' },
             { label: 'Sec 50%', key: 'second50', cls: 'text-center text-xs' },
             { label: 'Pen', key: 'penType', cls: 'text-center text-xs' },
-            { label: 'Input', key: 'inputType', cls: 'text-center text-xs' },
+            { label: 'Input', key: 'inputType', cls: 'text-center text-xs', sortable: true },
             { label: 'Prefab', key: 'prefab', cls: 'text-center font-mono text-xs text-slate-500' },
         ]
     },
@@ -3457,6 +3525,7 @@ function showMdTab(tab) {
     if (!config) return;
 
     mdAllRows = config.getData(payload.masterData);
+    mdInputSortDir = null;
     document.getElementById('md-search').value = '';
     renderMdTable(mdAllRows, config.columns);
 }
@@ -3471,13 +3540,17 @@ function filterMdTable() {
             return String(val ?? '').toLowerCase().includes(q);
         })
     ) : mdAllRows;
+    mdCurrentPage = 1;
     renderMdTable(filtered, config.columns);
 }
 
 function renderMdTable(rows, columns) {
+    mdFilteredRows = rows;
+    mdCurrentColumns = columns;
+    mdCurrentPage = 1;
+
     const table = document.getElementById('md-table');
     const thead = document.getElementById('md-thead');
-    const tbody = document.getElementById('md-tbody');
     const countEl = document.getElementById('md-row-count');
 
     // colgroup으로 컬럼 너비 고정 (table-layout: fixed 전제)
@@ -3493,31 +3566,57 @@ function renderMdTable(rows, columns) {
     table.style.tableLayout = 'fixed';
 
     // 헤더
-    thead.innerHTML = '<tr>' + columns.map(c =>
-        `<th class="px-4 py-3 font-bold border-b whitespace-nowrap text-center overflow-hidden">${c.label}</th>`
-    ).join('') + '</tr>';
+    thead.innerHTML = '<tr>' + columns.map(c => {
+        if (c.sortable) {
+            return `<th class="px-4 py-3 font-bold border-b whitespace-nowrap text-center overflow-hidden">
+                <button onclick="toggleMdInputSort()" class="inline-flex items-center gap-1 hover:text-blue-600 transition">
+                    ${c.label}
+                    <i id="md-input-sort-icon" class="fas fa-sort text-gray-400 text-xs"></i>
+                </button>
+            </th>`;
+        }
+        return `<th class="px-4 py-3 font-bold border-b whitespace-nowrap text-center overflow-hidden">${c.label}</th>`;
+    }).join('') + '</tr>';
 
-    // 바디
+    countEl.textContent = `${rows.length.toLocaleString()}건`;
+    _renderMdTableBody(rows, columns);
+}
+
+function _renderMdTableBody(rows, columns) {
+    const tbody = document.getElementById('md-tbody');
+
     if (rows.length === 0) {
         tbody.innerHTML = `<tr><td colspan="${columns.length}" class="text-center py-10 text-gray-400">결과 없음</td></tr>`;
-        countEl.textContent = '0건';
+        document.getElementById('md-pagination').innerHTML = '';
         return;
     }
 
-    const MAX_RENDER = 500;
-    const displayRows = rows.slice(0, MAX_RENDER);
+    // Input 정렬 적용
+    const iconEl = document.getElementById('md-input-sort-icon');
+    if (mdInputSortDir !== null) {
+        rows = [...rows].sort((a, b) => {
+            const va = a.inputType ?? 0;
+            const vb = b.inputType ?? 0;
+            return mdInputSortDir === 'asc' ? va - vb : vb - va;
+        });
+        if (iconEl) iconEl.className = `fas fa-sort-${mdInputSortDir === 'asc' ? 'up' : 'down'} text-blue-500 text-xs`;
+    } else {
+        if (iconEl) iconEl.className = 'fas fa-sort text-gray-400 text-xs';
+    }
 
-    tbody.innerHTML = displayRows.map((row, i) =>
+    const start = (mdCurrentPage - 1) * MD_PAGE_SIZE;
+    const pageRows = rows.slice(start, start + MD_PAGE_SIZE);
+    const globalOffset = start;
+
+    tbody.innerHTML = pageRows.map((row, i) =>
         '<tr class="hover:bg-slate-50/50 transition">' +
         columns.map(col => {
-            const val = typeof col.key === 'function' ? col.key(row, i) : (row[col.key] ?? '-');
+            const val = typeof col.key === 'function' ? col.key(row, globalOffset + i) : (row[col.key] ?? '-');
             const ovf = col.maxWidth ? ' style="overflow:hidden"' : '';
             return `<td class="px-4 py-2.5 border-b border-gray-100 ${col.cls ?? ''}"${ovf}>${val}</td>`;
         }).join('') +
         '</tr>'
     ).join('');
 
-    countEl.textContent = rows.length > MAX_RENDER
-        ? `${rows.length.toLocaleString()}건 중 ${MAX_RENDER}건 표시`
-        : `${rows.length.toLocaleString()}건`;
+    _buildMdPagination('md-pagination', rows.length, mdCurrentPage, MD_PAGE_SIZE, 'changeMdPage');
 }
