@@ -1,0 +1,2002 @@
+[
+  {
+    "commonName": "Aruba",
+    "officialName": "Aruba",
+    "nativeOfficialName": "Aruba",
+    "nativeCommonName": "Aruba",
+    "code": "AW",
+    "cca3": "ABW"
+  },
+  {
+    "commonName": "Afghanistan",
+    "officialName": "Islamic Republic of Afghanistan",
+    "nativeOfficialName": "جمهوری اسلامی افغانستان",
+    "nativeCommonName": "افغانستان",
+    "code": "AF",
+    "cca3": "AFG"
+  },
+  {
+    "commonName": "Angola",
+    "officialName": "Republic of Angola",
+    "nativeOfficialName": "República de Angola",
+    "nativeCommonName": "Angola",
+    "code": "AO",
+    "cca3": "AGO"
+  },
+  {
+    "commonName": "Anguilla",
+    "officialName": "Anguilla",
+    "nativeOfficialName": "Anguilla",
+    "nativeCommonName": "Anguilla",
+    "code": "AI",
+    "cca3": "AIA"
+  },
+  {
+    "commonName": "Åland Islands",
+    "officialName": "Åland Islands",
+    "nativeOfficialName": "Landskapet Åland",
+    "nativeCommonName": "Åland",
+    "code": "AX",
+    "cca3": "ALA"
+  },
+  {
+    "commonName": "Albania",
+    "officialName": "Republic of Albania",
+    "nativeOfficialName": "Republika e Shqipërisë",
+    "nativeCommonName": "Shqipëria",
+    "code": "AL",
+    "cca3": "ALB"
+  },
+  {
+    "commonName": "Andorra",
+    "officialName": "Principality of Andorra",
+    "nativeOfficialName": "Principat d'Andorra",
+    "nativeCommonName": "Andorra",
+    "code": "AD",
+    "cca3": "AND"
+  },
+  {
+    "commonName": "United Arab Emirates",
+    "officialName": "United Arab Emirates",
+    "nativeOfficialName": "الإمارات العربية المتحدة",
+    "nativeCommonName": "دولة الإمارات العربية المتحدة",
+    "code": "AE",
+    "cca3": "ARE"
+  },
+  {
+    "commonName": "Argentina",
+    "officialName": "Argentine Republic",
+    "nativeOfficialName": "Argentine Republic",
+    "nativeCommonName": "Argentina",
+    "code": "AR",
+    "cca3": "ARG"
+  },
+  {
+    "commonName": "Armenia",
+    "officialName": "Republic of Armenia",
+    "nativeOfficialName": "Հայաստանի Հանրապետություն",
+    "nativeCommonName": "Հայաստան",
+    "code": "AM",
+    "cca3": "ARM"
+  },
+  {
+    "commonName": "American Samoa",
+    "officialName": "American Samoa",
+    "nativeOfficialName": "American Samoa",
+    "nativeCommonName": "American Samoa",
+    "code": "AS",
+    "cca3": "ASM"
+  },
+  {
+    "commonName": "Antarctica",
+    "officialName": "Antarctica",
+    "nativeOfficialName": "Antarctica",
+    "nativeCommonName": "Antarctica",
+    "code": "AQ",
+    "cca3": "ATA"
+  },
+  {
+    "commonName": "French Southern and Antarctic Lands",
+    "officialName": "Territory of the French Southern and Antarctic Lands",
+    "nativeOfficialName": "Territoire des Terres australes et antarctiques françaises",
+    "nativeCommonName": "Terres australes et antarctiques françaises",
+    "code": "TF",
+    "cca3": "ATF"
+  },
+  {
+    "commonName": "Antigua and Barbuda",
+    "officialName": "Antigua and Barbuda",
+    "nativeOfficialName": "Antigua and Barbuda",
+    "nativeCommonName": "Antigua and Barbuda",
+    "code": "AG",
+    "cca3": "ATG"
+  },
+  {
+    "commonName": "Australia",
+    "officialName": "Commonwealth of Australia",
+    "nativeOfficialName": "Commonwealth of Australia",
+    "nativeCommonName": "Australia",
+    "code": "AU",
+    "cca3": "AUS"
+  },
+  {
+    "commonName": "Austria",
+    "officialName": "Republic of Austria",
+    "nativeOfficialName": "Republik Österreich",
+    "nativeCommonName": "Österreich",
+    "code": "AT",
+    "cca3": "AUT"
+  },
+  {
+    "commonName": "Azerbaijan",
+    "officialName": "Republic of Azerbaijan",
+    "nativeOfficialName": "Azərbaycan Respublikası",
+    "nativeCommonName": "Azərbaycan",
+    "code": "AZ",
+    "cca3": "AZE"
+  },
+  {
+    "commonName": "Burundi",
+    "officialName": "Republic of Burundi",
+    "nativeOfficialName": "République du Burundi",
+    "nativeCommonName": "Burundi",
+    "code": "BI",
+    "cca3": "BDI"
+  },
+  {
+    "commonName": "Belgium",
+    "officialName": "Kingdom of Belgium",
+    "nativeOfficialName": "Königreich Belgien",
+    "nativeCommonName": "Belgien",
+    "code": "BE",
+    "cca3": "BEL"
+  },
+  {
+    "commonName": "Benin",
+    "officialName": "Republic of Benin",
+    "nativeOfficialName": "République du Bénin",
+    "nativeCommonName": "Bénin",
+    "code": "BJ",
+    "cca3": "BEN"
+  },
+  {
+    "commonName": "Burkina Faso",
+    "officialName": "Burkina Faso",
+    "nativeOfficialName": "République du Burkina",
+    "nativeCommonName": "Burkina Faso",
+    "code": "BF",
+    "cca3": "BFA"
+  },
+  {
+    "commonName": "Bangladesh",
+    "officialName": "People's Republic of Bangladesh",
+    "nativeOfficialName": "বাংলাদেশ গণপ্রজাতন্ত্রী",
+    "nativeCommonName": "বাংলাদেশ",
+    "code": "BD",
+    "cca3": "BGD"
+  },
+  {
+    "commonName": "Bulgaria",
+    "officialName": "Republic of Bulgaria",
+    "nativeOfficialName": "Република България",
+    "nativeCommonName": "България",
+    "code": "BG",
+    "cca3": "BGR"
+  },
+  {
+    "commonName": "Bahrain",
+    "officialName": "Kingdom of Bahrain",
+    "nativeOfficialName": "مملكة البحرين",
+    "nativeCommonName": "‏البحرين",
+    "code": "BH",
+    "cca3": "BHR"
+  },
+  {
+    "commonName": "Bahamas",
+    "officialName": "Commonwealth of the Bahamas",
+    "nativeOfficialName": "Commonwealth of the Bahamas",
+    "nativeCommonName": "Bahamas",
+    "code": "BS",
+    "cca3": "BHS"
+  },
+  {
+    "commonName": "Bosnia and Herzegovina",
+    "officialName": "Bosnia and Herzegovina",
+    "nativeOfficialName": "Bosna i Hercegovina",
+    "nativeCommonName": "Bosna i Hercegovina",
+    "code": "BA",
+    "cca3": "BIH"
+  },
+  {
+    "commonName": "Saint Barthélemy",
+    "officialName": "Collectivity of Saint Barthélemy",
+    "nativeOfficialName": "Collectivité de Saint-Barthélemy",
+    "nativeCommonName": "Saint-Barthélemy",
+    "code": "BL",
+    "cca3": "BLM"
+  },
+  {
+    "commonName": "Saint Helena, Ascension and Tristan da Cunha",
+    "officialName": "Saint Helena, Ascension and Tristan da Cunha",
+    "nativeOfficialName": "Saint Helena, Ascension and Tristan da Cunha",
+    "nativeCommonName": "Saint Helena, Ascension and Tristan da Cunha",
+    "code": "SH",
+    "cca3": "SHN"
+  },
+  {
+    "commonName": "Belarus",
+    "officialName": "Republic of Belarus",
+    "nativeOfficialName": "Рэспубліка Беларусь",
+    "nativeCommonName": "Белару́сь",
+    "code": "BY",
+    "cca3": "BLR"
+  },
+  {
+    "commonName": "Belize",
+    "officialName": "Belize",
+    "nativeOfficialName": "Belize",
+    "nativeCommonName": "Belize",
+    "code": "BZ",
+    "cca3": "BLZ"
+  },
+  {
+    "commonName": "Bermuda",
+    "officialName": "Bermuda",
+    "nativeOfficialName": "Bermuda",
+    "nativeCommonName": "Bermuda",
+    "code": "BM",
+    "cca3": "BMU"
+  },
+  {
+    "commonName": "Bolivia",
+    "officialName": "Plurinational State of Bolivia",
+    "nativeOfficialName": "Wuliwya Suyu",
+    "nativeCommonName": "Wuliwya",
+    "code": "BO",
+    "cca3": "BOL"
+  },
+  {
+    "commonName": "Caribbean Netherlands",
+    "officialName": "Bonaire, Sint Eustatius and Saba",
+    "nativeOfficialName": "Bonaire, Sint Eustatius en Saba",
+    "nativeCommonName": "Caribisch Nederland",
+    "code": "BQ",
+    "cca3": "BES"
+  },
+  {
+    "commonName": "Brazil",
+    "officialName": "Federative Republic of Brazil",
+    "nativeOfficialName": "República Federativa do Brasil",
+    "nativeCommonName": "Brasil",
+    "code": "BR",
+    "cca3": "BRA"
+  },
+  {
+    "commonName": "Barbados",
+    "officialName": "Barbados",
+    "nativeOfficialName": "Barbados",
+    "nativeCommonName": "Barbados",
+    "code": "BB",
+    "cca3": "BRB"
+  },
+  {
+    "commonName": "Brunei",
+    "officialName": "Nation of Brunei, Abode of Peace",
+    "nativeOfficialName": "Nation of Brunei, Abode Damai",
+    "nativeCommonName": "Negara Brunei Darussalam",
+    "code": "BN",
+    "cca3": "BRN"
+  },
+  {
+    "commonName": "Bhutan",
+    "officialName": "Kingdom of Bhutan",
+    "nativeOfficialName": "འབྲུག་རྒྱལ་ཁབ་",
+    "nativeCommonName": "འབྲུག་ཡུལ་",
+    "code": "BT",
+    "cca3": "BTN"
+  },
+  {
+    "commonName": "Bouvet Island",
+    "officialName": "Bouvet Island",
+    "nativeOfficialName": "Bouvetøya",
+    "nativeCommonName": "Bouvetøya",
+    "code": "BV",
+    "cca3": "BVT"
+  },
+  {
+    "commonName": "Botswana",
+    "officialName": "Republic of Botswana",
+    "nativeOfficialName": "Republic of Botswana",
+    "nativeCommonName": "Botswana",
+    "code": "BW",
+    "cca3": "BWA"
+  },
+  {
+    "commonName": "Central African Republic",
+    "officialName": "Central African Republic",
+    "nativeOfficialName": "République centrafricaine",
+    "nativeCommonName": "République centrafricaine",
+    "code": "CF",
+    "cca3": "CAF"
+  },
+  {
+    "commonName": "Canada",
+    "officialName": "Canada",
+    "nativeOfficialName": "Canada",
+    "nativeCommonName": "Canada",
+    "code": "CA",
+    "cca3": "CAN"
+  },
+  {
+    "commonName": "Cocos (Keeling) Islands",
+    "officialName": "Territory of the Cocos (Keeling) Islands",
+    "nativeOfficialName": "Territory of the Cocos (Keeling) Islands",
+    "nativeCommonName": "Cocos (Keeling) Islands",
+    "code": "CC",
+    "cca3": "CCK"
+  },
+  {
+    "commonName": "Switzerland",
+    "officialName": "Swiss Confederation",
+    "nativeOfficialName": "Confédération suisse",
+    "nativeCommonName": "Suisse",
+    "code": "CH",
+    "cca3": "CHE"
+  },
+  {
+    "commonName": "Chile",
+    "officialName": "Republic of Chile",
+    "nativeOfficialName": "República de Chile",
+    "nativeCommonName": "Chile",
+    "code": "CL",
+    "cca3": "CHL"
+  },
+  {
+    "commonName": "China",
+    "officialName": "People's Republic of China",
+    "nativeOfficialName": "中华人民共和国",
+    "nativeCommonName": "中国",
+    "code": "CN",
+    "cca3": "CHN"
+  },
+  {
+    "commonName": "Ivory Coast",
+    "officialName": "Republic of Côte d'Ivoire",
+    "nativeOfficialName": "République de Côte d'Ivoire",
+    "nativeCommonName": "Côte d'Ivoire",
+    "code": "CI",
+    "cca3": "CIV"
+  },
+  {
+    "commonName": "Cameroon",
+    "officialName": "Republic of Cameroon",
+    "nativeOfficialName": "Republic of Cameroon",
+    "nativeCommonName": "Cameroon",
+    "code": "CM",
+    "cca3": "CMR"
+  },
+  {
+    "commonName": "DR Congo",
+    "officialName": "Democratic Republic of the Congo",
+    "nativeOfficialName": "République démocratique du Congo",
+    "nativeCommonName": "RD Congo",
+    "code": "CD",
+    "cca3": "COD"
+  },
+  {
+    "commonName": "Republic of the Congo",
+    "officialName": "Republic of the Congo",
+    "nativeOfficialName": "République du Congo",
+    "nativeCommonName": "République du Congo",
+    "code": "CG",
+    "cca3": "COG"
+  },
+  {
+    "commonName": "Cook Islands",
+    "officialName": "Cook Islands",
+    "nativeOfficialName": "Cook Islands",
+    "nativeCommonName": "Cook Islands",
+    "code": "CK",
+    "cca3": "COK"
+  },
+  {
+    "commonName": "Colombia",
+    "officialName": "Republic of Colombia",
+    "nativeOfficialName": "República de Colombia",
+    "nativeCommonName": "Colombia",
+    "code": "CO",
+    "cca3": "COL"
+  },
+  {
+    "commonName": "Comoros",
+    "officialName": "Union of the Comoros",
+    "nativeOfficialName": "الاتحاد القمري",
+    "nativeCommonName": "القمر‎",
+    "code": "KM",
+    "cca3": "COM"
+  },
+  {
+    "commonName": "Cape Verde",
+    "officialName": "Republic of Cabo Verde",
+    "nativeOfficialName": "República de Cabo Verde",
+    "nativeCommonName": "Cabo Verde",
+    "code": "CV",
+    "cca3": "CPV"
+  },
+  {
+    "commonName": "Costa Rica",
+    "officialName": "Republic of Costa Rica",
+    "nativeOfficialName": "República de Costa Rica",
+    "nativeCommonName": "Costa Rica",
+    "code": "CR",
+    "cca3": "CRI"
+  },
+  {
+    "commonName": "Cuba",
+    "officialName": "Republic of Cuba",
+    "nativeOfficialName": "República de Cuba",
+    "nativeCommonName": "Cuba",
+    "code": "CU",
+    "cca3": "CUB"
+  },
+  {
+    "commonName": "Curaçao",
+    "officialName": "Country of Curaçao",
+    "nativeOfficialName": "Country of Curaçao",
+    "nativeCommonName": "Curaçao",
+    "code": "CW",
+    "cca3": "CUW"
+  },
+  {
+    "commonName": "Christmas Island",
+    "officialName": "Territory of Christmas Island",
+    "nativeOfficialName": "Territory of Christmas Island",
+    "nativeCommonName": "Christmas Island",
+    "code": "CX",
+    "cca3": "CXR"
+  },
+  {
+    "commonName": "Cayman Islands",
+    "officialName": "Cayman Islands",
+    "nativeOfficialName": "Cayman Islands",
+    "nativeCommonName": "Cayman Islands",
+    "code": "KY",
+    "cca3": "CYM"
+  },
+  {
+    "commonName": "Cyprus",
+    "officialName": "Republic of Cyprus",
+    "nativeOfficialName": "Δημοκρατία της Κύπρος",
+    "nativeCommonName": "Κύπρος",
+    "code": "CY",
+    "cca3": "CYP"
+  },
+  {
+    "commonName": "Czechia",
+    "officialName": "Czech Republic",
+    "nativeOfficialName": "Česká republika",
+    "nativeCommonName": "Česko",
+    "code": "CZ",
+    "cca3": "CZE"
+  },
+  {
+    "commonName": "Germany",
+    "officialName": "Federal Republic of Germany",
+    "nativeOfficialName": "Bundesrepublik Deutschland",
+    "nativeCommonName": "Deutschland",
+    "code": "DE",
+    "cca3": "DEU"
+  },
+  {
+    "commonName": "Djibouti",
+    "officialName": "Republic of Djibouti",
+    "nativeOfficialName": "جمهورية جيبوتي",
+    "nativeCommonName": "جيبوتي‎",
+    "code": "DJ",
+    "cca3": "DJI"
+  },
+  {
+    "commonName": "Dominica",
+    "officialName": "Commonwealth of Dominica",
+    "nativeOfficialName": "Commonwealth of Dominica",
+    "nativeCommonName": "Dominica",
+    "code": "DM",
+    "cca3": "DMA"
+  },
+  {
+    "commonName": "Denmark",
+    "officialName": "Kingdom of Denmark",
+    "nativeOfficialName": "Kongeriget Danmark",
+    "nativeCommonName": "Danmark",
+    "code": "DK",
+    "cca3": "DNK"
+  },
+  {
+    "commonName": "Dominican Republic",
+    "officialName": "Dominican Republic",
+    "nativeOfficialName": "República Dominicana",
+    "nativeCommonName": "República Dominicana",
+    "code": "DO",
+    "cca3": "DOM"
+  },
+  {
+    "commonName": "Algeria",
+    "officialName": "People's Democratic Republic of Algeria",
+    "nativeOfficialName": "الجمهورية الديمقراطية الشعبية الجزائرية",
+    "nativeCommonName": "الجزائر",
+    "code": "DZ",
+    "cca3": "DZA"
+  },
+  {
+    "commonName": "Ecuador",
+    "officialName": "Republic of Ecuador",
+    "nativeOfficialName": "República del Ecuador",
+    "nativeCommonName": "Ecuador",
+    "code": "EC",
+    "cca3": "ECU"
+  },
+  {
+    "commonName": "Egypt",
+    "officialName": "Arab Republic of Egypt",
+    "nativeOfficialName": "جمهورية مصر العربية",
+    "nativeCommonName": "مصر",
+    "code": "EG",
+    "cca3": "EGY"
+  },
+  {
+    "commonName": "Eritrea",
+    "officialName": "State of Eritrea",
+    "nativeOfficialName": "دولة إرتريا",
+    "nativeCommonName": "إرتريا‎",
+    "code": "ER",
+    "cca3": "ERI"
+  },
+  {
+    "commonName": "Western Sahara",
+    "officialName": "Sahrawi Arab Democratic Republic",
+    "nativeOfficialName": "Sahrawi Arab Democratic Republic",
+    "nativeCommonName": "Western Sahara",
+    "code": "EH",
+    "cca3": "ESH"
+  },
+  {
+    "commonName": "Spain",
+    "officialName": "Kingdom of Spain",
+    "nativeOfficialName": "Reino de España",
+    "nativeCommonName": "España",
+    "code": "ES",
+    "cca3": "ESP"
+  },
+  {
+    "commonName": "Estonia",
+    "officialName": "Republic of Estonia",
+    "nativeOfficialName": "Eesti Vabariik",
+    "nativeCommonName": "Eesti",
+    "code": "EE",
+    "cca3": "EST"
+  },
+  {
+    "commonName": "Ethiopia",
+    "officialName": "Federal Democratic Republic of Ethiopia",
+    "nativeOfficialName": "የኢትዮጵያ ፌዴራላዊ ዲሞክራሲያዊ ሪፐብሊክ",
+    "nativeCommonName": "ኢትዮጵያ",
+    "code": "ET",
+    "cca3": "ETH"
+  },
+  {
+    "commonName": "Finland",
+    "officialName": "Republic of Finland",
+    "nativeOfficialName": "Suomen tasavalta",
+    "nativeCommonName": "Suomi",
+    "code": "FI",
+    "cca3": "FIN"
+  },
+  {
+    "commonName": "Fiji",
+    "officialName": "Republic of Fiji",
+    "nativeOfficialName": "Republic of Fiji",
+    "nativeCommonName": "Fiji",
+    "code": "FJ",
+    "cca3": "FJI"
+  },
+  {
+    "commonName": "Falkland Islands",
+    "officialName": "Falkland Islands",
+    "nativeOfficialName": "Falkland Islands",
+    "nativeCommonName": "Falkland Islands",
+    "code": "FK",
+    "cca3": "FLK"
+  },
+  {
+    "commonName": "France",
+    "officialName": "French Republic",
+    "nativeOfficialName": "République française",
+    "nativeCommonName": "France",
+    "code": "FR",
+    "cca3": "FRA"
+  },
+  {
+    "commonName": "Faroe Islands",
+    "officialName": "Faroe Islands",
+    "nativeOfficialName": "Færøerne",
+    "nativeCommonName": "Færøerne",
+    "code": "FO",
+    "cca3": "FRO"
+  },
+  {
+    "commonName": "Micronesia",
+    "officialName": "Federated States of Micronesia",
+    "nativeOfficialName": "Federated States of Micronesia",
+    "nativeCommonName": "Micronesia",
+    "code": "FM",
+    "cca3": "FSM"
+  },
+  {
+    "commonName": "Gabon",
+    "officialName": "Gabonese Republic",
+    "nativeOfficialName": "République gabonaise",
+    "nativeCommonName": "Gabon",
+    "code": "GA",
+    "cca3": "GAB"
+  },
+  {
+    "commonName": "United Kingdom",
+    "officialName": "United Kingdom of Great Britain and Northern Ireland",
+    "nativeOfficialName": "United Kingdom of Great Britain and Northern Ireland",
+    "nativeCommonName": "United Kingdom",
+    "code": "GB",
+    "cca3": "GBR"
+  },
+  {
+    "commonName": "Georgia",
+    "officialName": "Georgia",
+    "nativeOfficialName": "საქართველო",
+    "nativeCommonName": "საქართველო",
+    "code": "GE",
+    "cca3": "GEO"
+  },
+  {
+    "commonName": "Guernsey",
+    "officialName": "Bailiwick of Guernsey",
+    "nativeOfficialName": "Bailiwick of Guernsey",
+    "nativeCommonName": "Guernsey",
+    "code": "GG",
+    "cca3": "GGY"
+  },
+  {
+    "commonName": "Ghana",
+    "officialName": "Republic of Ghana",
+    "nativeOfficialName": "Republic of Ghana",
+    "nativeCommonName": "Ghana",
+    "code": "GH",
+    "cca3": "GHA"
+  },
+  {
+    "commonName": "Gibraltar",
+    "officialName": "Gibraltar",
+    "nativeOfficialName": "Gibraltar",
+    "nativeCommonName": "Gibraltar",
+    "code": "GI",
+    "cca3": "GIB"
+  },
+  {
+    "commonName": "Guinea",
+    "officialName": "Republic of Guinea",
+    "nativeOfficialName": "République de Guinée",
+    "nativeCommonName": "Guinée",
+    "code": "GN",
+    "cca3": "GIN"
+  },
+  {
+    "commonName": "Guadeloupe",
+    "officialName": "Guadeloupe",
+    "nativeOfficialName": "Guadeloupe",
+    "nativeCommonName": "Guadeloupe",
+    "code": "GP",
+    "cca3": "GLP"
+  },
+  {
+    "commonName": "Gambia",
+    "officialName": "Republic of the Gambia",
+    "nativeOfficialName": "Republic of the Gambia",
+    "nativeCommonName": "Gambia",
+    "code": "GM",
+    "cca3": "GMB"
+  },
+  {
+    "commonName": "Guinea-Bissau",
+    "officialName": "Republic of Guinea-Bissau",
+    "nativeOfficialName": "República da Guiné-Bissau",
+    "nativeCommonName": "Guiné-Bissau",
+    "code": "GW",
+    "cca3": "GNB"
+  },
+  {
+    "commonName": "Equatorial Guinea",
+    "officialName": "Republic of Equatorial Guinea",
+    "nativeOfficialName": "République de la Guinée Équatoriale",
+    "nativeCommonName": "Guinée équatoriale",
+    "code": "GQ",
+    "cca3": "GNQ"
+  },
+  {
+    "commonName": "Greece",
+    "officialName": "Hellenic Republic",
+    "nativeOfficialName": "Ελληνική Δημοκρατία",
+    "nativeCommonName": "Ελλάδα",
+    "code": "GR",
+    "cca3": "GRC"
+  },
+  {
+    "commonName": "Grenada",
+    "officialName": "Grenada",
+    "nativeOfficialName": "Grenada",
+    "nativeCommonName": "Grenada",
+    "code": "GD",
+    "cca3": "GRD"
+  },
+  {
+    "commonName": "Greenland",
+    "officialName": "Greenland",
+    "nativeOfficialName": "Kalaallit Nunaat",
+    "nativeCommonName": "Kalaallit Nunaat",
+    "code": "GL",
+    "cca3": "GRL"
+  },
+  {
+    "commonName": "Guatemala",
+    "officialName": "Republic of Guatemala",
+    "nativeOfficialName": "República de Guatemala",
+    "nativeCommonName": "Guatemala",
+    "code": "GT",
+    "cca3": "GTM"
+  },
+  {
+    "commonName": "French Guiana",
+    "officialName": "Guiana",
+    "nativeOfficialName": "Guyane",
+    "nativeCommonName": "Guyane française",
+    "code": "GF",
+    "cca3": "GUF"
+  },
+  {
+    "commonName": "Guam",
+    "officialName": "Guam",
+    "nativeOfficialName": "Guåhån",
+    "nativeCommonName": "Guåhån",
+    "code": "GU",
+    "cca3": "GUM"
+  },
+  {
+    "commonName": "Guyana",
+    "officialName": "Co-operative Republic of Guyana",
+    "nativeOfficialName": "Co-operative Republic of Guyana",
+    "nativeCommonName": "Guyana",
+    "code": "GY",
+    "cca3": "GUY"
+  },
+  {
+    "commonName": "Hong Kong",
+    "officialName": "Hong Kong Special Administrative Region of the People's Republic of China",
+    "nativeOfficialName": "Hong Kong Special Administrative Region of the People's Republic of China",
+    "nativeCommonName": "Hong Kong",
+    "code": "HK",
+    "cca3": "HKG"
+  },
+  {
+    "commonName": "Heard Island and McDonald Islands",
+    "officialName": "Heard Island and McDonald Islands",
+    "nativeOfficialName": "Heard Island and McDonald Islands",
+    "nativeCommonName": "Heard Island and McDonald Islands",
+    "code": "HM",
+    "cca3": "HMD"
+  },
+  {
+    "commonName": "Honduras",
+    "officialName": "Republic of Honduras",
+    "nativeOfficialName": "República de Honduras",
+    "nativeCommonName": "Honduras",
+    "code": "HN",
+    "cca3": "HND"
+  },
+  {
+    "commonName": "Croatia",
+    "officialName": "Republic of Croatia",
+    "nativeOfficialName": "Republika Hrvatska",
+    "nativeCommonName": "Hrvatska",
+    "code": "HR",
+    "cca3": "HRV"
+  },
+  {
+    "commonName": "Haiti",
+    "officialName": "Republic of Haiti",
+    "nativeOfficialName": "République d'Haïti",
+    "nativeCommonName": "Haïti",
+    "code": "HT",
+    "cca3": "HTI"
+  },
+  {
+    "commonName": "Hungary",
+    "officialName": "Hungary",
+    "nativeOfficialName": "Magyarország",
+    "nativeCommonName": "Magyarország",
+    "code": "HU",
+    "cca3": "HUN"
+  },
+  {
+    "commonName": "Indonesia",
+    "officialName": "Republic of Indonesia",
+    "nativeOfficialName": "Republik Indonesia",
+    "nativeCommonName": "Indonesia",
+    "code": "ID",
+    "cca3": "IDN"
+  },
+  {
+    "commonName": "Isle of Man",
+    "officialName": "Isle of Man",
+    "nativeOfficialName": "Isle of Man",
+    "nativeCommonName": "Isle of Man",
+    "code": "IM",
+    "cca3": "IMN"
+  },
+  {
+    "commonName": "India",
+    "officialName": "Republic of India",
+    "nativeOfficialName": "Republic of India",
+    "nativeCommonName": "India",
+    "code": "IN",
+    "cca3": "IND"
+  },
+  {
+    "commonName": "British Indian Ocean Territory",
+    "officialName": "British Indian Ocean Territory",
+    "nativeOfficialName": "British Indian Ocean Territory",
+    "nativeCommonName": "British Indian Ocean Territory",
+    "code": "IO",
+    "cca3": "IOT"
+  },
+  {
+    "commonName": "Ireland",
+    "officialName": "Republic of Ireland",
+    "nativeOfficialName": "Republic of Ireland",
+    "nativeCommonName": "Ireland",
+    "code": "IE",
+    "cca3": "IRL"
+  },
+  {
+    "commonName": "Iran",
+    "officialName": "Islamic Republic of Iran",
+    "nativeOfficialName": "جمهوری اسلامی ایران",
+    "nativeCommonName": "ایران",
+    "code": "IR",
+    "cca3": "IRN"
+  },
+  {
+    "commonName": "Iraq",
+    "officialName": "Republic of Iraq",
+    "nativeOfficialName": "جمهورية العراق",
+    "nativeCommonName": "العراق",
+    "code": "IQ",
+    "cca3": "IRQ"
+  },
+  {
+    "commonName": "Iceland",
+    "officialName": "Iceland",
+    "nativeOfficialName": "Ísland",
+    "nativeCommonName": "Ísland",
+    "code": "IS",
+    "cca3": "ISL"
+  },
+  {
+    "commonName": "Israel",
+    "officialName": "State of Israel",
+    "nativeOfficialName": "دولة إسرائيل",
+    "nativeCommonName": "إسرائيل",
+    "code": "IL",
+    "cca3": "ISR"
+  },
+  {
+    "commonName": "Italy",
+    "officialName": "Italian Republic",
+    "nativeOfficialName": "Repubblica italiana",
+    "nativeCommonName": "Italia",
+    "code": "IT",
+    "cca3": "ITA"
+  },
+  {
+    "commonName": "Jamaica",
+    "officialName": "Jamaica",
+    "nativeOfficialName": "Jamaica",
+    "nativeCommonName": "Jamaica",
+    "code": "JM",
+    "cca3": "JAM"
+  },
+  {
+    "commonName": "Jersey",
+    "officialName": "Bailiwick of Jersey",
+    "nativeOfficialName": "Bailiwick of Jersey",
+    "nativeCommonName": "Jersey",
+    "code": "JE",
+    "cca3": "JEY"
+  },
+  {
+    "commonName": "Jordan",
+    "officialName": "Hashemite Kingdom of Jordan",
+    "nativeOfficialName": "المملكة الأردنية الهاشمية",
+    "nativeCommonName": "الأردن",
+    "code": "JO",
+    "cca3": "JOR"
+  },
+  {
+    "commonName": "Japan",
+    "officialName": "Japan",
+    "nativeOfficialName": "日本",
+    "nativeCommonName": "日本",
+    "code": "JP",
+    "cca3": "JPN"
+  },
+  {
+    "commonName": "Kazakhstan",
+    "officialName": "Republic of Kazakhstan",
+    "nativeOfficialName": "Қазақстан Республикасы",
+    "nativeCommonName": "Қазақстан",
+    "code": "KZ",
+    "cca3": "KAZ"
+  },
+  {
+    "commonName": "Kenya",
+    "officialName": "Republic of Kenya",
+    "nativeOfficialName": "Republic of Kenya",
+    "nativeCommonName": "Kenya",
+    "code": "KE",
+    "cca3": "KEN"
+  },
+  {
+    "commonName": "Kyrgyzstan",
+    "officialName": "Kyrgyz Republic",
+    "nativeOfficialName": "Кыргыз Республикасы",
+    "nativeCommonName": "Кыргызстан",
+    "code": "KG",
+    "cca3": "KGZ"
+  },
+  {
+    "commonName": "Cambodia",
+    "officialName": "Kingdom of Cambodia",
+    "nativeOfficialName": "ព្រះរាជាណាចក្រកម្ពុជា",
+    "nativeCommonName": "Kâmpŭchéa",
+    "code": "KH",
+    "cca3": "KHM"
+  },
+  {
+    "commonName": "Kiribati",
+    "officialName": "Independent and Sovereign Republic of Kiribati",
+    "nativeOfficialName": "Independent and Sovereign Republic of Kiribati",
+    "nativeCommonName": "Kiribati",
+    "code": "KI",
+    "cca3": "KIR"
+  },
+  {
+    "commonName": "Saint Kitts and Nevis",
+    "officialName": "Federation of Saint Christopher and Nevis",
+    "nativeOfficialName": "Federation of Saint Christopher and Nevis",
+    "nativeCommonName": "Saint Kitts and Nevis",
+    "code": "KN",
+    "cca3": "KNA"
+  },
+  {
+    "commonName": "South Korea",
+    "officialName": "Republic of Korea",
+    "nativeOfficialName": "대한민국",
+    "nativeCommonName": "한국",
+    "code": "KR",
+    "cca3": "KOR"
+  },
+  {
+    "commonName": "Kosovo",
+    "officialName": "Republic of Kosovo",
+    "nativeOfficialName": "Republika e Kosovës",
+    "nativeCommonName": "Kosova",
+    "code": "XK",
+    "cca3": "UNK"
+  },
+  {
+    "commonName": "Kuwait",
+    "officialName": "State of Kuwait",
+    "nativeOfficialName": "دولة الكويت",
+    "nativeCommonName": "الكويت",
+    "code": "KW",
+    "cca3": "KWT"
+  },
+  {
+    "commonName": "Laos",
+    "officialName": "Lao People's Democratic Republic",
+    "nativeOfficialName": "ສາທາລະນະ ຊາທິປະໄຕ ຄົນລາວ ຂອງ",
+    "nativeCommonName": "ສປປລາວ",
+    "code": "LA",
+    "cca3": "LAO"
+  },
+  {
+    "commonName": "Lebanon",
+    "officialName": "Lebanese Republic",
+    "nativeOfficialName": "الجمهورية اللبنانية",
+    "nativeCommonName": "لبنان",
+    "code": "LB",
+    "cca3": "LBN"
+  },
+  {
+    "commonName": "Liberia",
+    "officialName": "Republic of Liberia",
+    "nativeOfficialName": "Republic of Liberia",
+    "nativeCommonName": "Liberia",
+    "code": "LR",
+    "cca3": "LBR"
+  },
+  {
+    "commonName": "Libya",
+    "officialName": "State of Libya",
+    "nativeOfficialName": "الدولة ليبيا",
+    "nativeCommonName": "‏ليبيا",
+    "code": "LY",
+    "cca3": "LBY"
+  },
+  {
+    "commonName": "Saint Lucia",
+    "officialName": "Saint Lucia",
+    "nativeOfficialName": "Saint Lucia",
+    "nativeCommonName": "Saint Lucia",
+    "code": "LC",
+    "cca3": "LCA"
+  },
+  {
+    "commonName": "Liechtenstein",
+    "officialName": "Principality of Liechtenstein",
+    "nativeOfficialName": "Fürstentum Liechtenstein",
+    "nativeCommonName": "Liechtenstein",
+    "code": "LI",
+    "cca3": "LIE"
+  },
+  {
+    "commonName": "Sri Lanka",
+    "officialName": "Democratic Socialist Republic of Sri Lanka",
+    "nativeOfficialName": "ශ්‍රී ලංකා ප්‍රජාතාන්ත්‍රික සමාජවාදී ජනරජය",
+    "nativeCommonName": "ශ්‍රී ලංකාව",
+    "code": "LK",
+    "cca3": "LKA"
+  },
+  {
+    "commonName": "Lesotho",
+    "officialName": "Kingdom of Lesotho",
+    "nativeOfficialName": "Kingdom of Lesotho",
+    "nativeCommonName": "Lesotho",
+    "code": "LS",
+    "cca3": "LSO"
+  },
+  {
+    "commonName": "Lithuania",
+    "officialName": "Republic of Lithuania",
+    "nativeOfficialName": "Lietuvos Respublikos",
+    "nativeCommonName": "Lietuva",
+    "code": "LT",
+    "cca3": "LTU"
+  },
+  {
+    "commonName": "Luxembourg",
+    "officialName": "Grand Duchy of Luxembourg",
+    "nativeOfficialName": "Großherzogtum Luxemburg",
+    "nativeCommonName": "Luxemburg",
+    "code": "LU",
+    "cca3": "LUX"
+  },
+  {
+    "commonName": "Latvia",
+    "officialName": "Republic of Latvia",
+    "nativeOfficialName": "Latvijas Republikas",
+    "nativeCommonName": "Latvija",
+    "code": "LV",
+    "cca3": "LVA"
+  },
+  {
+    "commonName": "Macau",
+    "officialName": "Macao Special Administrative Region of the People's Republic of China",
+    "nativeOfficialName": "Região Administrativa Especial de Macau da República Popular da China",
+    "nativeCommonName": "Macau",
+    "code": "MO",
+    "cca3": "MAC"
+  },
+  {
+    "commonName": "Saint Martin",
+    "officialName": "Saint Martin",
+    "nativeOfficialName": "Saint-Martin",
+    "nativeCommonName": "Saint-Martin",
+    "code": "MF",
+    "cca3": "MAF"
+  },
+  {
+    "commonName": "Morocco",
+    "officialName": "Kingdom of Morocco",
+    "nativeOfficialName": "المملكة المغربية",
+    "nativeCommonName": "المغرب",
+    "code": "MA",
+    "cca3": "MAR"
+  },
+  {
+    "commonName": "Monaco",
+    "officialName": "Principality of Monaco",
+    "nativeOfficialName": "Principauté de Monaco",
+    "nativeCommonName": "Monaco",
+    "code": "MC",
+    "cca3": "MCO"
+  },
+  {
+    "commonName": "Moldova",
+    "officialName": "Republic of Moldova",
+    "nativeOfficialName": "Republica Moldova",
+    "nativeCommonName": "Moldova",
+    "code": "MD",
+    "cca3": "MDA"
+  },
+  {
+    "commonName": "Madagascar",
+    "officialName": "Republic of Madagascar",
+    "nativeOfficialName": "République de Madagascar",
+    "nativeCommonName": "Madagascar",
+    "code": "MG",
+    "cca3": "MDG"
+  },
+  {
+    "commonName": "Maldives",
+    "officialName": "Republic of the Maldives",
+    "nativeOfficialName": "ދިވެހިރާއްޖޭގެ ޖުމްހޫރިއްޔާ",
+    "nativeCommonName": "ދިވެހިރާއްޖޭގެ",
+    "code": "MV",
+    "cca3": "MDV"
+  },
+  {
+    "commonName": "Mexico",
+    "officialName": "United Mexican States",
+    "nativeOfficialName": "Estados Unidos Mexicanos",
+    "nativeCommonName": "México",
+    "code": "MX",
+    "cca3": "MEX"
+  },
+  {
+    "commonName": "Marshall Islands",
+    "officialName": "Republic of the Marshall Islands",
+    "nativeOfficialName": "Republic of the Marshall Islands",
+    "nativeCommonName": "Marshall Islands",
+    "code": "MH",
+    "cca3": "MHL"
+  },
+  {
+    "commonName": "North Macedonia",
+    "officialName": "Republic of North Macedonia",
+    "nativeOfficialName": "Република Северна Македонија",
+    "nativeCommonName": "Македонија",
+    "code": "MK",
+    "cca3": "MKD"
+  },
+  {
+    "commonName": "Mali",
+    "officialName": "Republic of Mali",
+    "nativeOfficialName": "République du Mali",
+    "nativeCommonName": "Mali",
+    "code": "ML",
+    "cca3": "MLI"
+  },
+  {
+    "commonName": "Malta",
+    "officialName": "Republic of Malta",
+    "nativeOfficialName": "Republic of Malta",
+    "nativeCommonName": "Malta",
+    "code": "MT",
+    "cca3": "MLT"
+  },
+  {
+    "commonName": "Myanmar",
+    "officialName": "Republic of the Union of Myanmar",
+    "nativeOfficialName": "ပြည်ထောင်စု သမ္မတ မြန်မာနိုင်ငံတော်",
+    "nativeCommonName": "မြန်မာ",
+    "code": "MM",
+    "cca3": "MMR"
+  },
+  {
+    "commonName": "Montenegro",
+    "officialName": "Montenegro",
+    "nativeOfficialName": "Црна Гора",
+    "nativeCommonName": "Црна Гора",
+    "code": "ME",
+    "cca3": "MNE"
+  },
+  {
+    "commonName": "Mongolia",
+    "officialName": "Mongolia",
+    "nativeOfficialName": "Монгол улс",
+    "nativeCommonName": "Монгол улс",
+    "code": "MN",
+    "cca3": "MNG"
+  },
+  {
+    "commonName": "Northern Mariana Islands",
+    "officialName": "Commonwealth of the Northern Mariana Islands",
+    "nativeOfficialName": "Commonwealth of the Northern Mariana Islands",
+    "nativeCommonName": "Northern Mariana Islands",
+    "code": "MP",
+    "cca3": "MNP"
+  },
+  {
+    "commonName": "Mozambique",
+    "officialName": "Republic of Mozambique",
+    "nativeOfficialName": "República de Moçambique",
+    "nativeCommonName": "Moçambique",
+    "code": "MZ",
+    "cca3": "MOZ"
+  },
+  {
+    "commonName": "Mauritania",
+    "officialName": "Islamic Republic of Mauritania",
+    "nativeOfficialName": "الجمهورية الإسلامية الموريتانية",
+    "nativeCommonName": "موريتانيا",
+    "code": "MR",
+    "cca3": "MRT"
+  },
+  {
+    "commonName": "Montserrat",
+    "officialName": "Montserrat",
+    "nativeOfficialName": "Montserrat",
+    "nativeCommonName": "Montserrat",
+    "code": "MS",
+    "cca3": "MSR"
+  },
+  {
+    "commonName": "Martinique",
+    "officialName": "Martinique",
+    "nativeOfficialName": "Martinique",
+    "nativeCommonName": "Martinique",
+    "code": "MQ",
+    "cca3": "MTQ"
+  },
+  {
+    "commonName": "Mauritius",
+    "officialName": "Republic of Mauritius",
+    "nativeOfficialName": "Republic of Mauritius",
+    "nativeCommonName": "Mauritius",
+    "code": "MU",
+    "cca3": "MUS"
+  },
+  {
+    "commonName": "Malawi",
+    "officialName": "Republic of Malawi",
+    "nativeOfficialName": "Republic of Malawi",
+    "nativeCommonName": "Malawi",
+    "code": "MW",
+    "cca3": "MWI"
+  },
+  {
+    "commonName": "Malaysia",
+    "officialName": "Malaysia",
+    "nativeOfficialName": "Malaysia",
+    "nativeCommonName": "Malaysia",
+    "code": "MY",
+    "cca3": "MYS"
+  },
+  {
+    "commonName": "Mayotte",
+    "officialName": "Department of Mayotte",
+    "nativeOfficialName": "Département de Mayotte",
+    "nativeCommonName": "Mayotte",
+    "code": "YT",
+    "cca3": "MYT"
+  },
+  {
+    "commonName": "Namibia",
+    "officialName": "Republic of Namibia",
+    "nativeOfficialName": "Republiek van Namibië",
+    "nativeCommonName": "Namibië",
+    "code": "NA",
+    "cca3": "NAM"
+  },
+  {
+    "commonName": "New Caledonia",
+    "officialName": "New Caledonia",
+    "nativeOfficialName": "Nouvelle-Calédonie",
+    "nativeCommonName": "Nouvelle-Calédonie",
+    "code": "NC",
+    "cca3": "NCL"
+  },
+  {
+    "commonName": "Niger",
+    "officialName": "Republic of Niger",
+    "nativeOfficialName": "République du Niger",
+    "nativeCommonName": "Niger",
+    "code": "NE",
+    "cca3": "NER"
+  },
+  {
+    "commonName": "Norfolk Island",
+    "officialName": "Territory of Norfolk Island",
+    "nativeOfficialName": "Territory of Norfolk Island",
+    "nativeCommonName": "Norfolk Island",
+    "code": "NF",
+    "cca3": "NFK"
+  },
+  {
+    "commonName": "Nigeria",
+    "officialName": "Federal Republic of Nigeria",
+    "nativeOfficialName": "Federal Republic of Nigeria",
+    "nativeCommonName": "Nigeria",
+    "code": "NG",
+    "cca3": "NGA"
+  },
+  {
+    "commonName": "Nicaragua",
+    "officialName": "Republic of Nicaragua",
+    "nativeOfficialName": "República de Nicaragua",
+    "nativeCommonName": "Nicaragua",
+    "code": "NI",
+    "cca3": "NIC"
+  },
+  {
+    "commonName": "Niue",
+    "officialName": "Niue",
+    "nativeOfficialName": "Niue",
+    "nativeCommonName": "Niue",
+    "code": "NU",
+    "cca3": "NIU"
+  },
+  {
+    "commonName": "Netherlands",
+    "officialName": "Kingdom of the Netherlands",
+    "nativeOfficialName": "Koninkrijk der Nederlanden",
+    "nativeCommonName": "Nederland",
+    "code": "NL",
+    "cca3": "NLD"
+  },
+  {
+    "commonName": "Norway",
+    "officialName": "Kingdom of Norway",
+    "nativeOfficialName": "Kongeriket Noreg",
+    "nativeCommonName": "Noreg",
+    "code": "NO",
+    "cca3": "NOR"
+  },
+  {
+    "commonName": "Nepal",
+    "officialName": "Federal Democratic Republic of Nepal",
+    "nativeOfficialName": "नेपाल संघीय लोकतान्त्रिक गणतन्त्र",
+    "nativeCommonName": "नेपाल",
+    "code": "NP",
+    "cca3": "NPL"
+  },
+  {
+    "commonName": "Nauru",
+    "officialName": "Republic of Nauru",
+    "nativeOfficialName": "Republic of Nauru",
+    "nativeCommonName": "Nauru",
+    "code": "NR",
+    "cca3": "NRU"
+  },
+  {
+    "commonName": "New Zealand",
+    "officialName": "New Zealand",
+    "nativeOfficialName": "New Zealand",
+    "nativeCommonName": "New Zealand",
+    "code": "NZ",
+    "cca3": "NZL"
+  },
+  {
+    "commonName": "Oman",
+    "officialName": "Sultanate of Oman",
+    "nativeOfficialName": "سلطنة عمان",
+    "nativeCommonName": "عمان",
+    "code": "OM",
+    "cca3": "OMN"
+  },
+  {
+    "commonName": "Pakistan",
+    "officialName": "Islamic Republic of Pakistan",
+    "nativeOfficialName": "Islamic Republic of Pakistan",
+    "nativeCommonName": "Pakistan",
+    "code": "PK",
+    "cca3": "PAK"
+  },
+  {
+    "commonName": "Panama",
+    "officialName": "Republic of Panama",
+    "nativeOfficialName": "República de Panamá",
+    "nativeCommonName": "Panamá",
+    "code": "PA",
+    "cca3": "PAN"
+  },
+  {
+    "commonName": "Pitcairn Islands",
+    "officialName": "Pitcairn Group of Islands",
+    "nativeOfficialName": "Pitcairn Group of Islands",
+    "nativeCommonName": "Pitcairn Islands",
+    "code": "PN",
+    "cca3": "PCN"
+  },
+  {
+    "commonName": "Peru",
+    "officialName": "Republic of Peru",
+    "nativeOfficialName": "Piruw Suyu",
+    "nativeCommonName": "Piruw",
+    "code": "PE",
+    "cca3": "PER"
+  },
+  {
+    "commonName": "Philippines",
+    "officialName": "Republic of the Philippines",
+    "nativeOfficialName": "Republic of the Philippines",
+    "nativeCommonName": "Philippines",
+    "code": "PH",
+    "cca3": "PHL"
+  },
+  {
+    "commonName": "Palau",
+    "officialName": "Republic of Palau",
+    "nativeOfficialName": "Republic of Palau",
+    "nativeCommonName": "Palau",
+    "code": "PW",
+    "cca3": "PLW"
+  },
+  {
+    "commonName": "Papua New Guinea",
+    "officialName": "Independent State of Papua New Guinea",
+    "nativeOfficialName": "Independent State of Papua New Guinea",
+    "nativeCommonName": "Papua New Guinea",
+    "code": "PG",
+    "cca3": "PNG"
+  },
+  {
+    "commonName": "Poland",
+    "officialName": "Republic of Poland",
+    "nativeOfficialName": "Rzeczpospolita Polska",
+    "nativeCommonName": "Polska",
+    "code": "PL",
+    "cca3": "POL"
+  },
+  {
+    "commonName": "Puerto Rico",
+    "officialName": "Commonwealth of Puerto Rico",
+    "nativeOfficialName": "Commonwealth of Puerto Rico",
+    "nativeCommonName": "Puerto Rico",
+    "code": "PR",
+    "cca3": "PRI"
+  },
+  {
+    "commonName": "North Korea",
+    "officialName": "Democratic People's Republic of Korea",
+    "nativeOfficialName": "조선민주주의인민공화국",
+    "nativeCommonName": "조선",
+    "code": "KP",
+    "cca3": "PRK"
+  },
+  {
+    "commonName": "Portugal",
+    "officialName": "Portuguese Republic",
+    "nativeOfficialName": "República português",
+    "nativeCommonName": "Portugal",
+    "code": "PT",
+    "cca3": "PRT"
+  },
+  {
+    "commonName": "Paraguay",
+    "officialName": "Republic of Paraguay",
+    "nativeOfficialName": "Tetã Paraguái",
+    "nativeCommonName": "Paraguái",
+    "code": "PY",
+    "cca3": "PRY"
+  },
+  {
+    "commonName": "Palestine",
+    "officialName": "State of Palestine",
+    "nativeOfficialName": "دولة فلسطين",
+    "nativeCommonName": "فلسطين",
+    "code": "PS",
+    "cca3": "PSE"
+  },
+  {
+    "commonName": "French Polynesia",
+    "officialName": "French Polynesia",
+    "nativeOfficialName": "Polynésie française",
+    "nativeCommonName": "Polynésie française",
+    "code": "PF",
+    "cca3": "PYF"
+  },
+  {
+    "commonName": "Qatar",
+    "officialName": "State of Qatar",
+    "nativeOfficialName": "دولة قطر",
+    "nativeCommonName": "قطر",
+    "code": "QA",
+    "cca3": "QAT"
+  },
+  {
+    "commonName": "Réunion",
+    "officialName": "Réunion Island",
+    "nativeOfficialName": "Ile de la Réunion",
+    "nativeCommonName": "La Réunion",
+    "code": "RE",
+    "cca3": "REU"
+  },
+  {
+    "commonName": "Romania",
+    "officialName": "Romania",
+    "nativeOfficialName": "România",
+    "nativeCommonName": "România",
+    "code": "RO",
+    "cca3": "ROU"
+  },
+  {
+    "commonName": "Russia",
+    "officialName": "Russian Federation",
+    "nativeOfficialName": "Российская Федерация",
+    "nativeCommonName": "Россия",
+    "code": "RU",
+    "cca3": "RUS"
+  },
+  {
+    "commonName": "Rwanda",
+    "officialName": "Republic of Rwanda",
+    "nativeOfficialName": "Republic of Rwanda",
+    "nativeCommonName": "Rwanda",
+    "code": "RW",
+    "cca3": "RWA"
+  },
+  {
+    "commonName": "Saudi Arabia",
+    "officialName": "Kingdom of Saudi Arabia",
+    "nativeOfficialName": "المملكة العربية السعودية",
+    "nativeCommonName": "العربية السعودية",
+    "code": "SA",
+    "cca3": "SAU"
+  },
+  {
+    "commonName": "Sudan",
+    "officialName": "Republic of the Sudan",
+    "nativeOfficialName": "جمهورية السودان",
+    "nativeCommonName": "السودان",
+    "code": "SD",
+    "cca3": "SDN"
+  },
+  {
+    "commonName": "Senegal",
+    "officialName": "Republic of Senegal",
+    "nativeOfficialName": "République du Sénégal",
+    "nativeCommonName": "Sénégal",
+    "code": "SN",
+    "cca3": "SEN"
+  },
+  {
+    "commonName": "Singapore",
+    "officialName": "Republic of Singapore",
+    "nativeOfficialName": "Republic of Singapore",
+    "nativeCommonName": "Singapore",
+    "code": "SG",
+    "cca3": "SGP"
+  },
+  {
+    "commonName": "South Georgia",
+    "officialName": "South Georgia and the South Sandwich Islands",
+    "nativeOfficialName": "South Georgia and the South Sandwich Islands",
+    "nativeCommonName": "South Georgia",
+    "code": "GS",
+    "cca3": "SGS"
+  },
+  {
+    "commonName": "Svalbard and Jan Mayen",
+    "officialName": "Svalbard og Jan Mayen",
+    "nativeOfficialName": "Svalbard og Jan Mayen",
+    "nativeCommonName": "Svalbard og Jan Mayen",
+    "code": "SJ",
+    "cca3": "SJM"
+  },
+  {
+    "commonName": "Solomon Islands",
+    "officialName": "Solomon Islands",
+    "nativeOfficialName": "Solomon Islands",
+    "nativeCommonName": "Solomon Islands",
+    "code": "SB",
+    "cca3": "SLB"
+  },
+  {
+    "commonName": "Sierra Leone",
+    "officialName": "Republic of Sierra Leone",
+    "nativeOfficialName": "Republic of Sierra Leone",
+    "nativeCommonName": "Sierra Leone",
+    "code": "SL",
+    "cca3": "SLE"
+  },
+  {
+    "commonName": "El Salvador",
+    "officialName": "Republic of El Salvador",
+    "nativeOfficialName": "República de El Salvador",
+    "nativeCommonName": "El Salvador",
+    "code": "SV",
+    "cca3": "SLV"
+  },
+  {
+    "commonName": "San Marino",
+    "officialName": "Most Serene Republic of San Marino",
+    "nativeOfficialName": "Serenissima Repubblica di San Marino",
+    "nativeCommonName": "San Marino",
+    "code": "SM",
+    "cca3": "SMR"
+  },
+  {
+    "commonName": "Somalia",
+    "officialName": "Federal Republic of Somalia",
+    "nativeOfficialName": "جمهورية الصومال‎‎",
+    "nativeCommonName": "الصومال‎‎",
+    "code": "SO",
+    "cca3": "SOM"
+  },
+  {
+    "commonName": "Saint Pierre and Miquelon",
+    "officialName": "Saint Pierre and Miquelon",
+    "nativeOfficialName": "Collectivité territoriale de Saint-Pierre-et-Miquelon",
+    "nativeCommonName": "Saint-Pierre-et-Miquelon",
+    "code": "PM",
+    "cca3": "SPM"
+  },
+  {
+    "commonName": "Serbia",
+    "officialName": "Republic of Serbia",
+    "nativeOfficialName": "Република Србија",
+    "nativeCommonName": "Србија",
+    "code": "RS",
+    "cca3": "SRB"
+  },
+  {
+    "commonName": "South Sudan",
+    "officialName": "Republic of South Sudan",
+    "nativeOfficialName": "Republic of South Sudan",
+    "nativeCommonName": "South Sudan",
+    "code": "SS",
+    "cca3": "SSD"
+  },
+  {
+    "commonName": "São Tomé and Príncipe",
+    "officialName": "Democratic Republic of São Tomé and Príncipe",
+    "nativeOfficialName": "República Democrática do São Tomé e Príncipe",
+    "nativeCommonName": "São Tomé e Príncipe",
+    "code": "ST",
+    "cca3": "STP"
+  },
+  {
+    "commonName": "Suriname",
+    "officialName": "Republic of Suriname",
+    "nativeOfficialName": "Republiek Suriname",
+    "nativeCommonName": "Suriname",
+    "code": "SR",
+    "cca3": "SUR"
+  },
+  {
+    "commonName": "Slovakia",
+    "officialName": "Slovak Republic",
+    "nativeOfficialName": "Slovenská republika",
+    "nativeCommonName": "Slovensko",
+    "code": "SK",
+    "cca3": "SVK"
+  },
+  {
+    "commonName": "Slovenia",
+    "officialName": "Republic of Slovenia",
+    "nativeOfficialName": "Republika Slovenija",
+    "nativeCommonName": "Slovenija",
+    "code": "SI",
+    "cca3": "SVN"
+  },
+  {
+    "commonName": "Sweden",
+    "officialName": "Kingdom of Sweden",
+    "nativeOfficialName": "Konungariket Sverige",
+    "nativeCommonName": "Sverige",
+    "code": "SE",
+    "cca3": "SWE"
+  },
+  {
+    "commonName": "Eswatini",
+    "officialName": "Kingdom of Eswatini",
+    "nativeOfficialName": "Kingdom of Eswatini",
+    "nativeCommonName": "Eswatini",
+    "code": "SZ",
+    "cca3": "SWZ"
+  },
+  {
+    "commonName": "Sint Maarten",
+    "officialName": "Sint Maarten",
+    "nativeOfficialName": "Sint Maarten",
+    "nativeCommonName": "Sint Maarten",
+    "code": "SX",
+    "cca3": "SXM"
+  },
+  {
+    "commonName": "Seychelles",
+    "officialName": "Republic of Seychelles",
+    "nativeOfficialName": "Repiblik Sesel",
+    "nativeCommonName": "Sesel",
+    "code": "SC",
+    "cca3": "SYC"
+  },
+  {
+    "commonName": "Syria",
+    "officialName": "Syrian Arab Republic",
+    "nativeOfficialName": "الجمهورية العربية السورية",
+    "nativeCommonName": "سوريا",
+    "code": "SY",
+    "cca3": "SYR"
+  },
+  {
+    "commonName": "Turks and Caicos Islands",
+    "officialName": "Turks and Caicos Islands",
+    "nativeOfficialName": "Turks and Caicos Islands",
+    "nativeCommonName": "Turks and Caicos Islands",
+    "code": "TC",
+    "cca3": "TCA"
+  },
+  {
+    "commonName": "Chad",
+    "officialName": "Republic of Chad",
+    "nativeOfficialName": "جمهورية تشاد",
+    "nativeCommonName": "تشاد‎",
+    "code": "TD",
+    "cca3": "TCD"
+  },
+  {
+    "commonName": "Togo",
+    "officialName": "Togolese Republic",
+    "nativeOfficialName": "République togolaise",
+    "nativeCommonName": "Togo",
+    "code": "TG",
+    "cca3": "TGO"
+  },
+  {
+    "commonName": "Thailand",
+    "officialName": "Kingdom of Thailand",
+    "nativeOfficialName": "ราชอาณาจักรไทย",
+    "nativeCommonName": "ประเทศไทย",
+    "code": "TH",
+    "cca3": "THA"
+  },
+  {
+    "commonName": "Tajikistan",
+    "officialName": "Republic of Tajikistan",
+    "nativeOfficialName": "Республика Таджикистан",
+    "nativeCommonName": "Таджикистан",
+    "code": "TJ",
+    "cca3": "TJK"
+  },
+  {
+    "commonName": "Tokelau",
+    "officialName": "Tokelau",
+    "nativeOfficialName": "Tokelau",
+    "nativeCommonName": "Tokelau",
+    "code": "TK",
+    "cca3": "TKL"
+  },
+  {
+    "commonName": "Turkmenistan",
+    "officialName": "Turkmenistan",
+    "nativeOfficialName": "Туркменистан",
+    "nativeCommonName": "Туркмения",
+    "code": "TM",
+    "cca3": "TKM"
+  },
+  {
+    "commonName": "Timor-Leste",
+    "officialName": "Democratic Republic of Timor-Leste",
+    "nativeOfficialName": "República Democrática de Timor-Leste",
+    "nativeCommonName": "Timor-Leste",
+    "code": "TL",
+    "cca3": "TLS"
+  },
+  {
+    "commonName": "Tonga",
+    "officialName": "Kingdom of Tonga",
+    "nativeOfficialName": "Kingdom of Tonga",
+    "nativeCommonName": "Tonga",
+    "code": "TO",
+    "cca3": "TON"
+  },
+  {
+    "commonName": "Trinidad and Tobago",
+    "officialName": "Republic of Trinidad and Tobago",
+    "nativeOfficialName": "Republic of Trinidad and Tobago",
+    "nativeCommonName": "Trinidad and Tobago",
+    "code": "TT",
+    "cca3": "TTO"
+  },
+  {
+    "commonName": "Tunisia",
+    "officialName": "Tunisian Republic",
+    "nativeOfficialName": "الجمهورية التونسية",
+    "nativeCommonName": "تونس",
+    "code": "TN",
+    "cca3": "TUN"
+  },
+  {
+    "commonName": "Turkey",
+    "officialName": "Republic of Türkiye",
+    "nativeOfficialName": "Türkiye Cumhuriyeti",
+    "nativeCommonName": "Türkiye",
+    "code": "TR",
+    "cca3": "TUR"
+  },
+  {
+    "commonName": "Tuvalu",
+    "officialName": "Tuvalu",
+    "nativeOfficialName": "Tuvalu",
+    "nativeCommonName": "Tuvalu",
+    "code": "TV",
+    "cca3": "TUV"
+  },
+  {
+    "commonName": "Taiwan",
+    "officialName": "Republic of China (Taiwan)",
+    "nativeOfficialName": "中華民國",
+    "nativeCommonName": "台灣",
+    "code": "TW",
+    "cca3": "TWN"
+  },
+  {
+    "commonName": "Tanzania",
+    "officialName": "United Republic of Tanzania",
+    "nativeOfficialName": "United Republic of Tanzania",
+    "nativeCommonName": "Tanzania",
+    "code": "TZ",
+    "cca3": "TZA"
+  },
+  {
+    "commonName": "Uganda",
+    "officialName": "Republic of Uganda",
+    "nativeOfficialName": "Republic of Uganda",
+    "nativeCommonName": "Uganda",
+    "code": "UG",
+    "cca3": "UGA"
+  },
+  {
+    "commonName": "Ukraine",
+    "officialName": "Ukraine",
+    "nativeOfficialName": "Україна",
+    "nativeCommonName": "Україна",
+    "code": "UA",
+    "cca3": "UKR"
+  },
+  {
+    "commonName": "United States Minor Outlying Islands",
+    "officialName": "United States Minor Outlying Islands",
+    "nativeOfficialName": "United States Minor Outlying Islands",
+    "nativeCommonName": "United States Minor Outlying Islands",
+    "code": "UM",
+    "cca3": "UMI"
+  },
+  {
+    "commonName": "Uruguay",
+    "officialName": "Oriental Republic of Uruguay",
+    "nativeOfficialName": "República Oriental del Uruguay",
+    "nativeCommonName": "Uruguay",
+    "code": "UY",
+    "cca3": "URY"
+  },
+  {
+    "commonName": "United States",
+    "officialName": "United States of America",
+    "nativeOfficialName": "United States of America",
+    "nativeCommonName": "United States",
+    "code": "US",
+    "cca3": "USA"
+  },
+  {
+    "commonName": "Uzbekistan",
+    "officialName": "Republic of Uzbekistan",
+    "nativeOfficialName": "Республика Узбекистан",
+    "nativeCommonName": "Узбекистан",
+    "code": "UZ",
+    "cca3": "UZB"
+  },
+  {
+    "commonName": "Vatican City",
+    "officialName": "Vatican City State",
+    "nativeOfficialName": "Stato della Città del Vaticano",
+    "nativeCommonName": "Vaticano",
+    "code": "VA",
+    "cca3": "VAT"
+  },
+  {
+    "commonName": "Saint Vincent and the Grenadines",
+    "officialName": "Saint Vincent and the Grenadines",
+    "nativeOfficialName": "Saint Vincent and the Grenadines",
+    "nativeCommonName": "Saint Vincent and the Grenadines",
+    "code": "VC",
+    "cca3": "VCT"
+  },
+  {
+    "commonName": "Venezuela",
+    "officialName": "Bolivarian Republic of Venezuela",
+    "nativeOfficialName": "República Bolivariana de Venezuela",
+    "nativeCommonName": "Venezuela",
+    "code": "VE",
+    "cca3": "VEN"
+  },
+  {
+    "commonName": "British Virgin Islands",
+    "officialName": "Virgin Islands",
+    "nativeOfficialName": "Virgin Islands",
+    "nativeCommonName": "British Virgin Islands",
+    "code": "VG",
+    "cca3": "VGB"
+  },
+  {
+    "commonName": "United States Virgin Islands",
+    "officialName": "Virgin Islands of the United States",
+    "nativeOfficialName": "Virgin Islands of the United States",
+    "nativeCommonName": "United States Virgin Islands",
+    "code": "VI",
+    "cca3": "VIR"
+  },
+  {
+    "commonName": "Vietnam",
+    "officialName": "Socialist Republic of Vietnam",
+    "nativeOfficialName": "Cộng hòa xã hội chủ nghĩa Việt Nam",
+    "nativeCommonName": "Việt Nam",
+    "code": "VN",
+    "cca3": "VNM"
+  },
+  {
+    "commonName": "Vanuatu",
+    "officialName": "Republic of Vanuatu",
+    "nativeOfficialName": "Ripablik blong Vanuatu",
+    "nativeCommonName": "Vanuatu",
+    "code": "VU",
+    "cca3": "VUT"
+  },
+  {
+    "commonName": "Wallis and Futuna",
+    "officialName": "Territory of the Wallis and Futuna Islands",
+    "nativeOfficialName": "Territoire des îles Wallis et Futuna",
+    "nativeCommonName": "Wallis et Futuna",
+    "code": "WF",
+    "cca3": "WLF"
+  },
+  {
+    "commonName": "Samoa",
+    "officialName": "Independent State of Samoa",
+    "nativeOfficialName": "Independent State of Samoa",
+    "nativeCommonName": "Samoa",
+    "code": "WS",
+    "cca3": "WSM"
+  },
+  {
+    "commonName": "Yemen",
+    "officialName": "Republic of Yemen",
+    "nativeOfficialName": "الجمهورية اليمنية",
+    "nativeCommonName": "اليَمَن",
+    "code": "YE",
+    "cca3": "YEM"
+  },
+  {
+    "commonName": "South Africa",
+    "officialName": "Republic of South Africa",
+    "nativeOfficialName": "Republiek van Suid-Afrika",
+    "nativeCommonName": "South Africa",
+    "code": "ZA",
+    "cca3": "ZAF"
+  },
+  {
+    "commonName": "Zambia",
+    "officialName": "Republic of Zambia",
+    "nativeOfficialName": "Republic of Zambia",
+    "nativeCommonName": "Zambia",
+    "code": "ZM",
+    "cca3": "ZMB"
+  },
+  {
+    "commonName": "Zimbabwe",
+    "officialName": "Republic of Zimbabwe",
+    "nativeOfficialName": "Republic of Zimbabwe",
+    "nativeCommonName": "Zimbabwe",
+    "code": "ZW",
+    "cca3": "ZWE"
+  }
+]

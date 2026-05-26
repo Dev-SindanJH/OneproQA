@@ -46,6 +46,9 @@
                 <button onclick="showSection('accounts')" id="nav-accounts" class="nav-item whitespace-nowrap w-full flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-white transition">
                     <i class="fas fa-user-shield mr-3"></i> 검수 계정 관리
                 </button>
+                <button onclick="showSection('webgl')" id="nav-webgl" class="nav-item whitespace-nowrap w-full flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-white transition">
+                    <i class="fas fa-play-circle mr-3"></i> 웹 실행
+                </button>
             </nav>
         </aside>
 
@@ -412,7 +415,18 @@
                 </div>
             </section>
 
-            <!-- ===== 마스터 데이터 섹션 ===== -->
+            <!-- ===== 웹 실행 섹션 ===== -->
+            <section id="webgl" class="section">
+                <div class="mb-6">
+                    <h2 class="text-3xl font-bold text-slate-800">웹 실행</h2>
+                    <p class="text-sm text-gray-500 mt-1">Unity WebGL 빌드를 실행합니다.</p>
+                </div>
+                <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden" style="height: calc(100vh - 200px); min-height: 500px;">
+                    <iframe src="./onepromath_v3_webgl/index.html" class="w-full h-full border-0" allowfullscreen></iframe>
+                </div>
+            </section>
+
+            <!-- ===== 마스터 데이터 섹션 =====
             <section id="masterdata" class="section">
                 <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
                     <div>

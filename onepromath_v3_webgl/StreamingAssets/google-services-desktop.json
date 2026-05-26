@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "924318481252",
+    "firebase_url": "https://onepromath-4afe0.firebaseio.com",
+    "project_id": "onepromath-4afe0",
+    "storage_bucket": "onepromath-4afe0.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:924318481252:android:5d79cf7b7dd4bfbe",
+        "android_client_info": {
+          "package_name": "com.Mathmaster.OneProMath"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "924318481252-1t7atmke3cr0n1mg29d15emvk4ddv1dv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.Mathmaster.OneProMath",
+            "certificate_hash": "dc2fbfca9cb2eba0d656825ebc6fafde8ca569ef"
+          }
+        },
+        {
+          "client_id": "924318481252-urlfaebgtlkuacumvbipad18ftf06i34.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAjzydmWZzwmzzY7WJiHugd65dpJdOhRvE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "924318481252-urlfaebgtlkuacumvbipad18ftf06i34.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "924318481252-gkr98nnmeag1qgb6jg3u1u3gdbm2b11f.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.mathmaster.icecreamonepro"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
