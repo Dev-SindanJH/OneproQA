@@ -8,6 +8,11 @@
     <link rel="stylesheet" href="TemplateData/style.css">
 </head>
 <body>
+    <div id="stage-input-bar" style="padding: 10px; background: #222; display: flex; align-items: center; gap: 8px; font-family: sans-serif;">
+        <label for="stage-id-input" style="color: #fff; font-size: 14px;">스테이지 아이디:</label>
+        <input id="stage-id-input" type="text" placeholder="예: 10101" style="padding: 6px 10px; font-size: 14px; border-radius: 4px; border: 1px solid #aaa; width: 140px;">
+        <button onclick="goToStage()" style="padding: 6px 16px; font-size: 14px; border-radius: 4px; background: #4a90e2; color: #fff; border: none; cursor: pointer;">실행</button>
+    </div>
     <div id="unity-container" class="unity-desktop">
         <canvas id="unity-canvas" width=1280 height=720 tabindex="-1"></canvas>
 
@@ -22,6 +27,36 @@
         </div>
     </div>
     <script>
+      // 스테이지 이동 함수
+      function goToStage() {
+        var stageId = document.getElementById('stage-id-input').value.trim();
+        if (!stageId) { alert('스테이지 아이디를 입력해주세요.'); return; }
+        var base = window.location.origin + window.location.pathname;
+        window.location.href = base + '?stageId=' + encodeURIComponent(stageId) + '&countryCode=KR&languageCode=ko';
+      }
+
+      // 페이지 로드 시 현재 쿼리스트링의 stageId를 인풋에 채움
+      (function() {
+        var params = new URLSearchParams(window.location.search);
+        var stageId = params.get('stageId');
+        var input = document.getElementById('stage-id-input');
+        if (stageId && input) input.value = stageId;
+
+        // Unity가 언제 키 리스너를 등록하든 상관없이,
+        // 인풋이 포커스된 상태면 항상 이벤트 전파를 최상위에서 차단
+        function blockKeyIfInputFocused(e) {
+          if (document.activeElement === input) {
+            e.stopImmediatePropagation();
+          }
+        }
+        window.addEventListener('keydown',  blockKeyIfInputFocused, true);
+        window.addEventListener('keyup',    blockKeyIfInputFocused, true);
+        window.addEventListener('keypress', blockKeyIfInputFocused, true);
+
+        input.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') goToStage();
+        });
+      })();
 
       var container = document.querySelector("#unity-container");
       var canvas = document.querySelector("#unity-canvas");

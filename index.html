@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -37,17 +36,11 @@
                 <button onclick="showSection('list')" id="nav-list" class="nav-item whitespace-nowrap w-full flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-white transition">
                     <i class="fas fa-list mr-3"></i> 검수 목록
                 </button>
-                <button onclick="showSection('dashboard')" id="nav-dashboard" class="nav-item whitespace-nowrap w-full flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-white transition">
-                    <i class="fas fa-chart-line mr-3"></i> 대시보드
-                </button>
                 <button onclick="showSection('masterdata')" id="nav-masterdata" class="nav-item whitespace-nowrap w-full flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-white transition">
                     <i class="fas fa-database mr-3"></i> 마스터 데이터
                 </button>
                 <button onclick="showSection('accounts')" id="nav-accounts" class="nav-item whitespace-nowrap w-full flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-white transition">
                     <i class="fas fa-user-shield mr-3"></i> 검수 계정 관리
-                </button>
-                <button onclick="showSection('webgl')" id="nav-webgl" class="nav-item whitespace-nowrap w-full flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-white transition">
-                    <i class="fas fa-play-circle mr-3"></i> 웹 실행
                 </button>
             </nav>
         </aside>
@@ -120,108 +113,6 @@
                         <div onclick="navigateToListWithFilter('서버 수정 완료')" class="p-3 bg-teal-50 rounded-lg border border-teal-100 cursor-pointer hover:shadow-md hover:scale-105 transition-all">
                             <p class="text-teal-600 text-xs font-bold mb-1">서버 수정 완료</p>
                             <p class="text-2xl font-black text-teal-700" id="cntServerDone">-</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section id="dashboard" class="section">
-                <div class="mb-6 flex justify-between items-start">
-                    <div>
-                        <h2 class="text-3xl font-bold mb-2 text-slate-800">검수 분석 대시보드</h2>
-                        <p class="text-sm text-gray-500">검수 데이터를 시각적으로 분석합니다.</p>
-                    </div>
-                    <button onclick="refreshAllData()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-emerald-700 shadow-md shadow-emerald-200 transition" title="캐시를 초기화하고 최신 데이터를 가져옵니다">
-                        <i class="fas fa-sync-alt mr-2"></i>새로고침
-                    </button>
-                </div>
-
-                <!-- 요약 통계 -->
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-                        <div class="flex items-center gap-3 mb-2">
-                            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                                <i class="fas fa-clipboard-list text-blue-600"></i>
-                            </div>
-                            <p class="text-gray-400 text-xs font-bold uppercase">전체 검수</p>
-                        </div>
-                        <p class="text-2xl font-black text-blue-600" id="dash-total-count">-</p>
-                    </div>
-                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-                        <div class="flex items-center gap-3 mb-2">
-                            <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                                <i class="fas fa-window-restore text-purple-600"></i>
-                            </div>
-                            <p class="text-gray-400 text-xs font-bold uppercase">팝업 검수</p>
-                        </div>
-                        <p class="text-2xl font-black text-purple-600" id="dash-popup-count">-</p>
-                    </div>
-                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-                        <div class="flex items-center gap-3 mb-2">
-                            <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-                                <i class="fas fa-desktop text-indigo-600"></i>
-                            </div>
-                            <p class="text-gray-400 text-xs font-bold uppercase">씬 검수</p>
-                        </div>
-                        <p class="text-2xl font-black text-indigo-600" id="dash-scene-count">-</p>
-                    </div>
-                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-                        <div class="flex items-center gap-3 mb-2">
-                            <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                                <i class="fas fa-users text-green-600"></i>
-                            </div>
-                            <p class="text-gray-400 text-xs font-bold uppercase">참여 인원</p>
-                        </div>
-                        <p class="text-2xl font-black text-green-600" id="dash-author-count">-</p>
-                    </div>
-                </div>
-
-                <!-- 차트 그리드 -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                    <!-- 상태별 분포 도넛 차트 -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <h3 class="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
-                            <i class="fas fa-chart-pie text-blue-500"></i>
-                            검수 상태 분포
-                        </h3>
-                        <div class="relative" style="height: 300px;">
-                            <canvas id="statusChart"></canvas>
-                        </div>
-                    </div>
-
-                    <!-- 작성자별 검수 건수 바 차트 -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <h3 class="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
-                            <i class="fas fa-chart-bar text-green-500"></i>
-                            작성자별 검수 건수
-                        </h3>
-                        <div class="relative" style="height: 300px;">
-                            <canvas id="authorChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 씬/팝업 분석 -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <!-- 씬별 검수 건수 -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <h3 class="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
-                            <i class="fas fa-desktop text-indigo-500"></i>
-                            씬별 검수 현황 (문제 발생 빈도)
-                        </h3>
-                        <div class="relative" style="height: 350px;">
-                            <canvas id="sceneChart"></canvas>
-                        </div>
-                    </div>
-
-                    <!-- 팝업별 검수 건수 -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <h3 class="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
-                            <i class="fas fa-window-restore text-purple-500"></i>
-                            팝업별 검수 현황 (문제 발생 빈도)
-                        </h3>
-                        <div class="relative" style="height: 350px;">
-                            <canvas id="popupChart"></canvas>
                         </div>
                     </div>
                 </div>
@@ -412,17 +303,6 @@
                             <tr><td colspan="4" class="text-center py-8 text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>불러오는 중...</td></tr>
                         </tbody>
                     </table>
-                </div>
-            </section>
-
-            <!-- ===== 웹 실행 섹션 ===== -->
-            <section id="webgl" class="section">
-                <div class="mb-6">
-                    <h2 class="text-3xl font-bold text-slate-800">웹 실행</h2>
-                    <p class="text-sm text-gray-500 mt-1">Unity WebGL 빌드를 실행합니다.</p>
-                </div>
-                <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden" style="height: calc(100vh - 200px); min-height: 500px;">
-                    <iframe src="./onepromath_v3_webgl/index.html" class="w-full h-full border-0" allowfullscreen></iframe>
                 </div>
             </section>
 
