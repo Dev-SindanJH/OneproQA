@@ -322,6 +322,11 @@ function showSection(sectionId) {
         fetchAccounts();
     }
 
+    // 홈 탭 진입 시 QA 인원 현황 로드
+    if (sectionId === 'home') {
+        fetchQaMembers();
+    }
+
     // 모바일에서 섹션 전환 시 사이드바 자동 닫기
     if (window.innerWidth < 768) {
         const sidebar = document.getElementById('sidebar');
@@ -2146,6 +2151,53 @@ async function fetchAccounts() {
             </td>
         </tr>
     `).join('');
+}
+
+/** 홈 - QA 인원 상태 함수 **/
+async function fetchQaMembers() {
+    const list = document.getElementById('qaMemberList');
+    if (!list) return;
+
+    list.innerHTML = '<p class="col-span-full text-center py-6 text-gray-400 text-sm"><i class="fas fa-spinner fa-spin mr-2"></i>불러오는 중...</p>';
+
+    const { data, error } = await supabaseClient
+        .from('qa_members')
+        .select('id,qa_name,on_qa')
+        .order('qa_name', { ascending: true });
+
+    if (error) {
+        list.innerHTML = `<p class="col-span-full text-center py-6 text-red-500 text-sm">실패: ${error.message}</p>`;
+        return;
+    }
+
+    if (!data || data.length === 0) {
+        list.innerHTML = '<p class="col-span-full text-center py-6 text-gray-400 text-sm">등록된 인원이 없습니다.</p>';
+        return;
+    }
+
+    list.innerHTML = data.map(m => `
+        <div class="flex items-center justify-between gap-2 p-3 rounded-lg border ${m.on_qa ? 'bg-green-50 border-green-100' : 'bg-gray-50 border-gray-200'}">
+            <span class="font-bold text-sm text-slate-700 truncate">${m.qa_name}</span>
+            <button onclick="toggleQaMember('${m.id}', ${m.on_qa})" class="shrink-0 px-3 py-1 rounded-full text-xs font-bold transition ${m.on_qa ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-gray-300 text-gray-600 hover:bg-gray-400'}">
+                ${m.on_qa ? 'On' : 'Off'}
+            </button>
+        </div>
+    `).join('');
+}
+
+async function toggleQaMember(id, currentOn) {
+    const nextOn = !currentOn;
+
+    const { error } = await supabaseClient
+        .from('qa_members')
+        .update({ on_qa: nextOn })
+        .eq('id', id);
+
+    if (error) {
+        showToast('상태 변경 실패: ' + error.message, 'error');
+    } else {
+        fetchQaMembers();
+    }
 }
 
 // 초기 실행
