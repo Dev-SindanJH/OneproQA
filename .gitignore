@@ -35,6 +35,7 @@ Thumbs.db
 .DS_Store
 
 # --- 로그 및 캐시 (Logs and Runtime) ---
+QALogs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

@@ -120,9 +120,14 @@
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                     <div class="flex justify-between items-center mb-4 border-b pb-2">
                         <p class="text-gray-400 text-xs font-bold uppercase">QA 인원 현황</p>
-                        <button onclick="fetchQaMembers()" class="text-slate-400 hover:text-slate-600 transition" title="새로고침">
-                            <i class="fas fa-sync-alt"></i>
-                        </button>
+                        <div class="flex items-center gap-3">
+                            <button onclick="openAddQaMemberModal()" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-700 shadow-sm transition">
+                                <i class="fas fa-plus mr-1"></i>추가하기
+                            </button>
+                            <button onclick="fetchQaMembers()" class="text-slate-400 hover:text-slate-600 transition" title="새로고침">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
                     </div>
                     <div id="qaMemberList" class="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <p class="col-span-full text-center py-6 text-gray-400 text-sm"><i class="fas fa-spinner fa-spin mr-2"></i>불러오는 중...</p>
@@ -439,6 +444,26 @@
             <div class="p-5 bg-slate-50 border-t flex justify-end gap-3">
                 <button onclick="closeModal('addAccountModal')" class="bg-slate-200 text-slate-600 px-4 py-2 rounded-xl font-bold hover:bg-slate-300 transition text-sm">취소</button>
                 <button onclick="submitAddAccount()" id="account-submit-btn" class="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-blue-700 transition text-sm shadow-md">등록하기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- QA 인원 추가 모달 -->
+    <div id="addQaMemberModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100002]">
+        <div class="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div class="p-6 border-b bg-blue-50">
+                <h3 class="text-lg font-black text-blue-800"><i class="fas fa-user-plus mr-2"></i>QA 인원 추가</h3>
+                <p class="text-xs text-blue-600 mt-1">추가할 인원의 이름을 입력하세요.</p>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">이름</label>
+                    <input type="text" id="qa-member-name" placeholder="이름을 입력하세요" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                </div>
+            </div>
+            <div class="p-5 bg-slate-50 border-t flex justify-end gap-3">
+                <button onclick="closeModal('addQaMemberModal')" class="bg-slate-200 text-slate-600 px-4 py-2 rounded-xl font-bold hover:bg-slate-300 transition text-sm">취소</button>
+                <button onclick="submitAddQaMember()" id="qa-member-submit-btn" class="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-blue-700 transition text-sm shadow-md">등록하기</button>
             </div>
         </div>
     </div>

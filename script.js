@@ -2154,6 +2154,39 @@ async function fetchAccounts() {
 }
 
 /** 홈 - QA 인원 상태 함수 **/
+function openAddQaMemberModal() {
+    document.getElementById('qa-member-name').value = '';
+    openModal('addQaMemberModal');
+}
+
+async function submitAddQaMember() {
+    const qaName = document.getElementById('qa-member-name').value.trim();
+
+    if (!qaName) {
+        showToast('이름을 입력해주세요.', 'error');
+        return;
+    }
+
+    const btn = document.getElementById('qa-member-submit-btn');
+    btn.innerText = '등록 중...';
+    btn.disabled = true;
+
+    const { error } = await supabaseClient
+        .from('qa_members')
+        .insert([{ qa_name: qaName, on_qa: false }]);
+
+    btn.innerText = '등록하기';
+    btn.disabled = false;
+
+    if (error) {
+        showToast('등록 실패: ' + error.message, 'error');
+    } else {
+        showToast('QA 인원이 등록되었습니다.');
+        closeModal('addQaMemberModal');
+        fetchQaMembers();
+    }
+}
+
 async function fetchQaMembers() {
     const list = document.getElementById('qaMemberList');
     if (!list) return;
