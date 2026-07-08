@@ -26,6 +26,7 @@ obj/
 # --- 에디터 및 OS 설정 (IDE & OS) ---
 .vscode/
 .idea/
+.claude/
 *.suo
 *.ntvs*
 *.njsproj
