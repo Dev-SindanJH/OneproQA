@@ -515,6 +515,44 @@ document.addEventListener('DOMContentLoaded', () => {
         return `<span class="whitespace-nowrap inline-block bg-slate-50 text-slate-500 px-3 py-1.5 rounded-md text-[11px] font-bold border border-slate-200">${s || '신규 등록'}</span>`;
     }
 
+    // 수정 완료 시점의 번들코드(코멘트 끝의 "(숫자)")를 현재 검수 번들코드와 비교
+    // 배지 대상이면 { fixedBundle, verifiable, displayComment(번들코드 제거된 코멘트) } 반환
+    function getFixBundleInfo(log) {
+        const state = (log.state || log.status || '').trim();
+        if (state !== '수정 완료') return null;
+
+        const comment = log.developer_comment || '';
+        const match = comment.match(/\((\d+)\)\s*$/);
+        if (!match) return null;
+
+        const fixedBundle = parseInt(match[1], 10);
+        const nowBundle = parseInt(currentBundleCode, 10);
+        if (isNaN(fixedBundle) || isNaN(nowBundle)) return null;
+
+        return {
+            fixedBundle,
+            verifiable: nowBundle > fixedBundle,
+            displayComment: comment.replace(/\s*\(\d+\)\s*$/, '')
+        };
+    }
+
+    // 현재 검수 버전에서 수정 사항을 확인할 수 있는지 여부를 배지로 반환 (앞에 수정 시점 번들코드 표시)
+    function getFixVerifyBadge(log) {
+        const info = getFixBundleInfo(log);
+        if (!info) return '';
+
+        if (info.verifiable) {
+            return `<div class="mt-1.5"><span class="inline-flex items-center gap-1 bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full text-[10px] font-black whitespace-nowrap"><i class="fas fa-check-circle"></i>(${info.fixedBundle}) 현재 버전에서 확인 가능</span></div>`;
+        }
+        return `<div class="mt-1.5"><span class="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full text-[10px] font-black whitespace-nowrap"><i class="fas fa-hourglass-half"></i>(${info.fixedBundle}) 현재 버전에서 확인 불가</span></div>`;
+    }
+
+    // 표시용 개발자 코멘트: 배지가 표시되는 경우 끝의 (번들코드)를 제거
+    function getDisplayDevComment(log) {
+        const info = getFixBundleInfo(log);
+        return info ? info.displayComment : (log.developer_comment || '');
+    }
+
 /** 데이터 로드 및 처리 함수 **/
 async function fetchQAInformation(forceRefresh = false) {
     const now = new Date().toISOString(); // 시간까지 포함된 전체 타임스탬프
@@ -1129,9 +1167,10 @@ function renderTable() {
             <td class="px-4 py-4 text-center border-b border-gray-100">${imageActionHtml}</td>
             <td class="px-4 py-4 text-gray-600 border-b border-gray-100 ${currentState === '수정 완료' ? 'cursor-pointer hover:bg-blue-50/30' : ''}" ${currentState === '수정 완료' ? `onclick="openDevCommentEditModal('${log.id}')" title="클릭하여 코멘트 수정"` : ''}>
                 <div class="tooltip-container">
-                    <div class="line-clamp-3 w-full text-xs leading-relaxed">${log.developer_comment || '<span class="text-gray-300 italic">코멘트 없음</span>'}</div>
-                    <span class="tooltip-text-left">${log.developer_comment || '코멘트 없음'}</span>
+                    <div class="line-clamp-3 w-full text-xs leading-relaxed">${getDisplayDevComment(log) || '<span class="text-gray-300 italic">코멘트 없음</span>'}</div>
+                    <span class="tooltip-text-left">${getDisplayDevComment(log) || '코멘트 없음'}</span>
                 </div>
+                ${getFixVerifyBadge(log)}
             </td>
             <td class="px-4 py-4 border-b border-gray-100 relative">
                 <div class="flex flex-col items-center gap-1 z-10">
@@ -1184,7 +1223,7 @@ function renderTable() {
                         <span class="mobile-card-meta-item" title="작성: ${formatKST(log.created_at)}"><i class="fas fa-calendar-alt"></i> ${formatRelativeTime(log.created_at)}</span>
                         ${log.updated_at ? `<span class="mobile-card-meta-item text-blue-500" title="업데이트: ${formatKST(log.updated_at)}"><i class="fas fa-sync-alt"></i> ${formatRelativeTime(log.updated_at)}</span>` : ''}
                     </div>
-                    ${log.developer_comment ? `<div class="mobile-card-comment ${currentState === '수정 완료' ? 'cursor-pointer hover:bg-blue-50/30 active:bg-blue-100/30 transition' : ''}" ${currentState === '수정 완료' ? `onclick="openDevCommentEditModal('${log.id}')"` : ''}><div class="mobile-card-comment-label">${currentState === '수정 완료' ? '<i class="fas fa-edit mr-1 text-blue-500"></i>' : ''}개발자 코멘트</div>${log.developer_comment}</div>` : ''}
+                    ${log.developer_comment ? `<div class="mobile-card-comment ${currentState === '수정 완료' ? 'cursor-pointer hover:bg-blue-50/30 active:bg-blue-100/30 transition' : ''}" ${currentState === '수정 완료' ? `onclick="openDevCommentEditModal('${log.id}')"` : ''}><div class="mobile-card-comment-label">${currentState === '수정 완료' ? '<i class="fas fa-edit mr-1 text-blue-500"></i>' : ''}개발자 코멘트</div>${getDisplayDevComment(log)}${getFixVerifyBadge(log)}</div>` : ''}
                     <div class="mobile-card-actions">
                         ${mobileActionButtons}
                         ${mobileImageBtn}
@@ -1608,11 +1647,20 @@ async function openDetailModal(logId) {
     const devCommentSection = document.getElementById('modal-dev-comment-section');
     const modalDevComment = document.getElementById('modal-dev-comment');
     if (log.developer_comment) {
-        modalDevComment.innerText = log.developer_comment;
+        modalDevComment.innerText = getDisplayDevComment(log);
         devCommentSection.classList.remove('hidden');
     } else {
         devCommentSection.classList.add('hidden');
     }
+
+    // 수정 확인 가능 여부 배지 (컨테이너가 없으면 코멘트 아래에 동적 생성)
+    let fixBadgeEl = document.getElementById('modal-fix-verify-badge');
+    if (!fixBadgeEl) {
+        fixBadgeEl = document.createElement('div');
+        fixBadgeEl.id = 'modal-fix-verify-badge';
+        modalDevComment.insertAdjacentElement('afterend', fixBadgeEl);
+    }
+    fixBadgeEl.innerHTML = getFixVerifyBadge(log);
 
     // 상태별 액션 버튼 생성
     const actionButtonsContainer = document.getElementById('modal-action-buttons');
@@ -1765,7 +1813,7 @@ async function openReRequestModal(logId) {
     const log = await findLogById(logId);
     if (!log) return;
     document.getElementById('request-log-id').value = logId; document.getElementById('request-text').value = ''; 
-    document.getElementById('request-existing-desc').innerText = log.user_description || '-'; document.getElementById('request-existing-comment').innerText = log.developer_comment || '-';
+    document.getElementById('request-existing-desc').innerText = log.user_description || '-'; document.getElementById('request-existing-comment').innerText = getDisplayDevComment(log) || '-';
     openModal('requestModal');
 }
 
