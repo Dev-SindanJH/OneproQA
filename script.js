@@ -752,7 +752,7 @@ async function fetchLogs(forceRefresh = false) {
 
     let query = supabaseClient
         .from('qa_logs')
-        .select('id,user_name,state,current_scene,current_popup,user_description,developer_comment,created_at,updated_at,image_url,is_delete,inAppLogs,login_info');
+        .select('id,user_name,state,current_scene,current_popup,user_description,developer_comment,created_at,updated_at,image_url,is_delete,inAppLogs,login_info,device_info');
 
     // 필터 적용
     query = applyFiltersToQuery(query, currentFilters);
@@ -1640,6 +1640,28 @@ async function openDetailModal(logId) {
         imageSection.classList.add('hidden');
     }
 
+    // 검수 환경(디바이스) 정보 표시
+    const deviceSection = document.getElementById('modal-device-section');
+    const deviceInfoEl = document.getElementById('modal-device-info');
+    let device = log.device_info;
+    try { if (typeof device === 'string') device = JSON.parse(device); } catch (e) { device = null; }
+    if (device && Object.values(device).some(v => v)) {
+        const chip = (icon, value, extraCls = 'bg-slate-50 text-slate-600 border-slate-200') =>
+            value ? `<span class="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full border ${extraCls}"><i class="fas ${icon} text-[10px] opacity-60"></i>${value}</span>` : '';
+        const versionText = device.app_version ? `v${device.app_version}${device.bundle_code ? ` (${device.bundle_code})` : ''}` : '';
+        const serverCls = device.server === 'PROD' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-purple-50 text-purple-600 border-purple-200';
+        deviceInfoEl.innerHTML =
+            chip('fa-code-branch', versionText, 'bg-blue-50 text-blue-700 border-blue-200') +
+            chip('fa-server', device.server, serverCls) +
+            chip('fa-mobile-screen', device.device_model) +
+            chip('fa-microchip', device.os) +
+            chip('fa-expand', device.screen) +
+            chip('fa-language', device.language);
+        deviceSection.classList.remove('hidden');
+    } else {
+        deviceSection.classList.add('hidden');
+    }
+
     // 로그인 정보 표시
     populateLoginInfoPanel(log.login_info);
 
@@ -1707,12 +1729,18 @@ async function openDetailModal(logId) {
                 const raw = item.logContent;
                 const methodMatch = raw.match(/^\[(GET|POST|PUT|DELETE|PATCH)\]/);
                 const method = methodMatch ? methodMatch[1] : 'API';
-                let url = raw.replace(`[${method}]`, '').trim().split('Request:')[0].split('Response')[0].trim();
+                let url = raw.replace(`[${method}]`, '').trim().split('Request:')[0].split('Elapsed:')[0].split('Response')[0].trim();
 
-                headerContent = `<div class="flex items-start"><span class="method-badge bg-emerald-100 text-emerald-700 mt-0.5">${method}</span><span class="text-[11px] font-bold text-slate-700 break-all leading-relaxed flex-1">${url}</span></div>`;
+                const elapsedMatch = raw.match(/Elapsed:\s*([\d.]+)s/);
+                const elapsedSec = elapsedMatch ? parseFloat(elapsedMatch[1]) : null;
+                const elapsedBadge = elapsedSec !== null
+                    ? `<span class="text-[10px] font-black ml-2 whitespace-nowrap ${elapsedSec >= 2 ? 'text-red-500' : elapsedSec >= 1 ? 'text-amber-500' : 'text-slate-400'}"><i class="fas fa-stopwatch mr-0.5"></i>${elapsedMatch[1]}s</span>`
+                    : '';
+
+                headerContent = `<div class="flex items-start"><span class="method-badge bg-emerald-100 text-emerald-700 mt-0.5">${method}</span><span class="text-[11px] font-bold text-slate-700 break-all leading-relaxed flex-1">${url}</span>${elapsedBadge}</div>`;
 
                 const formatJson = (s) => { try { return JSON.stringify(JSON.parse(s.trim()), null, 2); } catch(e) { return s; } };
-                let reqPart = raw.includes('Request:') ? `<div class="json-label"><i class="fas fa-arrow-right"></i> REQUEST</div><pre class="json-block">${formatJson(raw.split('Request:')[1].split('Response')[0])}</pre>` : '';
+                let reqPart = raw.includes('Request:') ? `<div class="json-label"><i class="fas fa-arrow-right"></i> REQUEST</div><pre class="json-block">${formatJson(raw.split('Request:')[1].split('Elapsed:')[0].split('Response')[0])}</pre>` : '';
                 let resMatch = raw.match(/Response\[(\d+)\]:\s*([\s\S]*)$/);
                 let resPart = resMatch ? `<div class="json-label mt-2"><span><i class="fas fa-arrow-left"></i> RESPONSE</span><span class="${resMatch[1].startsWith('2')?'text-emerald-500':'text-red-500'} font-black">HTTP ${resMatch[1]}</span></div><pre class="json-block">${formatJson(resMatch[2])}</pre>` : '';
                 detailContent = `<div class="mt-3 border-t border-slate-100 pt-3">${reqPart}${resPart}</div>`;
@@ -1731,7 +1759,7 @@ async function openDetailModal(logId) {
                 <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden transition-all">
                     <div class="p-3 flex justify-between items-center cursor-pointer hover:bg-slate-50" onclick="toggleLogDetail('${index}')">
                         <div class="flex flex-col flex-1 min-w-0"><span class="text-[9px] font-black ${config.color} uppercase mb-0.5">${config.label}</span><div class="flex items-center">${headerContent}</div></div>
-                        <div class="flex items-center gap-3 ml-2"><span class="text-[10px] font-mono text-slate-400">${timeStr}</span><i class="fas fa-chevron-down text-[10px] text-slate-300 transition-transform duration-300" id="icon-${index}"></i></div>
+                        <div class="flex items-center gap-3 ml-2">${item.logCount > 1 ? `<span class="text-[9px] font-black text-white bg-red-400 rounded-full px-1.5 py-0.5" title="${item.logCount}회 반복 발생">×${item.logCount}</span>` : ''}<span class="text-[10px] font-mono text-slate-400">${timeStr}</span><i class="fas fa-chevron-down text-[10px] text-slate-300 transition-transform duration-300" id="icon-${index}"></i></div>
                     </div>
                     <div id="extra-${index}" class="hidden px-3 pb-3 bg-white">${detailContent}</div>
                 </div>`;
