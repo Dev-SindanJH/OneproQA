@@ -39,6 +39,9 @@
                 <button onclick="showSection('masterdata')" id="nav-masterdata" class="nav-item whitespace-nowrap w-full flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-white transition">
                     <i class="fas fa-database mr-3"></i> 마스터 데이터
                 </button>
+                <button onclick="showSection('ranking')" id="nav-ranking" class="nav-item whitespace-nowrap w-full flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-white transition">
+                    <i class="fas fa-trophy mr-3"></i> 랭킹
+                </button>
                 <button onclick="showSection('accounts')" id="nav-accounts" class="nav-item whitespace-nowrap w-full flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-white transition">
                     <i class="fas fa-user-shield mr-3"></i> 검수 계정 관리
                 </button>
@@ -422,6 +425,130 @@
                             <tbody id="md-country-tbody" class="divide-y divide-gray-100"></tbody>
                         </table>
                         <div id="md-country-pagination" class="flex justify-center items-center gap-1 p-4 bg-white border-t border-gray-100"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== 랭킹 섹션 ===== -->
+            <section id="ranking" class="section">
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold mb-1 text-slate-800">랭킹</h2>
+                        <p class="text-sm text-gray-500">서버의 랭킹 API를 호출해 결과를 확인합니다.</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <!-- 서버 선택 -->
+                        <div class="flex items-center bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+                            <button onclick="switchRankingServer('dev')" id="rk-server-dev" class="md-lang-btn px-4 py-2 text-sm font-bold transition">DEV</button>
+                            <button onclick="switchRankingServer('prod')" id="rk-server-prod" class="md-lang-btn px-4 py-2 text-sm font-bold transition">PROD</button>
+                        </div>
+                        <button onclick="loadRankingData()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-emerald-700 shadow-md transition">
+                            <i class="fas fa-sync-alt mr-2"></i>새로고침
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 랭킹 종류 탭 -->
+                <div class="flex flex-wrap gap-1.5 mb-4" id="rk-type-tabs"></div>
+
+                <!-- 조회 조건 -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-4">
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 items-end">
+                        <div>
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Profile ID</label>
+                            <input type="text" id="rk-profile-id" value="264202" onkeydown="if(event.key==='Enter')loadRankingData()" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">국가 코드</label>
+                            <select id="rk-country-code" onchange="loadRankingData(1)" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                                <option value="ALL">ALL</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">School ID <span class="text-slate-300 normal-case">(선택)</span></label>
+                            <input type="text" id="rk-school-id" placeholder="예: 4097" onkeydown="if(event.key==='Enter')loadRankingData()" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">페이지 크기</label>
+                            <select id="rk-size" onchange="loadRankingData(1)" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                                <option value="10">10</option>
+                                <option value="20">20</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </div>
+                        <button onclick="loadRankingData(1)" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 shadow-md shadow-blue-200 transition">
+                            <i class="fas fa-search mr-2"></i>조회
+                        </button>
+                    </div>
+                    <!-- 상위 N% 검색 -->
+                    <div class="mt-4 pt-4 border-t border-gray-100">
+                        <div class="flex flex-wrap items-end gap-3">
+                            <div>
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">상위 N% 검색</label>
+                                <div class="flex items-center gap-1">
+                                    <input type="number" id="rk-percent" value="10" min="0.01" max="100" step="0.01" onkeydown="if(event.key==='Enter')jumpToTopPercent()" class="w-28 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono text-right focus:outline-none focus:ring-2 focus:ring-blue-400">
+                                    <span class="text-sm font-bold text-slate-500">%</span>
+                                </div>
+                            </div>
+                            <button onclick="jumpToTopPercent()" id="rk-percent-btn" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-indigo-700 shadow-md shadow-indigo-200 transition">
+                                <i class="fas fa-crosshairs mr-2"></i>해당 순위로 이동
+                            </button>
+                            <div class="flex flex-wrap gap-1.5">
+                                <button onclick="jumpToTopPercent(1)" class="md-tab-btn">상위 1%</button>
+                                <button onclick="jumpToTopPercent(5)" class="md-tab-btn">상위 5%</button>
+                                <button onclick="jumpToTopPercent(10)" class="md-tab-btn">상위 10%</button>
+                                <button onclick="jumpToTopPercent(50)" class="md-tab-btn">상위 50%</button>
+                            </div>
+                            <p id="rk-percent-result" class="text-xs text-slate-500 self-center"></p>
+                        </div>
+                    </div>
+                    <p id="rk-request-url" class="text-[10px] font-mono text-slate-400 mt-3 break-all"></p>
+                </div>
+
+                <!-- 로딩 -->
+                <div id="rk-loading" class="bg-white rounded-xl border border-gray-100 shadow-sm p-16 text-center text-gray-400 hidden">
+                    <i class="fas fa-spinner fa-spin text-2xl mb-3 block"></i>랭킹을 불러오는 중...
+                </div>
+
+                <!-- 에러 -->
+                <div id="rk-error" class="bg-red-50 border border-red-200 text-red-600 rounded-xl p-6 text-sm hidden"></div>
+
+                <!-- 점검 안내 -->
+                <div id="rk-maintenance" class="bg-amber-50 border border-amber-200 text-amber-700 rounded-xl p-4 text-sm mb-4 hidden"></div>
+
+                <!-- 데이터 영역 -->
+                <div id="rk-content" class="hidden">
+                    <!-- 내 랭킹 / 남은 시간 -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+                        <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+                            <p class="text-gray-400 text-[10px] font-bold uppercase mb-3">내 랭킹</p>
+                            <div id="rk-my-rank"></div>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+                            <p class="text-gray-400 text-[10px] font-bold uppercase mb-3">시즌 남은 시간</p>
+                            <p class="text-2xl font-black text-slate-700 font-mono" id="rk-remaining">-</p>
+                            <p class="text-[10px] text-slate-400 mt-1" id="rk-remaining-raw"></p>
+                        </div>
+                    </div>
+
+                    <!-- 랭킹 테이블 -->
+                    <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead class="bg-slate-50 text-gray-500 text-xs uppercase">
+                                <tr>
+                                    <th class="px-4 py-3 font-bold border-b text-center w-20">순위</th>
+                                    <th class="px-4 py-3 font-bold border-b text-center w-24">국가</th>
+                                    <th class="px-4 py-3 font-bold border-b">이름</th>
+                                    <th class="px-4 py-3 font-bold border-b text-center">타이틀</th>
+                                    <th class="px-4 py-3 font-bold border-b text-center">아바타</th>
+                                    <th class="px-4 py-3 font-bold border-b text-center">착용 아이템</th>
+                                    <th class="px-4 py-3 font-bold border-b text-center w-32">점수</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rk-tbody" class="divide-y divide-gray-100"></tbody>
+                        </table>
+                        <div id="rk-pagination" class="flex justify-center items-center gap-1 p-4 bg-white border-t border-gray-100"></div>
                     </div>
                 </div>
             </section>

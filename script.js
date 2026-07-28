@@ -327,6 +327,21 @@ function showSection(sectionId) {
         fetchQaMembers();
     }
 
+    // 랭킹 탭 첫 진입 시 자동 조회
+    if (sectionId === 'ranking') {
+        _renderRankingTypeTabs();
+        _syncRankingServerButtons();
+        if (!rankingData) loadRankingData(1);
+        // 타이틀/아바타 이름 표시용 마스터 데이터 (없으면 백그라운드 로드 후 재렌더)
+        if (!masterDataCache[currentMasterLang]) {
+            Promise.resolve(loadMasterData(currentMasterLang))
+                .then(() => rerenderRanking())
+                .catch(() => {});
+        }
+    } else {
+        _rkStopCountdown();
+    }
+
     // 모바일에서 섹션 전환 시 사이드바 자동 닫기
     if (window.innerWidth < 768) {
         const sidebar = document.getElementById('sidebar');
@@ -3442,4 +3457,456 @@ function _renderMdTableBody(rows, columns) {
     ).join('');
 
     _buildMdPagination('md-pagination', rows.length, mdCurrentPage, MD_PAGE_SIZE, 'changeMdPage');
+}
+
+/* ===================== 랭킹 ===================== */
+
+const RANKING_DEVICE_ID = '71709';                 // 고정 디바이스 ID
+const RANKING_DEFAULT_PROFILE_ID = '264202';       // 기본 프로필 ID
+const RANKING_CHARACTER_NAME = ['에러', '뚜이', '나누', '고고', '배로', '라니', '마크'];
+
+// 랭킹 종류 (추가 시 여기에만 등록하면 탭이 생성됨)
+const RANKING_TYPES = [
+    { key: 'coin', label: '코인', path: 'coin' },
+];
+
+let rankingType = 'coin';
+let rankingServer = null;     // null 이면 검수 서버(currentServerInfo) 따라감
+let rankingCurrentPage = 1;
+let rankingData = null;       // 마지막 응답 data
+let rankingLastArgs = null;   // 마지막 렌더 인자 (마스터 데이터 로드 후 재렌더용)
+let rankingCountdownTimer = null;
+let rankingRemainingSeconds = 0;
+let rankingLoadSeq = 0;       // 응답 경합 방지용
+let rankingTotalCount = null; // 현재 조회 조건의 전체 인원 수
+let rankingTotalKey = null;   // 전체 인원 수 캐시 키 (조회 조건)
+let rankingHighlightRank = null; // 상위 N% 검색으로 찾은 순위 (해당 행 강조)
+
+// 재조회 없이 마지막 응답으로 다시 그리기
+function rerenderRanking() {
+    if (rankingLastArgs) renderRankingData(...rankingLastArgs);
+}
+
+function getRankingApiBase() {
+    const server = rankingServer ?? currentServerInfo;
+    return server === 'prod' ? MASTER_API_BASE_PROD : MASTER_API_BASE_DEV;
+}
+
+function switchRankingServer(server) {
+    rankingServer = server;
+    _syncRankingServerButtons();
+    loadRankingData(1);
+}
+
+function _syncRankingServerButtons() {
+    const active = rankingServer ?? currentServerInfo;
+    ['dev', 'prod'].forEach(s => {
+        const btn = document.getElementById(`rk-server-${s}`);
+        if (btn) btn.classList.toggle('active', s === active);
+    });
+}
+
+function _renderRankingTypeTabs() {
+    const wrap = document.getElementById('rk-type-tabs');
+    if (!wrap) return;
+    wrap.innerHTML = RANKING_TYPES.map(t =>
+        `<button onclick="switchRankingType('${t.key}')" id="rktab-${t.key}" class="md-tab-btn${t.key === rankingType ? ' active' : ''}">${t.label}</button>`
+    ).join('');
+}
+
+function switchRankingType(key) {
+    if (rankingType === key) return;
+    rankingType = key;
+    _renderRankingTypeTabs();
+    loadRankingData(1);
+}
+
+// ISO 3166-1 alpha-2 → 국기 이모지
+function _rkFlag(code) {
+    if (typeof code !== 'string' || code.length !== 2) return '';
+    return String.fromCodePoint(...[...code.toUpperCase()].map(c => 127397 + c.charCodeAt(0)));
+}
+
+function _rkEsc(v) {
+    if (v === null || v === undefined) return '';
+    return String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// java 기준 포맷: yyyy-MM-dd'T'HH:mm:ssxxx (Z 인 경우 +00:00)
+function _rkClientDatetime() {
+    const now = new Date();
+    const offsetMin = -now.getTimezoneOffset();
+    const pad2 = n => String(n).padStart(2, '0');
+    const sign = offsetMin >= 0 ? '+' : '-';
+    const absMin = Math.abs(offsetMin);
+    const offsetStr = offsetMin === 0 ? '+00:00' : `${sign}${pad2(Math.floor(absMin / 60))}:${pad2(absMin % 60)}`;
+    return `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}` +
+        `T${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}${offsetStr}`;
+}
+
+function _rkHeaders(profileId) {
+    return {
+        'Client-Datetime': _rkClientDatetime(),
+        'Timezone-Identifier': Intl.DateTimeFormat().resolvedOptions().timeZone,
+        'App-Version': currentAppVersion || '3.0.0',
+        'Platform': 'android',
+        'Device-Id': RANKING_DEVICE_ID,
+        'Profile-Id': String(profileId),
+    };
+}
+
+// 캐시된 마스터 데이터에서 타이틀 / 아바타 아이템 조회용 맵 생성
+function _rkBuildMasterMaps() {
+    const maps = { title: {}, item: {} };
+    for (const lang of ['ko', 'en', 'ja']) {
+        const md = masterDataCache[lang]?.masterData;
+        if (!md) continue;
+        const translations = {};
+        (md.translationMasterData?.translations ?? []).forEach(t => { translations[t.translationKey] = t.value; });
+        (md.titleMasterData?.titles ?? []).forEach(t => {
+            maps.title[t.titleId] = translations[t.nameTranslation?.translationKey] || t.code || null;
+        });
+        (md.friendsAvatarMasterData?.friendsAvatarItems ?? []).forEach(it => {
+            maps.item[it.friendsAvatarItemId] = { type1: it.type1, fileName: it.fileName };
+        });
+        if (Object.keys(maps.title).length > 0 || Object.keys(maps.item).length > 0) break;
+    }
+    return maps;
+}
+
+function _rkItemIcons(itemIds, itemMap) {
+    if (!Array.isArray(itemIds) || itemIds.length === 0) return '<span class="text-slate-300">-</span>';
+    return `<div class="flex flex-wrap gap-1 justify-center">` + itemIds.map(id => {
+        const info = itemMap[id];
+        const candidates = info ? getAvatarItemImageCandidates(info) : [];
+        if (candidates.length === 0) {
+            return `<span class="font-mono text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded" title="마스터 데이터 없음">${id}</span>`;
+        }
+        const cAttr = JSON.stringify(candidates).replace(/"/g, '&quot;');
+        return `<img src="${candidates[0]}" alt="${id}" title="${id}" class="w-8 h-8 object-contain rounded bg-slate-50 border border-slate-100 cursor-pointer"
+            data-c="${cAttr}" data-ci="0"
+            onerror="var ci=+this.dataset.ci+1,ca=JSON.parse(this.dataset.c);this.dataset.ci=ci;if(ci&lt;ca.length){this.src=ca[ci]}else{this.replaceWith(Object.assign(document.createElement('span'),{className:'font-mono text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded',textContent:this.alt}))}"
+            onmousedown="showAvatarItemPreview(event,'${candidates[0]}','${cAttr}')" onmouseup="hideAvatarItemPreview()" onmouseleave="hideAvatarItemPreview()"
+            ontouchstart="showAvatarItemPreview(event,'${candidates[0]}','${cAttr}')" ontouchend="hideAvatarItemPreview()">`;
+    }).join('') + `</div>`;
+}
+
+function _rkTitleCell(titleId, titleMap) {
+    if (titleId === null || titleId === undefined) return '<span class="text-slate-300">-</span>';
+    const name = titleMap[titleId];
+    return name
+        ? `<span class="text-slate-700">${_rkEsc(name)}</span> <span class="font-mono text-[10px] text-slate-400">#${titleId}</span>`
+        : `<span class="font-mono text-xs text-slate-500">#${titleId}</span>`;
+}
+
+function _rkScore(score) {
+    const n = Number(score);
+    return Number.isFinite(n) ? n.toLocaleString() : _rkEsc(score ?? '-');
+}
+
+function _rkRankBadge(rank) {
+    const medal = { 1: '🥇', 2: '🥈', 3: '🥉' }[rank];
+    return medal
+        ? `<span class="text-lg">${medal}</span> <span class="font-black text-slate-700">${rank}</span>`
+        : `<span class="font-bold text-slate-600">${rank ?? '-'}</span>`;
+}
+
+function _rkFormatDuration(sec) {
+    if (!Number.isFinite(sec) || sec < 0) return '-';
+    const d = Math.floor(sec / 86400);
+    const h = Math.floor((sec % 86400) / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = Math.floor(sec % 60);
+    const pad2 = n => String(n).padStart(2, '0');
+    return (d > 0 ? `${d}일 ` : '') + `${pad2(h)}:${pad2(m)}:${pad2(s)}`;
+}
+
+function _rkStartCountdown(seconds) {
+    if (rankingCountdownTimer) clearInterval(rankingCountdownTimer);
+    rankingRemainingSeconds = Number(seconds) || 0;
+    const el = document.getElementById('rk-remaining');
+    const rawEl = document.getElementById('rk-remaining-raw');
+    if (rawEl) rawEl.textContent = `remainingSeconds: ${seconds ?? '-'}`;
+    const tick = () => {
+        if (!el) return;
+        el.textContent = _rkFormatDuration(rankingRemainingSeconds);
+        if (rankingRemainingSeconds <= 0) {
+            clearInterval(rankingCountdownTimer);
+            rankingCountdownTimer = null;
+            return;
+        }
+        rankingRemainingSeconds--;
+    };
+    tick();
+    rankingCountdownTimer = setInterval(tick, 1000);
+}
+
+function _rkStopCountdown() {
+    if (rankingCountdownTimer) {
+        clearInterval(rankingCountdownTimer);
+        rankingCountdownTimer = null;
+    }
+}
+
+function changeRankingPage(page) {
+    loadRankingData(page);
+}
+
+// 순위 → 상위 몇 % 인지 (전체 인원 수를 알 때만 표시)
+function _rkPercentOf(rank) {
+    if (rankingTotalCount === null || !Number.isFinite(rank) || rank <= 0) return null;
+    return Math.min(100, (rank / rankingTotalCount) * 100);
+}
+
+function _rkFormatPercent(pct) {
+    if (pct === null) return '';
+    return pct < 0.01 ? '<0.01' : (pct < 1 ? pct.toFixed(2) : pct.toFixed(1));
+}
+
+function _rkPercentBadge(rank) {
+    const pct = _rkPercentOf(rank);
+    if (pct === null) return '';
+    return `<p class="text-[10px] text-indigo-500 font-bold mt-0.5">상위 ${_rkFormatPercent(pct)}%</p>`;
+}
+
+// 상위 N% 에 해당하는 순위로 이동
+async function jumpToTopPercent(percentArg) {
+    const inputEl = document.getElementById('rk-percent');
+    const resultEl = document.getElementById('rk-percent-result');
+    const btn = document.getElementById('rk-percent-btn');
+
+    const pct = percentArg !== undefined ? percentArg : parseFloat(inputEl.value);
+    if (!Number.isFinite(pct) || pct <= 0 || pct > 100) {
+        showToast('상위 % 는 0 초과 100 이하로 입력해 주세요.', 'error');
+        return;
+    }
+    if (percentArg !== undefined) inputEl.value = pct;
+
+    const inp = _rkReadInputs();
+    btn.disabled = true;
+    resultEl.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>전체 인원 확인 중...';
+
+    try {
+        // 아직 조회 전이면 1페이지부터 받아서 totalPages 확보
+        if (!rankingData) await loadRankingData(1);
+        const total = await _rkEnsureTotalCount(inp, rankingData);
+        if (total === null || total <= 0) throw new Error('전체 인원 수를 확인할 수 없습니다.');
+
+        const targetRank = Math.max(1, Math.ceil(total * pct / 100));
+        const targetPage = Math.ceil(targetRank / inp.size);
+
+        rankingHighlightRank = targetRank;
+        await loadRankingData(targetPage);
+
+        resultEl.innerHTML = `<span class="text-indigo-600 font-bold">상위 ${pct}%</span> = <span class="font-mono font-bold">${targetRank.toLocaleString()}위</span>
+            <span class="text-slate-400">/ 전체 ${total.toLocaleString()}명 · ${targetPage.toLocaleString()}페이지</span>`;
+    } catch (e) {
+        resultEl.innerHTML = `<span class="text-red-500">${_rkEsc(e.message)}</span>`;
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+// 조회 조건 읽기
+function _rkReadInputs() {
+    return {
+        profileId: (document.getElementById('rk-profile-id').value || '').trim() || RANKING_DEFAULT_PROFILE_ID,
+        countryCode: document.getElementById('rk-country-code').value || 'ALL',
+        schoolId: (document.getElementById('rk-school-id').value || '').trim(),
+        size: Number(document.getElementById('rk-size').value) || 10,
+    };
+}
+
+function _rkBuildUrl(inp, page) {
+    const typeCfg = RANKING_TYPES.find(t => t.key === rankingType) ?? RANKING_TYPES[0];
+    const params = new URLSearchParams({ countryCode: inp.countryCode, page: String(page), size: String(inp.size) });
+    if (inp.schoolId) params.set('schoolId', inp.schoolId);
+    return `${getRankingApiBase()}/api/v3/ranking/${typeCfg.path}/profiles/${encodeURIComponent(inp.profileId)}?${params}`;
+}
+
+async function _rkRequest(inp, page) {
+    const res = await fetch(_rkBuildUrl(inp, page), { headers: _rkHeaders(inp.profileId) });
+    const json = await res.json().catch(() => null);
+    if (!res.ok) throw new Error(json?.status?.code || json?.message || `HTTP ${res.status}`);
+    if (json?.status?.code && json.status.code !== 'SUCCESS') throw new Error(json.status.code);
+    return json;
+}
+
+// 조회 조건이 같으면 전체 인원 수 캐시를 재사용
+function _rkTotalKey(inp) {
+    return [getRankingApiBase(), rankingType, inp.countryCode, inp.schoolId, inp.size].join('|');
+}
+
+// 전체 인원 수 계산: 마지막 페이지 인원까지 반영 (필요할 때만 1회 추가 조회)
+async function _rkEnsureTotalCount(inp, data) {
+    const key = _rkTotalKey(inp);
+    if (rankingTotalKey === key && rankingTotalCount !== null) return rankingTotalCount;
+
+    const totalPages = Number(data?.totalPages) || 0;
+    if (totalPages <= 0) return null;
+
+    let lastCount;
+    if (Number(data?.currentPage) === totalPages) {
+        lastCount = (data.rankings ?? []).length;   // 이미 마지막 페이지를 보고 있음
+    } else {
+        const json = await _rkRequest(inp, totalPages);
+        lastCount = (json?.data?.rankings ?? []).length;
+    }
+
+    rankingTotalCount = (totalPages - 1) * inp.size + lastCount;
+    rankingTotalKey = key;
+    return rankingTotalCount;
+}
+
+async function loadRankingData(page) {
+    const profileIdEl = document.getElementById('rk-profile-id');
+    if (!profileIdEl) return;
+
+    const inp = _rkReadInputs();
+    rankingCurrentPage = page || rankingCurrentPage || 1;
+
+    // 조회 조건이 바뀌면 전체 인원 캐시와 상위 N% 결과 무효화
+    if (rankingTotalKey !== _rkTotalKey(inp)) {
+        rankingTotalKey = null;
+        rankingTotalCount = null;
+        rankingHighlightRank = null;
+        const pctResultEl = document.getElementById('rk-percent-result');
+        if (pctResultEl) pctResultEl.innerHTML = '';
+    }
+
+    const urlEl = document.getElementById('rk-request-url');
+    if (urlEl) urlEl.textContent = `GET ${_rkBuildUrl(inp, rankingCurrentPage)}`;
+
+    const loadingEl = document.getElementById('rk-loading');
+    const contentEl = document.getElementById('rk-content');
+    const errorEl = document.getElementById('rk-error');
+    loadingEl.classList.remove('hidden');
+    errorEl.classList.add('hidden');
+    _rkStopCountdown();
+
+    const seq = ++rankingLoadSeq;
+    try {
+        const json = await _rkRequest(inp, rankingCurrentPage);
+        if (seq !== rankingLoadSeq) return; // 더 최근 요청이 있으면 무시
+
+        rankingData = json?.data ?? null;
+        rankingLastArgs = [rankingData, json?.maintenance, inp.size];
+        loadingEl.classList.add('hidden');
+        contentEl.classList.remove('hidden');
+        renderRankingData(...rankingLastArgs);
+
+        // 전체 인원 수는 백그라운드로 확보 후 퍼센트 표시 갱신
+        _rkEnsureTotalCount(inp, rankingData)
+            .then(total => { if (total !== null && seq === rankingLoadSeq) rerenderRanking(); })
+            .catch(() => {});
+    } catch (e) {
+        if (seq !== rankingLoadSeq) return;
+        loadingEl.classList.add('hidden');
+        contentEl.classList.add('hidden');
+        errorEl.classList.remove('hidden');
+        // 랭킹 API는 배포된 QA 페이지 도메인만 CORS 허용 → 로컬 실행 시 fetch 자체가 실패
+        const localHint = (isLocalEnvironment() && /Failed to fetch|NetworkError/i.test(e.message))
+            ? `<p class="text-xs mt-2 text-red-500">로컬(localhost/file) 환경에서는 랭킹 API의 CORS 정책상 호출할 수 없습니다. 배포된 QA 페이지에서 확인해 주세요.</p>`
+            : '';
+        errorEl.innerHTML = `<i class="fas fa-exclamation-circle mr-2"></i>랭킹 조회 실패: ${_rkEsc(e.message)}${localHint}`;
+    }
+}
+
+function renderRankingData(data, maintenance, size) {
+    if (!data) return;
+    const maps = _rkBuildMasterMaps();
+
+    // 국가 코드 셀렉트 갱신 (응답의 countryCodes 반영, 현재 선택값 유지)
+    const countrySel = document.getElementById('rk-country-code');
+    const codes = Array.isArray(data.countryCodes) ? data.countryCodes : [];
+    if (codes.length > 0) {
+        const selected = countrySel.value;
+        const PINNED = ['KR', 'JP', 'US'];
+        const rest = codes.filter(c => c && c !== 'ALL' && !PINNED.includes(c)).sort();
+        const options = ['ALL', ...PINNED.filter(c => codes.includes(c)), ...rest];
+        countrySel.innerHTML = options.map(c =>
+            `<option value="${_rkEsc(c)}"${c === selected ? ' selected' : ''}>${c === 'ALL' ? 'ALL' : `${_rkFlag(c)} ${_rkEsc(c)}`}</option>`
+        ).join('');
+        if (!options.includes(selected)) countrySel.value = 'ALL';
+    }
+
+    // 내 랭킹
+    const myRankEl = document.getElementById('rk-my-rank');
+    const my = data.myRank;
+    myRankEl.innerHTML = my
+        ? `<div class="flex flex-wrap items-center gap-4">
+               <div class="text-center min-w-[70px]">
+                   <p class="text-3xl font-black text-blue-600">${my.rank ?? '-'}</p>
+                   <p class="text-[10px] text-slate-400 font-bold uppercase">RANK</p>
+                   ${_rkPercentBadge(my.rank)}
+               </div>
+               <div class="flex-1 min-w-[160px]">
+                   <p class="text-lg font-bold text-slate-800">${_rkFlag(my.countryCode)} ${_rkEsc(my.name) || '-'}</p>
+                   <p class="text-xs text-slate-500 mt-0.5">${_rkTitleCell(my.titleId, maps.title)}</p>
+                   <p class="text-[11px] text-slate-400 mt-1">${RANKING_CHARACTER_NAME[my.friendsAvatarCharacterId] ?? `캐릭터 #${my.friendsAvatarCharacterId ?? '-'}`}</p>
+               </div>
+               <div class="text-right">
+                   <p class="text-2xl font-black text-emerald-600 font-mono">${_rkScore(my.score)}</p>
+                   <p class="text-[10px] text-slate-400 font-bold uppercase">SCORE</p>
+               </div>
+           </div>`
+        : `<p class="text-sm text-slate-400 italic">내 랭킹 정보 없음</p>`;
+
+    // 남은 시간
+    _rkStartCountdown(data.remainingSeconds);
+
+    // 점검 안내
+    const mtEl = document.getElementById('rk-maintenance');
+    if (maintenance && (maintenance.title || maintenance.content)) {
+        mtEl.classList.remove('hidden');
+        mtEl.innerHTML = `<p class="font-bold mb-1"><i class="fas fa-triangle-exclamation mr-2"></i>${_rkEsc(maintenance.title)}</p>
+            <p class="text-xs">${_rkEsc(maintenance.content)}</p>
+            <p class="text-[10px] mt-1 font-mono">${_rkEsc(maintenance.startAt)} ~ ${_rkEsc(maintenance.endAt)}</p>`;
+    } else {
+        mtEl.classList.add('hidden');
+        mtEl.innerHTML = '';
+    }
+
+    // 랭킹 테이블
+    const tbody = document.getElementById('rk-tbody');
+    const rows = Array.isArray(data.rankings) ? data.rankings : [];
+    if (rows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-gray-400">랭킹 데이터 없음</td></tr>`;
+    } else {
+        const myRankNo = my?.rank;
+        tbody.innerHTML = rows.map(r => {
+            const isMe = myRankNo !== undefined && r.rank === myRankNo;
+            const isTarget = rankingHighlightRank !== null && r.rank === rankingHighlightRank;
+            const charName = RANKING_CHARACTER_NAME[r.friendsAvatarCharacterId] ?? `#${r.friendsAvatarCharacterId ?? '-'}`;
+            const rowCls = isTarget ? 'bg-indigo-50 ring-2 ring-inset ring-indigo-400' : (isMe ? 'bg-blue-50/60' : 'hover:bg-slate-50/50');
+            return `<tr class="${rowCls} transition"${isTarget ? ' id="rk-target-row"' : ''}>
+                <td class="px-4 py-2.5 border-b border-gray-100 text-center">
+                    ${_rkRankBadge(r.rank)}
+                    ${_rkPercentBadge(r.rank)}
+                </td>
+                <td class="px-4 py-2.5 border-b border-gray-100 text-center">
+                    <span class="text-base">${_rkFlag(r.countryCode)}</span>
+                    <span class="font-mono text-[10px] text-slate-400 block">${_rkEsc(r.countryCode) || '-'}</span>
+                </td>
+                <td class="px-4 py-2.5 border-b border-gray-100">
+                    <span class="font-bold text-slate-700">${_rkEsc(r.name) || '-'}</span>
+                    ${isMe ? '<span class="ml-1.5 text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-black border border-blue-200">나</span>' : ''}
+                </td>
+                <td class="px-4 py-2.5 border-b border-gray-100 text-center text-xs">${_rkTitleCell(r.titleId, maps.title)}</td>
+                <td class="px-4 py-2.5 border-b border-gray-100 text-center text-xs text-slate-600">${_rkEsc(charName)}</td>
+                <td class="px-4 py-2.5 border-b border-gray-100 text-center">${_rkItemIcons(r.friendsAvatarItemIds, maps.item)}</td>
+                <td class="px-4 py-2.5 border-b border-gray-100 text-center font-mono font-bold text-emerald-600">${_rkScore(r.score)}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    // 페이지네이션 (서버 페이징: totalPages 기준)
+    const totalPages = Number(data.totalPages) || 1;
+    const pageSize = Number(size) || 10;
+    rankingCurrentPage = Number(data.currentPage) || rankingCurrentPage;
+    _buildMdPagination('rk-pagination', totalPages * pageSize, rankingCurrentPage, pageSize, 'changeRankingPage');
+
+    // 상위 N% 로 찾은 행이 이 페이지에 있으면 화면에 보이도록 스크롤
+    const targetRow = document.getElementById('rk-target-row');
+    if (targetRow) targetRow.scrollIntoView({ block: 'center', behavior: 'smooth' });
 }
