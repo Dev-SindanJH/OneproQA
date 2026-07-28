@@ -717,3 +717,14 @@ canvas {
     background: #f1f5f9;
     color: #94a3b8;
 }
+
+/* ===== 랭킹 테이블 컬럼 폭 =====
+   위쪽의 전역 `table th:nth-child(N)` 규칙(검수 목록용)이 모든 테이블에 적용되므로
+   id 선택자로 우선순위를 높여 랭킹 테이블만 따로 지정한다. */
+#rk-table th:nth-child(1), #rk-table td:nth-child(1) { width: 9%;  }  /* 순위 */
+#rk-table th:nth-child(2), #rk-table td:nth-child(2) { width: 6%;  }  /* 국가 */
+#rk-table th:nth-child(3), #rk-table td:nth-child(3) { width: 20%; }  /* 이름 */
+#rk-table th:nth-child(4), #rk-table td:nth-child(4) { width: 19%; }  /* 타이틀 */
+#rk-table th:nth-child(5), #rk-table td:nth-child(5) { width: 9%;  }  /* 아바타 */
+#rk-table th:nth-child(6), #rk-table td:nth-child(6) { width: 23%; }  /* 착용 아이템 */
+#rk-table th:nth-child(7), #rk-table td:nth-child(7) { width: 14%; }  /* 점수 */

@@ -330,7 +330,6 @@ function showSection(sectionId) {
     // 랭킹 탭 첫 진입 시 자동 조회
     if (sectionId === 'ranking') {
         _renderRankingTypeTabs();
-        _syncRankingServerButtons();
         if (!rankingData) loadRankingData(1);
         // 타이틀/아바타 이름 표시용 마스터 데이터 (없으면 백그라운드 로드 후 재렌더)
         if (!masterDataCache[currentMasterLang]) {
@@ -3471,7 +3470,6 @@ const RANKING_TYPES = [
 ];
 
 let rankingType = 'coin';
-let rankingServer = null;     // null 이면 검수 서버(currentServerInfo) 따라감
 let rankingCurrentPage = 1;
 let rankingData = null;       // 마지막 응답 data
 let rankingLastArgs = null;   // 마지막 렌더 인자 (마스터 데이터 로드 후 재렌더용)
@@ -3480,6 +3478,8 @@ let rankingRemainingSeconds = 0;
 let rankingLoadSeq = 0;       // 응답 경합 방지용
 let rankingTotalCount = null; // 현재 조회 조건의 전체 인원 수
 let rankingTotalKey = null;   // 전체 인원 수 캐시 키 (조회 조건)
+let rankingScoreCache = new Map(); // 순위 → 점수 (점수 검색 이분 탐색용)
+let rankingProbeCount = 0;    // 점수 검색 시 실제 조회 횟수
 let rankingHighlightRank = null; // 상위 N% 검색으로 찾은 순위 (해당 행 강조)
 
 // 재조회 없이 마지막 응답으로 다시 그리기
@@ -3487,23 +3487,9 @@ function rerenderRanking() {
     if (rankingLastArgs) renderRankingData(...rankingLastArgs);
 }
 
+// 랭킹은 운영 서버 데이터만 조회한다 (검수 서버 설정과 무관)
 function getRankingApiBase() {
-    const server = rankingServer ?? currentServerInfo;
-    return server === 'prod' ? MASTER_API_BASE_PROD : MASTER_API_BASE_DEV;
-}
-
-function switchRankingServer(server) {
-    rankingServer = server;
-    _syncRankingServerButtons();
-    loadRankingData(1);
-}
-
-function _syncRankingServerButtons() {
-    const active = rankingServer ?? currentServerInfo;
-    ['dev', 'prod'].forEach(s => {
-        const btn = document.getElementById(`rk-server-${s}`);
-        if (btn) btn.classList.toggle('active', s === active);
-    });
+    return MASTER_API_BASE_PROD;
 }
 
 function _renderRankingTypeTabs() {
@@ -3660,7 +3646,9 @@ function _rkPercentOf(rank) {
 
 function _rkFormatPercent(pct) {
     if (pct === null) return '';
-    return pct < 0.01 ? '<0.01' : (pct < 1 ? pct.toFixed(2) : pct.toFixed(1));
+    if (pct > 0 && pct < 0.01) return '<0.01';        // 0 은 그대로 0 으로
+    if (pct < 100 && pct >= 99.95) return '>99.9';    // 전원이 아닌데 100% 로 반올림되는 것 방지
+    return pct < 1 ? pct.toFixed(2) : pct.toFixed(1);
 }
 
 function _rkPercentBadge(rank) {
@@ -3687,9 +3675,7 @@ async function jumpToTopPercent(percentArg) {
     resultEl.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>전체 인원 확인 중...';
 
     try {
-        // 아직 조회 전이면 1페이지부터 받아서 totalPages 확보
-        if (!rankingData) await loadRankingData(1);
-        const total = await _rkEnsureTotalCount(inp, rankingData);
+        const total = await _rkEnsureTotalCount(inp);
         if (total === null || total <= 0) throw new Error('전체 인원 수를 확인할 수 없습니다.');
 
         const targetRank = Math.max(1, Math.ceil(total * pct / 100));
@@ -3705,6 +3691,71 @@ async function jumpToTopPercent(percentArg) {
     } finally {
         btn.disabled = false;
     }
+}
+
+const RANKING_SCORE_OPS = {
+    gte: { label: '이상', symbol: '≥', top: true,  cmp: (s, n) => s >= n },
+    gt:  { label: '초과', symbol: '>', top: true,  cmp: (s, n) => s >  n },
+    lte: { label: '이하', symbol: '≤', top: false, cmp: (s, n) => s >  n }, // 여집합: 초과 인원을 빼서 계산
+    lt:  { label: '미만', symbol: '<', top: false, cmp: (s, n) => s >= n },
+};
+
+// N점 이상/초과/이하/미만 인원 수와 전체 대비 비율 검색
+async function searchByScore() {
+    const valueEl = document.getElementById('rk-score-value');
+    const opKey = document.getElementById('rk-score-op').value;
+    const resultEl = document.getElementById('rk-score-result');
+    const btn = document.getElementById('rk-score-btn');
+
+    const score = parseFloat(valueEl.value);
+    if (!Number.isFinite(score)) {
+        showToast('점수를 입력해 주세요.', 'error');
+        return;
+    }
+    const op = RANKING_SCORE_OPS[opKey] ?? RANKING_SCORE_OPS.gte;
+
+    const inp = _rkReadInputs();
+    btn.disabled = true;
+    rankingProbeCount = 0;
+    const setProgress = () => {
+        resultEl.innerHTML = `<i class="fas fa-spinner fa-spin mr-1"></i>랭킹 탐색 중... (${rankingProbeCount}회 조회)`;
+    };
+    setProgress();
+
+    try {
+        const total = await _rkEnsureTotalCount(inp);
+        if (total === null || total <= 0) throw new Error('전체 인원 수를 확인할 수 없습니다.');
+
+        // 점수 내림차순이므로 "상위 몇 명까지가 조건을 만족하는가" 를 찾으면 된다
+        const topCount = await _rkCountTopWhere(inp, total, s => op.cmp(s, score), setProgress);
+        const count = op.top ? topCount : total - topCount;
+
+        // 조건을 만족하는 구간의 경계 순위 (이상/초과는 마지막, 이하/미만은 첫 번째)
+        const boundaryRank = count === 0 ? null : (op.top ? topCount : topCount + 1);
+        const pct = (count / total) * 100;
+
+        resultEl.innerHTML = `
+            <span class="font-mono font-bold text-slate-700">${score.toLocaleString()}점 ${op.label}(${op.symbol})</span>
+            <span class="mx-1 text-slate-300">→</span>
+            <span class="text-teal-600 font-black">${count.toLocaleString()}명</span>
+            <span class="text-slate-400">/ 전체 ${total.toLocaleString()}명 ·</span>
+            <span class="text-teal-600 font-bold">${_rkFormatPercent(pct)}%</span>
+            ${boundaryRank !== null ? `<button onclick="jumpToRank(${boundaryRank})" class="ml-2 text-[11px] font-bold text-white bg-slate-600 hover:bg-slate-700 px-2 py-1 rounded transition">
+                    ${boundaryRank.toLocaleString()}위 보기
+                 </button>` : ''}
+            <span class="ml-1 text-[10px] text-slate-300">(${rankingProbeCount}회 조회)</span>`;
+    } catch (e) {
+        resultEl.innerHTML = `<span class="text-red-500">${_rkEsc(e.message)}</span>`;
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+// 특정 순위가 있는 페이지로 이동 + 해당 행 강조
+async function jumpToRank(rank) {
+    const inp = _rkReadInputs();
+    rankingHighlightRank = rank;
+    await loadRankingData(Math.ceil(rank / inp.size));
 }
 
 // 조회 조건 읽기
@@ -3732,30 +3783,50 @@ async function _rkRequest(inp, page) {
     return json;
 }
 
-// 조회 조건이 같으면 전체 인원 수 캐시를 재사용
-function _rkTotalKey(inp) {
-    return [getRankingApiBase(), rankingType, inp.countryCode, inp.schoolId, inp.size].join('|');
+// 랭킹 집합을 결정하는 조건 (페이지 크기는 무관)
+function _rkScopeKey(inp) {
+    return [getRankingApiBase(), rankingType, inp.countryCode, inp.schoolId].join('|');
 }
 
-// 전체 인원 수 계산: 마지막 페이지 인원까지 반영 (필요할 때만 1회 추가 조회)
-async function _rkEnsureTotalCount(inp, data) {
-    const key = _rkTotalKey(inp);
+// 전체 인원 수: size=1 로 조회하면 totalPages 가 곧 전체 인원 수 (1회 조회, 이후 캐시)
+async function _rkEnsureTotalCount(inp) {
+    const key = _rkScopeKey(inp);
     if (rankingTotalKey === key && rankingTotalCount !== null) return rankingTotalCount;
 
-    const totalPages = Number(data?.totalPages) || 0;
-    if (totalPages <= 0) return null;
+    const json = await _rkRequest({ ...inp, size: 1 }, 1);
+    const total = Number(json?.data?.totalPages) || 0;
+    if (total <= 0) return null;
 
-    let lastCount;
-    if (Number(data?.currentPage) === totalPages) {
-        lastCount = (data.rankings ?? []).length;   // 이미 마지막 페이지를 보고 있음
-    } else {
-        const json = await _rkRequest(inp, totalPages);
-        lastCount = (json?.data?.rankings ?? []).length;
-    }
-
-    rankingTotalCount = (totalPages - 1) * inp.size + lastCount;
+    rankingTotalCount = total;
     rankingTotalKey = key;
     return rankingTotalCount;
+}
+
+// 특정 순위의 점수 (size=1 이면 page 번호가 곧 순위) — 조회 결과는 캐시
+async function _rkScoreAt(inp, rank) {
+    const cacheKey = `${_rkScopeKey(inp)}|${rank}`;
+    if (rankingScoreCache.has(cacheKey)) return rankingScoreCache.get(cacheKey);
+
+    const json = await _rkRequest({ ...inp, size: 1 }, rank);
+    const row = json?.data?.rankings?.[0];
+    const score = row ? Number(row.score) : NaN;
+    rankingScoreCache.set(cacheKey, score);
+    rankingProbeCount++;
+    return score;
+}
+
+// 점수 내림차순이라는 성질을 이용해, 조건을 만족하는 상위 인원 수를 이분 탐색으로 구한다
+async function _rkCountTopWhere(inp, total, cmp, onProgress) {
+    if (!cmp(await _rkScoreAt(inp, 1))) return 0;      // 1위도 조건 밖이면 0명
+    if (cmp(await _rkScoreAt(inp, total))) return total; // 꼴찌도 조건 안이면 전원
+
+    let lo = 1, hi = total;   // cmp(lo)=true, cmp(hi)=false 를 유지
+    while (hi - lo > 1) {
+        const mid = Math.floor((lo + hi) / 2);
+        if (cmp(await _rkScoreAt(inp, mid))) lo = mid; else hi = mid;
+        if (onProgress) onProgress();
+    }
+    return lo;
 }
 
 async function loadRankingData(page) {
@@ -3765,13 +3836,16 @@ async function loadRankingData(page) {
     const inp = _rkReadInputs();
     rankingCurrentPage = page || rankingCurrentPage || 1;
 
-    // 조회 조건이 바뀌면 전체 인원 캐시와 상위 N% 결과 무효화
-    if (rankingTotalKey !== _rkTotalKey(inp)) {
+    // 조회 조건이 바뀌면 전체 인원 / 점수 캐시와 검색 결과 무효화
+    if (rankingTotalKey !== _rkScopeKey(inp)) {
         rankingTotalKey = null;
         rankingTotalCount = null;
         rankingHighlightRank = null;
-        const pctResultEl = document.getElementById('rk-percent-result');
-        if (pctResultEl) pctResultEl.innerHTML = '';
+        rankingScoreCache.clear();
+        ['rk-percent-result', 'rk-score-result'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = '';
+        });
     }
 
     const urlEl = document.getElementById('rk-request-url');
@@ -3796,7 +3870,7 @@ async function loadRankingData(page) {
         renderRankingData(...rankingLastArgs);
 
         // 전체 인원 수는 백그라운드로 확보 후 퍼센트 표시 갱신
-        _rkEnsureTotalCount(inp, rankingData)
+        _rkEnsureTotalCount(inp)
             .then(total => { if (total !== null && seq === rankingLoadSeq) rerenderRanking(); })
             .catch(() => {});
     } catch (e) {
@@ -3888,13 +3962,13 @@ function renderRankingData(data, maintenance, size) {
                     <span class="text-base">${_rkFlag(r.countryCode)}</span>
                     <span class="font-mono text-[10px] text-slate-400 block">${_rkEsc(r.countryCode) || '-'}</span>
                 </td>
-                <td class="px-4 py-2.5 border-b border-gray-100">
+                <td class="px-4 py-2.5 border-b border-gray-100 break-words">
                     <span class="font-bold text-slate-700">${_rkEsc(r.name) || '-'}</span>
                     ${isMe ? '<span class="ml-1.5 text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-black border border-blue-200">나</span>' : ''}
                 </td>
                 <td class="px-4 py-2.5 border-b border-gray-100 text-center text-xs">${_rkTitleCell(r.titleId, maps.title)}</td>
                 <td class="px-4 py-2.5 border-b border-gray-100 text-center text-xs text-slate-600">${_rkEsc(charName)}</td>
-                <td class="px-4 py-2.5 border-b border-gray-100 text-center">${_rkItemIcons(r.friendsAvatarItemIds, maps.item)}</td>
+                <td class="px-2 py-2.5 border-b border-gray-100 text-center">${_rkItemIcons(r.friendsAvatarItemIds, maps.item)}</td>
                 <td class="px-4 py-2.5 border-b border-gray-100 text-center font-mono font-bold text-emerald-600">${_rkScore(r.score)}</td>
             </tr>`;
         }).join('');
