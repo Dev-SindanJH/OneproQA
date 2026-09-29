@@ -227,19 +227,31 @@ html[data-theme="dark"] .theme-switch-knob { transform: translateX(16px); backgr
     /* 메뉴 클릭 직후에는 마우스가 레일 위에 있어도 즉시 접힘 (마우스가 벗어나면 해제) */
     #sidebar.glass-sidebar.force-collapse { width: 76px !important; box-shadow: none; }
     #sidebar.force-collapse .nav-label { opacity: 0 !important; pointer-events: none; transition-delay: 0s; }
-    /* 1. 본문은 사이드바가 펼쳐진 폭(248px) 기준으로 배치
-          좌우 대칭: 화면 양끝에서 본문까지 거리 = 248px + 40px */
+    /* 1. 본문은 접힌 레일(76px) 옆에 배치 — 펼친 사이드바는 오버레이로 본문 위에 뜸
+          넓은 화면에서는 최대 1440px 로 가운데 정렬 */
     #main-content {
-        margin-left: 248px;
-        margin-right: 248px;
+        margin-left: 76px;
         padding-left: 40px !important;
         padding-right: 40px !important;
+    }
+    #main-content > .section {
+        max-width: 1440px;
+        margin-left: auto;
+        margin-right: auto;
     }
 }
 
 /* 모바일: 기존 슬라이드 메뉴 유지, 라벨 항상 표시 */
 @media (max-width: 767px) {
-    #sidebar.glass-sidebar { width: 248px !important; padding-top: 72px; }
+    /* 화면 밖으로 밀린 사이드바가 레이아웃 공간(상단 빈 영역)을 차지하지 않도록 fixed 오버레이로 띄움 */
+    #sidebar.glass-sidebar {
+        position: fixed; top: 0; left: 0; bottom: 0;
+        z-index: 40;
+        width: 248px !important; padding-top: 72px;
+        transition: transform .28s cubic-bezier(.2, .8, .2, 1);
+    }
+    /* 고정된 햄버거 버튼(top 16px + 높이 약 54px)이 페이지 제목을 가리지 않도록 */
+    #main-content { padding-top: 84px !important; }
     #sidebar-toggle {
         background: var(--side-bg) !important; color: var(--text) !important;
         border: 1px solid var(--line);

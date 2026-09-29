@@ -15,6 +15,7 @@ const itemsPerPage = 10;
 let currentBundleCode = ''; // 현재 검수 번들 코드
 let currentAppVersion = ''; // 현재 앱 버전
 let currentServerInfo = 'dev'; // 현재 서버 환경: 'dev' | 'prod'
+let currentQAInfo = null; // 홈에 표시 중인 검수 정보 행 (검수 정보 입력 모달의 수정 대상)
 let dateSortOrder = 'desc'; // 날짜 정렬 순서: 'asc' (오름차순), 'desc' (내림차순), 'none' (정렬 없음)
 
 // 현재 필터 상태 저장
@@ -37,7 +38,7 @@ async function invalidateLogsCache() {
     await cacheManager.clearStore('qa_logs');
     await cacheManager.clearStore('qa_logs_page');
     await cacheManager.clearStore('qa_logs_count');
-    await cacheManager.clearStore('qa_logs_summary');
+    // 요약 데이터(qa_logs_summary)는 변경분만 applySummaryChange로 반영하므로 여기서 지우지 않음
 }
 
 async function invalidateQAInfoCache() {
@@ -114,15 +115,20 @@ function applyFiltersToQuery(query, filters) {
     // 검색어 필터
     if (filters.search && filters.search.trim()) {
         const searchTerm = filters.search.trim();
-        const likeTerm = `%${searchTerm}%`;
-        // 16진수 + 대시로만 이루어진 경우 → UUID 부분 일치 검색 (직접 filter로 cast)
-        // 그 외 → 검수 내용 + 개발자 코멘트 텍스트 검색
-        const isUuidLike = /^[0-9a-f-]+$/i.test(searchTerm);
-        if (isUuidLike) {
-            query = query.filter('id::text', 'ilike', likeTerm);
-        } else {
-            query = query.or(`user_description.ilike.${likeTerm},developer_comment.ilike.${likeTerm}`);
+        // PostgREST or() 값은 큰따옴표로 감싸야 쉼표·괄호가 들어가도 깨지지 않음
+        const quotedLike = `"%${searchTerm.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}%"`;
+        const conditions = [
+            `user_description.ilike.${quotedLike}`,
+            `developer_comment.ilike.${quotedLike}`
+        ];
+        // 16진수(+대시)로만 이루어진 경우 ID 앞자리 검색도 함께 수행
+        // uuid 컬럼은 ilike 불가 → 앞자리를 0/f로 채운 범위(gte~lte)로 검색
+        const hex = searchTerm.replace(/-/g, '').toLowerCase();
+        if (/^[0-9a-f]{4,32}$/.test(hex)) {
+            const toUuid = h => `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+            conditions.push(`and(id.gte.${toUuid(hex.padEnd(32, '0'))},id.lte.${toUuid(hex.padEnd(32, 'f'))})`);
         }
+        query = query.or(conditions.join(','));
     }
 
     return query;
@@ -511,13 +517,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Esc: 열려 있는 모달 중 가장 위(z-index 최대, 같으면 DOM상 나중)에 있는 것 하나만 닫기
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            const detailModal = document.getElementById('detailModal');
-            if (detailModal && !detailModal.classList.contains('hidden')) {
-                closeModal('detailModal');
-            }
-        }
+        if (e.key !== 'Escape' || e.isComposing) return; // 한글 입력 조합 중 Esc는 무시
+        const openModals = Array.from(document.querySelectorAll('[id$="Modal"]'))
+            .filter(m => !m.classList.contains('hidden'));
+        if (openModals.length === 0) return;
+        const zOf = m => parseInt(getComputedStyle(m).zIndex, 10) || 0;
+        const top = openModals.reduce((a, b) => (zOf(b) >= zOf(a) ? b : a));
+        e.preventDefault();
+        closeModal(top.id);
     });
 });
 
@@ -605,12 +614,96 @@ async function fetchQAInformation(forceRefresh = false) {
     }
 }
 
+/** 홈 - 검수 정보(버전·회차·기간) 직접 입력 **/
+// ISO 시각 → datetime-local 입력값 (KST)
+function toKstInputValue(iso) {
+    if (!iso) return '';
+    return new Date(new Date(iso).getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 16);
+}
+
+// datetime-local 입력값 (KST) → ISO 시각
+function fromKstInputValue(value) {
+    return value ? new Date(`${value}:00+09:00`).toISOString() : null;
+}
+
+async function openQaInfoModal() {
+    const isEdit = !!currentQAInfo;
+    let base = currentQAInfo;
+    if (!base) {
+        // 진행 중인 회차가 없으면 가장 최근에 등록한 회차의 버전·번들·서버를 기본값으로 사용
+        const { data } = await supabaseClient
+            .from('qa_information')
+            .select('version,bundleCode,serverInfo')
+            .order('created_at', { ascending: false })
+            .limit(1);
+        base = (data && data[0]) || {};
+    }
+
+    document.getElementById('qa-info-version').value = base.version || '';
+    document.getElementById('qa-info-bundle').value = base.bundleCode ?? '';
+    document.getElementById('qa-info-server').value = base.serverInfo === 'prod' ? 'prod' : 'dev';
+    document.getElementById('qa-info-round').value = isEdit ? (currentQAInfo.round || '') : '';
+    document.getElementById('qa-info-start').value = toKstInputValue(isEdit ? currentQAInfo.start_at : new Date().toISOString());
+    document.getElementById('qa-info-end').value = isEdit ? toKstInputValue(currentQAInfo.end_at) : '';
+
+    document.getElementById('qa-info-update-btn').classList.toggle('hidden', !isEdit);
+    document.getElementById('qa-info-mode-desc').textContent = isEdit
+        ? `현재 진행 중인 ${currentQAInfo.round}회차 정보를 수정하거나, 입력값으로 새 회차를 등록합니다.`
+        : '진행 중인 회차가 없습니다. 새 검수 회차를 등록합니다.';
+
+    openModal('qaInfoModal');
+}
+
+async function submitQaInfo(mode) {
+    const version = document.getElementById('qa-info-version').value.trim().replace(/^v/i, '');
+    const bundleRaw = document.getElementById('qa-info-bundle').value.trim();
+    const round = document.getElementById('qa-info-round').value.trim().replace(/회차$/, '').trim();
+    const serverInfo = document.getElementById('qa-info-server').value;
+    const startAt = fromKstInputValue(document.getElementById('qa-info-start').value);
+    const endAt = fromKstInputValue(document.getElementById('qa-info-end').value);
+    const bundleCode = Number(bundleRaw);
+
+    if (!version) return showToast('검수 버전을 입력해주세요.', 'error');
+    if (!bundleRaw || !Number.isInteger(bundleCode) || bundleCode < 0) return showToast('번들 코드는 0 이상의 정수로 입력해주세요.', 'error');
+    if (!round) return showToast('검수 회차를 입력해주세요.', 'error');
+    if (!startAt || !endAt) return showToast('검수 시작·종료 일시를 입력해주세요.', 'error');
+    if (new Date(endAt) <= new Date(startAt)) return showToast('검수 종료는 시작보다 뒤여야 합니다.', 'error');
+    if (mode === 'update' && !currentQAInfo) return showToast('수정할 진행 중인 회차가 없습니다.', 'error');
+
+    const payload = { version, bundleCode, round, serverInfo, start_at: startAt, end_at: endAt };
+    const buttons = ['qa-info-update-btn', 'qa-info-insert-btn'].map(id => document.getElementById(id));
+    buttons.forEach(b => b.disabled = true);
+
+    const { error } = mode === 'update'
+        ? await supabaseClient.from('qa_information').update(payload).eq('id', currentQAInfo.id)
+        : await supabaseClient.from('qa_information').insert([payload]);
+
+    buttons.forEach(b => b.disabled = false);
+
+    if (error) {
+        showToast('저장 실패: ' + error.message, 'error');
+        return;
+    }
+
+    closeModal('qaInfoModal');
+    await invalidateQAInfoCache();
+    await fetchQAInformation(true);
+
+    const now = Date.now();
+    const isActive = new Date(startAt).getTime() <= now && now <= new Date(endAt).getTime();
+    showToast(isActive
+        ? (mode === 'update' ? '검수 정보가 수정되었습니다.' : '새 검수 회차가 등록되었습니다.')
+        : '저장되었습니다. 현재 검수 기간이 아니라서 기간이 되면 홈에 표시됩니다.');
+}
+
 function updateQAInformationUI(qaInfo) {
     const versionEl = document.getElementById('qaVersion');
     const roundEl = document.getElementById('qaRound');
     const periodEl = document.getElementById('qaPeriod');
     const serverEl = document.getElementById('qaServer');
     const appDownloadBtn = document.getElementById('appDownloadBtn');
+
+    currentQAInfo = qaInfo || null;
 
     if (qaInfo) {
         // bundleCode 저장
@@ -658,13 +751,55 @@ function updateQAInformationUI(qaInfo) {
     }
 }
 
+const STATUS_KEYS = ['수정 필요', '수정 완료', '수정 확인', '보류/패스', '서버 수정 요청', '서버 수정 완료'];
+
 function updateDashboard(logs) {
-    let counts = {'수정 필요':0, '수정 완료':0, '수정 확인':0, '보류/패스':0, '서버 수정 요청':0, '서버 수정 완료':0};
-    logs.forEach(log => { 
-        const s = (log.state || log.status || '').trim(); 
-        if(counts[s] !== undefined) counts[s]++; 
+    const counts = Object.fromEntries(STATUS_KEYS.map(s => [s, 0]));
+    logs.forEach(log => {
+        const s = (log.state || log.status || '').trim();
+        if(counts[s] !== undefined) counts[s]++;
     });
-    document.getElementById('cntRevision').innerText = counts['수정 필요']; 
+    renderStatusCounts(counts, logs.length);
+}
+
+/**
+ * 상태별 개수를 count 쿼리로 조회해 홈 카드/필터 뱃지를 갱신 (전체 요약 데이터를 다시 받지 않음)
+ */
+async function refreshStatusCounts() {
+    const base = () => supabaseClient
+        .from('qa_logs')
+        .select('id', { count: 'exact', head: true })
+        .not('is_delete', 'eq', true);
+
+    const results = await Promise.all([base(), ...STATUS_KEYS.map(s => base().eq('state', s))]);
+    if (results.some(r => r.error)) {
+        console.error('상태별 카운트 조회 실패:', results.find(r => r.error).error);
+        updateDashboard(globalLogs); // 실패 시 로컬 요약 데이터 기준으로 표시
+        return;
+    }
+
+    const counts = Object.fromEntries(STATUS_KEYS.map((s, i) => [s, results[i + 1].count || 0]));
+    renderStatusCounts(counts, results[0].count || 0);
+}
+
+/**
+ * 변경된 행만 요약 데이터(globalLogs)에 반영하고 캐시·드롭다운·카운트를 갱신
+ * @param {(logs: Array) => Array} mutate - 기존 요약 배열을 받아 새 배열을 반환
+ */
+async function applySummaryChange(mutate) {
+    globalLogs = mutate(globalLogs);
+    await cacheManager.set('qa_logs_summary', 'default', globalLogs, 30 * 60 * 1000);
+    updateAuthorDropdown();
+    await refreshStatusCounts();
+}
+
+function setSummaryState(ids, state) {
+    const idSet = new Set(ids);
+    return applySummaryChange(logs => logs.map(l => idSet.has(l.id) ? { ...l, state } : l));
+}
+
+function renderStatusCounts(counts, total) {
+    document.getElementById('cntRevision').innerText = counts['수정 필요'];
     document.getElementById('cntFixed').innerText = counts['수정 완료'];
     document.getElementById('cntVerified').innerText = counts['수정 확인']; 
     document.getElementById('cntHold').innerText = counts['보류/패스'];
@@ -683,7 +818,7 @@ function updateDashboard(logs) {
     const scntHold = document.getElementById('scnt-hold');
     const scntServer = document.getElementById('scnt-server');
     const scntServerDone = document.getElementById('scnt-server-done');
-    if (scntAll) scntAll.textContent = logs.length;
+    if (scntAll) scntAll.textContent = total;
     if (scntRevision) scntRevision.textContent = counts['수정 필요'];
     if (scntFixed) scntFixed.textContent = counts['수정 완료'];
     if (scntVerified) scntVerified.textContent = counts['수정 확인'];
@@ -1894,7 +2029,7 @@ async function directUpdateStateFromModal(id, s) {
         showToast(`[${s}] 상태로 변경되었습니다.`);
         await invalidateLogsCache(); // 캐시 무효화
         closeModal('detailModal');
-        await fetchSummaryData(true); // 요약 데이터 갱신
+        await setSummaryState([id], s); // 요약 데이터에 변경분만 반영
         await fetchLogsCount(true); // 카운트 갱신
         await fetchLogs(true); // 현재 페이지 갱신
     }
@@ -1926,8 +2061,7 @@ async function submitEditDesc() {
     } else { 
         showToast('수정되었습니다.'); 
         await invalidateLogsCache(); // 캐시 무효화
-        closeModal('editDescModal'); 
-        await fetchSummaryData(true); // 요약 데이터 갱신
+        closeModal('editDescModal');
         await fetchLogs(true); // 현재 페이지 갱신
     }
 }
@@ -1937,9 +2071,9 @@ async function directUpdateState(id, s) {
     if (error) { 
         alert('실패: ' + error.message); 
     } else { 
-        showToast(`[${s}] 상태로 변경되었습니다.`); 
+        showToast(`[${s}] 상태로 변경되었습니다.`);
         await invalidateLogsCache(); // 캐시 무효화
-        await fetchSummaryData(true); // 요약 데이터 갱신
+        await setSummaryState([id], s); // 요약 데이터에 변경분만 반영
         await fetchLogsCount(true); // 카운트 갱신
         await fetchLogs(true); // 현재 페이지 갱신
     }
@@ -1964,32 +2098,49 @@ async function submitReRequest() {
     } else { 
         showToast('재수정 요청이 완료되었습니다.'); 
         await invalidateLogsCache(); // 캐시 무효화
-        closeModal('requestModal'); 
-        await fetchSummaryData(true); // 요약 데이터 갱신
+        closeModal('requestModal');
+        await setSummaryState([id], '수정 필요'); // 요약 데이터에 변경분만 반영
         await fetchLogsCount(true); // 카운트 갱신
         await fetchLogs(true); // 현재 페이지 갱신
     }
 }
 
-function toggleAllChecks(source) { document.querySelectorAll('.row-check').forEach(cb => cb.checked = source.checked); }
+function toggleAllChecks(source) {
+    document.querySelectorAll('.row-check').forEach(cb => cb.checked = source.checked);
+    ['checkAll', 'mobileCheckAll'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.checked = source.checked;
+    });
+}
+
+// PC 테이블과 모바일 카드에 같은 항목의 체크박스가 하나씩 있으므로 서로 동기화
+document.addEventListener('change', (e) => {
+    if (!e.target.classList || !e.target.classList.contains('row-check')) return;
+    document.querySelectorAll(`.row-check[value="${e.target.value}"]`).forEach(cb => cb.checked = e.target.checked);
+});
+
+// 선택된 로그 ID (PC/모바일 중복 제거)
+function getSelectedLogIds() {
+    return [...new Set(Array.from(document.querySelectorAll('.row-check:checked')).map(cb => cb.value))];
+}
 
 function confirmDeleteSelected() {
-    const checked = document.querySelectorAll('.row-check:checked');
-    if (checked.length === 0) return alert('선택해주세요.');
-    document.getElementById('delete-count').innerText = checked.length; openModal('deleteModal');
+    const ids = getSelectedLogIds();
+    if (ids.length === 0) return alert('선택해주세요.');
+    document.getElementById('delete-count').innerText = ids.length; openModal('deleteModal');
 }
 
 async function executeDelete() {
-    const checked = document.querySelectorAll('.row-check:checked');
-    const ids = Array.from(checked).map(cb => cb.value);
+    const ids = getSelectedLogIds();
     const { error } = await supabaseClient.from('qa_logs').update({ is_delete: true }).in('id', ids);
     if (error) { 
         alert('실패: ' + error.message); 
     } else { 
         showToast('삭제되었습니다.'); 
         await invalidateLogsCache(); // 캐시 무효화
-        closeModal('deleteModal'); 
-        await fetchSummaryData(true); // 요약 데이터 갱신
+        closeModal('deleteModal');
+        const deleted = new Set(ids);
+        await applySummaryChange(logs => logs.filter(l => !deleted.has(l.id))); // 삭제분만 요약 데이터에서 제거
         await fetchLogsCount(true); // 카운트 갱신
         await fetchLogs(true); // 현재 페이지 갱신
     }
@@ -2078,13 +2229,16 @@ async function submitNewLog() {
             logData.current_scene = codeName;
         }
 
-        const { error } = await supabaseClient.from('qa_logs').insert([logData]);
+        const { data: inserted, error } = await supabaseClient
+            .from('qa_logs')
+            .insert([logData])
+            .select('id,user_name,state,current_scene,current_popup,created_at');
 
         if (error) throw error;
         showToast('검수 내용이 등록되었습니다.');
         await invalidateLogsCache(); // 캐시 무효화
         closeModal('writeModal');
-        await fetchSummaryData(true); // 요약 데이터 갱신
+        await applySummaryChange(logs => [...(inserted || []), ...logs]); // 새 항목만 요약 데이터에 추가
         await fetchLogsCount(true); // 카운트 갱신
         await fetchLogs(true); // 현재 페이지 갱신
     } catch (e) { showToast('실패: ' + e.message, 'error'); } finally { btn.innerText = '등록하기'; btn.disabled = false; }
@@ -2156,7 +2310,6 @@ async function submitUpdateImage() {
         showToast('이미지가 처리되었습니다.'); 
         await invalidateLogsCache(); // 캐시 무효화
         closeModal('addEditImageModal');
-        await fetchSummaryData(true); // 요약 데이터 갱신
         await fetchLogs(true); // 현재 페이지 갱신
     } catch (e) { alert('작업 실패: ' + e.message); } finally { btn.innerText = '이미지 저장'; btn.disabled = false; }
 }
@@ -2209,8 +2362,8 @@ async function submitDevProcess(targetState) {
     } else { 
         showToast(`[${targetState}] 처리가 완료되었습니다.`); 
         await invalidateLogsCache(); // 캐시 무효화
-        closeModal('devProcessModal'); 
-        await fetchSummaryData(true); // 요약 데이터 갱신
+        closeModal('devProcessModal');
+        await setSummaryState([id], targetState); // 요약 데이터에 변경분만 반영
         await fetchLogsCount(true); // 카운트 갱신
         await fetchLogs(true); // 현재 페이지 갱신
     }
@@ -2247,7 +2400,6 @@ async function submitDevCommentEdit() {
         showToast('개발자 코멘트가 수정되었습니다.');
         await invalidateLogsCache(); // 캐시 무효화
         closeModal('editDevCommentModal');
-        await fetchSummaryData(true); // 요약 데이터 갱신
         await fetchLogs(true); // 현재 페이지 갱신
     }
 }
@@ -2278,7 +2430,9 @@ async function submitAddAccount() {
     btn.disabled = false;
 
     if (error) {
-        showToast('등록 실패: ' + error.message, 'error');
+        // 23505: unique 제약 위반 (login_id 대소문자 무시 중복)
+        const msg = error.code === '23505' ? `이미 등록된 계정입니다: ${loginId}` : '등록 실패: ' + error.message;
+        showToast(msg, 'error');
     } else {
         showToast('계정이 등록되었습니다.');
         closeModal('addAccountModal');
@@ -2302,11 +2456,16 @@ async function deleteAccount(id) {
     }
 }
 
+// 검수 계정 목록 (전체를 한 번 받아 클라이언트에서 검색·페이징)
+const ACCOUNT_PAGE_SIZE = 10;
+let allAccounts = [];
+let accountCurrentPage = 1;
+
 async function fetchAccounts() {
     const tbody = document.getElementById('accountTableBody');
     if (!tbody) return;
 
-    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>불러오는 중...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>불러오는 중...</td></tr>';
 
     const { data, error } = await supabaseClient
         .from('qa_accounts')
@@ -2314,19 +2473,53 @@ async function fetchAccounts() {
         .order('created_at', { ascending: false });
 
     if (error) {
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-red-500">실패: ${error.message}</td></tr>`;
+        allAccounts = [];
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-red-500">실패: ${escapeHtml(error.message)}</td></tr>`;
+        document.getElementById('account-pagination').innerHTML = '';
+        document.getElementById('account-row-count').textContent = '';
         return;
     }
 
-    if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-400">등록된 계정이 없습니다.</td></tr>';
+    allAccounts = data || [];
+    renderAccounts(); // 검색어·현재 페이지 유지 (추가/삭제 후 재조회 시)
+}
+
+// 검색어 입력 시 1페이지부터 다시 표시
+function filterAccounts() {
+    accountCurrentPage = 1;
+    renderAccounts();
+}
+
+function changeAccountPage(page) {
+    accountCurrentPage = page;
+    renderAccounts();
+}
+
+function renderAccounts() {
+    const tbody = document.getElementById('accountTableBody');
+    const countEl = document.getElementById('account-row-count');
+    const term = (document.getElementById('account-search')?.value || '').trim().toLowerCase();
+    const rows = term
+        ? allAccounts.filter(acc => (acc.login_id || '').toLowerCase().includes(term))
+        : allAccounts;
+
+    countEl.textContent = term ? `${rows.length}건 / 전체 ${allAccounts.length}건` : `${allAccounts.length}건`;
+
+    const totalPages = Math.max(1, Math.ceil(rows.length / ACCOUNT_PAGE_SIZE));
+    accountCurrentPage = Math.min(Math.max(1, accountCurrentPage), totalPages); // 삭제로 마지막 페이지가 사라진 경우 보정
+    _buildMdPagination('account-pagination', rows.length, accountCurrentPage, ACCOUNT_PAGE_SIZE, 'changeAccountPage');
+
+    if (rows.length === 0) {
+        const msg = term ? `'${escapeHtml(term)}'에 해당하는 계정이 없습니다.` : '등록된 계정이 없습니다.';
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-gray-400">${msg}</td></tr>`;
         return;
     }
 
-    tbody.innerHTML = data.map((acc, idx) => `
+    const offset = (accountCurrentPage - 1) * ACCOUNT_PAGE_SIZE;
+    tbody.innerHTML = rows.slice(offset, offset + ACCOUNT_PAGE_SIZE).map((acc, idx) => `
         <tr class="hover:bg-blue-50/20 transition">
-            <td class="px-6 py-4 text-center text-xs text-slate-400 font-mono">${idx + 1}</td>
-            <td class="px-6 py-4 font-bold text-slate-700">${acc.login_id}</td>
+            <td class="px-6 py-4 text-center text-xs text-slate-400 font-mono">${offset + idx + 1}</td>
+            <td class="px-6 py-4 font-bold text-slate-700">${escapeHtml(acc.login_id)}</td>
             <td class="px-6 py-4 text-center text-xs text-slate-500">${formatKST(acc.created_at)}</td>
             <td class="px-6 py-4 text-center">
                 <button onclick="deleteAccount('${acc.id}')" class="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 px-3 py-1.5 rounded-lg text-xs font-bold transition">
