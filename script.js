@@ -33,12 +33,11 @@ let mobileContentFilterChoices = null;
 async function invalidateLogsCache() {
     console.log('🗑️ QA Logs 캐시 무효화');
     // 페이지별 캐시 삭제를 위해 패턴 매칭 필요 (간단히 전체 삭제)
-    await cacheManager.delete('qa_logs', 'default');
-    // 페이지별 캐시도 삭제 (실제로는 모든 페이지 키를 삭제해야 하지만, 간단히 처리)
-    for (let i = 1; i <= 100; i++) {
-        await cacheManager.delete('qa_logs_page', i.toString());
-    }
-    await cacheManager.delete('qa_logs_count', 'default');
+    // 페이지/카운트 캐시 키는 필터·정렬을 담은 JSON 문자열이므로 저장소 단위로 전체 삭제
+    await cacheManager.clearStore('qa_logs');
+    await cacheManager.clearStore('qa_logs_page');
+    await cacheManager.clearStore('qa_logs_count');
+    await cacheManager.clearStore('qa_logs_summary');
 }
 
 async function invalidateQAInfoCache() {
@@ -53,6 +52,8 @@ async function refreshAllData() {
     await invalidateLogsCache();
     await invalidateQAInfoCache();
     await fetchQAInformation(true);
+    await fetchSummaryData(true); // 상태별 카운트(홈/필터 뱃지) 갱신
+    localStorage.setItem('last_summary_load_time', Date.now().toString());
     await fetchLogsCount(true); // 카운트 갱신
     await fetchLogs(true); // 현재 페이지 갱신
     showToast('데이터가 새로고침되었습니다!', 'success');
@@ -206,7 +207,10 @@ const SCENE_NAME_MAP = {
     'Rungame_practice_1': '깨비나라 연산런 인게임',
     'InAppPurchaseScene': '인앱결제 상세페이지',
     'AvatarContestScene': '아바타 콘테스트',
-    'VideoPlayScene': '비디오 실행'
+    'VideoPlayScene': '비디오 실행',
+    'MakeTenScene': '텐텐팡',
+    'MathBattleLobby': '매쓰배틀 로비',
+    'MathBattleInGame': '매쓰배틀 인게임'
 };
 
 // Popup 이름 매핑 (영어 코드 → 한글)
