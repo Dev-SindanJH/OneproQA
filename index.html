@@ -5,14 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>일프로 QA</title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <script src="theme.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="theme-glass.css">
 </head>
 <body class="bg-gray-50 font-sans text-gray-900">
+    <div class="app-backdrop" aria-hidden="true"></div>
 
     <!-- 햄버거 메뉴 버튼 -->
     <button onclick="toggleSidebar()" id="sidebar-toggle" class="fixed top-4 left-4 z-50 bg-slate-800 text-white p-3 rounded-lg shadow-lg hover:bg-slate-700 transition md:block">
@@ -23,32 +29,49 @@
     <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden" onclick="toggleSidebar()"></div>
 
     <div class="flex flex-col md:flex-row min-h-screen">
-        <aside id="sidebar" class="sidebar-open w-full md:w-64 bg-slate-800 text-white flex-shrink-0 fixed md:sticky top-0 h-screen z-40 transition-transform duration-300">
-            <div class="p-4 md:p-6 flex justify-between items-center md:block">
-                <button onclick="showSection('home')" class="flex flex-col items-center gap-1 hover:opacity-80 transition w-32 md:w-full">
-                    <img src="./icon_qa2.png" alt="로고" class="h-auto w-full object-contain rounded">
+        <aside id="sidebar" class="sidebar-open glass-sidebar" aria-label="주 메뉴">
+            <button onclick="showSection('home')" class="side-brand" title="홈으로">
+                <img src="./favicon.png" alt="" class="side-brand-mark">
+                <span class="nav-label side-brand-text">
+                    <span class="side-brand-name">일프로 QA</span>
+                    <span class="side-brand-sub">quality console</span>
+                </span>
+            </button>
+            <nav class="side-nav">
+                <button onclick="showSection('home')" id="nav-home" class="nav-item active" title="홈">
+                    <i class="fas fa-house nav-icon" aria-hidden="true"></i>
+                    <span class="nav-label">홈</span>
                 </button>
-            </div>
-            <nav class="mt-0 md:mt-6 flex flex-row md:flex-col overflow-x-auto">
-                <button onclick="showSection('home')" id="nav-home" class="nav-item whitespace-nowrap w-full flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-white transition">
-                    <i class="fas fa-home mr-3"></i> 홈
+                <button onclick="showSection('list')" id="nav-list" class="nav-item" title="검수 목록">
+                    <i class="fas fa-list-check nav-icon" aria-hidden="true"></i>
+                    <span class="nav-label">검수 목록</span>
                 </button>
-                <button onclick="showSection('list')" id="nav-list" class="nav-item whitespace-nowrap w-full flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-white transition">
-                    <i class="fas fa-list mr-3"></i> 검수 목록
+                <button onclick="showSection('masterdata')" id="nav-masterdata" class="nav-item" title="마스터 데이터">
+                    <i class="fas fa-database nav-icon" aria-hidden="true"></i>
+                    <span class="nav-label">마스터 데이터</span>
                 </button>
-                <button onclick="showSection('masterdata')" id="nav-masterdata" class="nav-item whitespace-nowrap w-full flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-white transition">
-                    <i class="fas fa-database mr-3"></i> 마스터 데이터
+                <button onclick="showSection('ranking')" id="nav-ranking" class="nav-item" title="랭킹">
+                    <i class="fas fa-trophy nav-icon" aria-hidden="true"></i>
+                    <span class="nav-label">랭킹</span>
                 </button>
-                <button onclick="showSection('ranking')" id="nav-ranking" class="nav-item whitespace-nowrap w-full flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-white transition">
-                    <i class="fas fa-trophy mr-3"></i> 랭킹
-                </button>
-                <button onclick="showSection('accounts')" id="nav-accounts" class="nav-item whitespace-nowrap w-full flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-white transition">
-                    <i class="fas fa-user-shield mr-3"></i> 검수 계정 관리
+                <button onclick="showSection('accounts')" id="nav-accounts" class="nav-item" title="검수 계정 관리">
+                    <i class="fas fa-user-shield nav-icon" aria-hidden="true"></i>
+                    <span class="nav-label">검수 계정 관리</span>
                 </button>
             </nav>
+            <div class="side-footer">
+                <button type="button" id="themeToggle" class="theme-toggle" role="switch" aria-checked="false" aria-label="다크 모드 전환" onclick="toggleTheme()" title="다크/라이트 전환">
+                    <span class="theme-toggle-icon" aria-hidden="true">
+                        <i class="fas fa-moon icon-moon"></i>
+                        <i class="fas fa-sun icon-sun"></i>
+                    </span>
+                    <span class="nav-label theme-toggle-text">다크 모드</span>
+                    <span class="nav-label theme-switch" aria-hidden="true"><span class="theme-switch-knob"></span></span>
+                </button>
+            </div>
         </aside>
 
-        <main class="flex-1 p-8" id="main-content">
+        <main class="flex-1 min-w-0 p-8" id="main-content">
             <section id="home" class="section active">
                 <div class="flex justify-between items-start mb-3">
                     <h2 class="text-3xl font-bold text-slate-800">Overview</h2>
@@ -90,35 +113,35 @@
                     </div>
                 </div>
 
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8">
-                    <p class="text-gray-400 text-xs font-bold uppercase mb-4 border-b pb-2">검수 현황</p>
-                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
-                        <div onclick="navigateToListWithFilter('수정 필요')" class="p-3 bg-orange-50 rounded-lg border border-orange-100 cursor-pointer hover:shadow-md hover:scale-105 transition-all">
-                            <p class="text-orange-600 text-xs font-bold mb-1">수정 필요</p>
-                            <p class="text-2xl font-black text-orange-700" id="cntRevision">-</p>
-                        </div>
-                        <div onclick="navigateToListWithFilter('수정 완료')" class="p-3 bg-blue-50 rounded-lg border border-blue-100 cursor-pointer hover:shadow-md hover:scale-105 transition-all">
-                            <p class="text-blue-600 text-xs font-bold mb-1">수정 완료</p>
-                            <p class="text-2xl font-black text-blue-700" id="cntFixed">-</p>
-                        </div>
-                        <div onclick="navigateToListWithFilter('수정 확인')" class="p-3 bg-green-50 rounded-lg border border-green-100 cursor-pointer hover:shadow-md hover:scale-105 transition-all">
-                            <p class="text-green-600 text-xs font-bold mb-1">수정 확인</p>
-                            <p class="text-2xl font-black text-green-700" id="cntVerified">-</p>
-                        </div>
-                        <div onclick="navigateToListWithFilter('보류/패스')" class="p-3 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer hover:shadow-md hover:scale-105 transition-all">
-                            <p class="text-gray-600 text-xs font-bold mb-1">보류/패스</p>
-                            <p class="text-2xl font-black text-gray-700" id="cntHold">-</p>
-                        </div>
-                        <div onclick="navigateToListWithFilter('서버 수정 요청')" class="p-3 bg-purple-50 rounded-lg border border-purple-100 cursor-pointer hover:shadow-md hover:scale-105 transition-all">
-                            <p class="text-purple-600 text-xs font-bold mb-1">서버 수정 요청</p>
-                            <p class="text-2xl font-black text-purple-700" id="cntServerRequest">-</p>
-                        </div>
-                        <div onclick="navigateToListWithFilter('서버 수정 완료')" class="p-3 bg-teal-50 rounded-lg border border-teal-100 cursor-pointer hover:shadow-md hover:scale-105 transition-all">
-                            <p class="text-teal-600 text-xs font-bold mb-1">서버 수정 완료</p>
-                            <p class="text-2xl font-black text-teal-700" id="cntServerDone">-</p>
-                        </div>
+                <section class="stat-section mb-6" aria-labelledby="statTitle">
+                    <p id="statTitle" class="stat-section-title">검수 현황</p>
+                    <div class="stat-grid">
+                        <button type="button" class="stat-tile" data-tone="need" onclick="navigateToListWithFilter('수정 필요')">
+                            <span class="stat-tile-head"><span class="stat-dot" aria-hidden="true"></span><span class="stat-label">수정 필요</span></span>
+                            <span class="stat-num" id="cntRevision">-</span>
+                        </button>
+                        <button type="button" class="stat-tile" data-tone="done" onclick="navigateToListWithFilter('수정 완료')">
+                            <span class="stat-tile-head"><span class="stat-dot" aria-hidden="true"></span><span class="stat-label">수정 완료</span></span>
+                            <span class="stat-num" id="cntFixed">-</span>
+                        </button>
+                        <button type="button" class="stat-tile" data-tone="ok" onclick="navigateToListWithFilter('수정 확인')">
+                            <span class="stat-tile-head"><span class="stat-dot" aria-hidden="true"></span><span class="stat-label">수정 확인</span></span>
+                            <span class="stat-num" id="cntVerified">-</span>
+                        </button>
+                        <button type="button" class="stat-tile" data-tone="hold" onclick="navigateToListWithFilter('보류/패스')">
+                            <span class="stat-tile-head"><span class="stat-dot" aria-hidden="true"></span><span class="stat-label">보류/패스</span></span>
+                            <span class="stat-num" id="cntHold">-</span>
+                        </button>
+                        <button type="button" class="stat-tile" data-tone="sreq" onclick="navigateToListWithFilter('서버 수정 요청')">
+                            <span class="stat-tile-head"><span class="stat-dot" aria-hidden="true"></span><span class="stat-label">서버 수정 요청</span></span>
+                            <span class="stat-num" id="cntServerRequest">-</span>
+                        </button>
+                        <button type="button" class="stat-tile" data-tone="sdone" onclick="navigateToListWithFilter('서버 수정 완료')">
+                            <span class="stat-tile-head"><span class="stat-dot" aria-hidden="true"></span><span class="stat-label">서버 수정 완료</span></span>
+                            <span class="stat-num" id="cntServerDone">-</span>
+                        </button>
                     </div>
-                </div>
+                </section>
 
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                     <div class="flex justify-between items-center mb-4 border-b pb-2">
