@@ -164,9 +164,10 @@
 
 #toast-container {
     position: fixed;
-    top: 10%; 
+    top: 10%;
     left: 50%;
-    z-index: 100000;
+    /* 모든 모달(99999~100003)보다 위에 떠야 모달 안에서 띄운 알림이 보임 */
+    z-index: 2147483000;
     display: flex;
     flex-direction: column;
     gap: 12px;
