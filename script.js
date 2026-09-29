@@ -770,7 +770,7 @@ async function fetchLogs(forceRefresh = false) {
 
     let query = supabaseClient
         .from('qa_logs')
-        .select('id,user_name,state,current_scene,current_popup,user_description,developer_comment,created_at,updated_at,image_url,is_delete,inAppLogs,login_info,device_info');
+        .select('id,user_name,state,current_scene,current_popup,user_description,developer_comment,created_at,updated_at,image_url,is_delete,inAppLogs,login_info,device_info,content_context,screen_history');
 
     // 필터 적용
     query = applyFiltersToQuery(query, currentFilters);
@@ -1680,6 +1680,9 @@ async function openDetailModal(logId) {
         deviceSection.classList.add('hidden');
     }
 
+    renderContentContext(log);
+    renderScreenHistory(log);
+
     // 로그인 정보 표시
     populateLoginInfoPanel(log.login_info);
 
@@ -1766,8 +1769,14 @@ async function openDetailModal(logId) {
                 if (item.logType === 'Scene' || item.logType === 0) config = { icon: 'fa-film', color: 'text-blue-500', bgColor: 'bg-blue-500', label: 'SCENE' };
                 else if (item.logType === 'Popup' || item.logType === 1) config = { icon: 'fa-clone', color: 'text-purple-500', bgColor: 'bg-purple-500', label: 'POPUP' };
                 else if (item.logType === 'Exception' || item.logType === 3) config = { icon: 'fa-exclamation-triangle', color: 'text-red-500', bgColor: 'bg-red-500', label: 'ERROR' };
-                headerContent = `<span class="text-[12px] text-slate-700 font-medium truncate flex-1">${item.logContent}</span>`;
-                detailContent = `<div class="mt-2 text-[12px] text-slate-600 bg-slate-50 p-3 rounded border border-dashed whitespace-pre-wrap">${item.logContent}</div>`;
+                else if (item.logType === 'Input' || item.logType === 4) {
+                    // 탭 기록은 버튼 라벨이 그대로 들어오므로 이스케이프해서 표시
+                    config = { icon: 'fa-hand-pointer', color: 'text-amber-500', bgColor: 'bg-amber-500', label: 'TAP' };
+                    headerContent = `<span class="text-[12px] text-slate-700 font-medium truncate flex-1">${escapeHtml(item.logContent)}</span>`;
+                    detailContent = `<div class="mt-2 text-[12px] text-slate-600 bg-slate-50 p-3 rounded border border-dashed whitespace-pre-wrap">${escapeHtml(item.logContent)}</div>`;
+                }
+                headerContent ||= `<span class="text-[12px] text-slate-700 font-medium truncate flex-1">${item.logContent}</span>`;
+                detailContent ||= `<div class="mt-2 text-[12px] text-slate-600 bg-slate-50 p-3 rounded border border-dashed whitespace-pre-wrap">${item.logContent}</div>`;
             }
 
             const logRow = document.createElement('div');
@@ -1785,6 +1794,87 @@ async function openDetailModal(logId) {
         });
     }
     openModal('detailModal');
+}
+
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function parseJsonField(value) {
+    if (typeof value !== 'string') return value || null;
+    try { return JSON.parse(value); } catch (e) { return null; }
+}
+
+const STAGE_CONTENT_TYPE_LABELS = {
+    DailyStudy: '오늘의 학습', Challenge: '도전', FreeStudy: '자유 학습', MathWorld: '수학 월드',
+    ReviewNote: '오답 노트', AITestRecommended: 'AI 추천', DailyStudyReview: '오늘의 학습 복습',
+    Lesson: '수업', Homework: '숙제', WebGLPreview: '웹 미리보기', PerfectChallenge: '백점 도전'
+};
+
+// 앱이 검수 시점에 보낸 콘텐츠 정보(content_context) 표시. stage 외 키는 각 씬이 등록한 값이라 JSON 그대로 보여준다
+function renderContentContext(log) {
+    const section = document.getElementById('modal-context-section');
+    const container = document.getElementById('modal-context-info');
+    const context = parseJsonField(log.content_context);
+    if (!context || Object.keys(context).length === 0) {
+        section.classList.add('hidden');
+        return;
+    }
+
+    const chip = (icon, text, cls = 'bg-slate-50 text-slate-600 border-slate-200') =>
+        `<span class="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full border ${cls}"><i class="fas ${icon} text-[10px] opacity-60"></i>${escapeHtml(text)}</span>`;
+
+    let html = '';
+    const stage = context.stage;
+    if (stage) {
+        const typeLabel = STAGE_CONTENT_TYPE_LABELS[stage.content_type] || stage.content_type;
+        const chapterPath = [stage.level ? `${stage.level}단계` : '', stage.supreme_chapter, stage.chapter, stage.stage_name]
+            .filter(Boolean).join(' › ');
+        const progress = stage.problem_count
+            ? `${stage.solve_cnt ?? 0}/${stage.problem_count}문제 풀이 · 정답 ${stage.right_cnt ?? 0} · 오답 ${stage.wrong_cnt ?? 0}`
+            : '';
+        html += `<div class="flex flex-wrap gap-2">
+            <button onclick="openStageInfoModal(${Number(stage.stage_id)})" class="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full border bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 transition"><i class="fas fa-layer-group text-[10px] opacity-60"></i>stageId: ${escapeHtml(stage.stage_id)}</button>
+            ${typeLabel ? chip('fa-tag', typeLabel, 'bg-indigo-50 text-indigo-700 border-indigo-200') : ''}
+            ${stage.code ? chip('fa-barcode', stage.code) : ''}
+            ${progress ? chip('fa-list-check', progress) : ''}
+            ${stage.level_test_id ? chip('fa-clipboard-check', `레벨테스트 ${stage.level_test_id}`) : ''}
+            ${stage.country ? chip('fa-globe', stage.country) : ''}
+        </div>`;
+        if (chapterPath) {
+            html += `<div class="text-[12px] text-slate-600 font-medium">${escapeHtml(chapterPath)}</div>`;
+        }
+    }
+
+    Object.entries(context).filter(([key]) => key !== 'stage').forEach(([key, value]) => {
+        html += `<div class="text-[11px]"><span class="font-black text-slate-500 mr-2">${escapeHtml(key)}</span><code class="text-slate-600 break-all">${escapeHtml(typeof value === 'object' ? JSON.stringify(value) : value)}</code></div>`;
+    });
+
+    container.innerHTML = html;
+    section.classList.remove('hidden');
+}
+
+// 전송 직전 최근 탭 시점에 찍어둔 축소 화면들 (screen_history)
+function renderScreenHistory(log) {
+    const section = document.getElementById('modal-screen-history-section');
+    const container = document.getElementById('modal-screen-history');
+    const history = parseJsonField(log.screen_history);
+    if (!Array.isArray(history) || history.length === 0) {
+        section.classList.add('hidden');
+        return;
+    }
+
+    container.innerHTML = history.map(entry => {
+        const time = entry.time ? new Date(entry.time).toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '';
+        return `<a href="${escapeHtml(entry.url)}" target="_blank" rel="noopener" class="block bg-slate-100 rounded-lg border border-slate-200 overflow-hidden hover:opacity-90 transition">
+            <img src="${escapeHtml(entry.url)}" alt="화면 기록" class="w-full" loading="lazy">
+            <div class="px-2 py-1.5 text-[10px] text-slate-600 flex justify-between gap-2">
+                <span class="font-bold truncate" title="${escapeHtml(entry.label)}"><i class="fas fa-hand-pointer mr-1 text-amber-500"></i>${escapeHtml(entry.label)}</span>
+                <span class="font-mono text-slate-400 whitespace-nowrap">${time}</span>
+            </div>
+        </a>`;
+    }).join('');
+    section.classList.remove('hidden');
 }
 
 function openImageViewerFromModal() {

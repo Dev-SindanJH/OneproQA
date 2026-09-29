@@ -643,12 +643,24 @@
                         <div id="modal-device-info" class="flex flex-wrap gap-2"></div>
                     </div>
 
+                    <!-- 검수 시점 콘텐츠 정보 영역 (스테이지 등) -->
+                    <div id="modal-context-section" class="mb-6 hidden">
+                        <h4 class="text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">콘텐츠 정보 (Context)</h4>
+                        <div id="modal-context-info" class="space-y-2"></div>
+                    </div>
+
                     <!-- 캡처 이미지 영역 -->
                     <div id="modal-image-section" class="mb-6 hidden">
                         <h4 class="text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">캡처 이미지</h4>
                         <div class="bg-slate-100 p-4 rounded-xl border border-slate-200">
                             <img id="modal-image" src="" alt="캡처 이미지" class="max-w-full rounded-lg shadow-sm cursor-pointer hover:opacity-90 transition" onclick="openImageViewerFromModal()">
                         </div>
+                    </div>
+
+                    <!-- 전송 직전 최근 탭 시점 화면 기록 -->
+                    <div id="modal-screen-history-section" class="mb-6 hidden">
+                        <h4 class="text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">최근 화면 기록 (탭 직전 화면, 오래된 순)</h4>
+                        <div id="modal-screen-history" class="grid grid-cols-3 gap-3"></div>
                     </div>
 
                     <div class="mb-8">
