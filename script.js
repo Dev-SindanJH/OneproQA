@@ -412,6 +412,18 @@ function copyContentKey(key, type) {
     });
 }
 
+// 상세 모달의 로그를 앱 프로젝트 Claude Code 세션에서 분석하도록 /qa-fix 명령 복사
+function copyClaudeFixCommand() {
+    const logId = document.getElementById('modal-id').innerText.trim();
+    if (!logId) return;
+    navigator.clipboard.writeText(`/qa-fix ${logId}`).then(() => {
+        showToast('Claude 명령이 복사되었습니다. 앱 프로젝트 세션에 붙여넣으세요.', 'success');
+    }).catch(err => {
+        console.error('복사 실패:', err);
+        showToast('복사에 실패했습니다.', 'error');
+    });
+}
+
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
     if (!container) return;
