@@ -725,12 +725,16 @@ canvas {
 }
 
 /* ===== 상세 리포트 - 인앱 로그 타임라인 TAP 토글 ===== */
+/* position: relative 필수 - 숨긴 체크박스(absolute)의 기준을 라벨로 잡아야 한다.
+   없으면 글래스 테마 모달(backdrop-filter)이 기준이 되어 스크롤을 따라가지 않고,
+   클릭 시 포커스가 overflow-hidden 모달 자체를 스크롤시켜 헤더가 잘린다. */
 .tl-switch-label {
+    position: relative;
     display: inline-flex; align-items: center; gap: 8px;
     cursor: pointer; user-select: none;
     font-size: 11px; font-weight: 800; color: var(--muted, #64748b);
 }
-.tl-switch-input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.tl-switch-input { position: absolute; top: 0; left: 0; margin: 0; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
 .tl-switch {
     position: relative; flex-shrink: 0; width: 32px; height: 18px; border-radius: 999px;
     background: var(--line-strong, #cbd5e1); transition: background .2s;
