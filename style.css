@@ -724,6 +724,32 @@ canvas {
     color: #94a3b8;
 }
 
+/* ===== 상세 리포트 - 인앱 로그 타임라인 TAP 토글 ===== */
+.tl-switch-label {
+    display: inline-flex; align-items: center; gap: 8px;
+    cursor: pointer; user-select: none;
+    font-size: 11px; font-weight: 800; color: var(--muted, #64748b);
+}
+.tl-switch-input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.tl-switch {
+    position: relative; flex-shrink: 0; width: 32px; height: 18px; border-radius: 999px;
+    background: var(--line-strong, #cbd5e1); transition: background .2s;
+}
+.tl-switch-knob {
+    position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%;
+    background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .3); transition: transform .2s ease;
+}
+/* 켜짐 색은 타임라인의 TAP 아이콘 색(amber)과 맞춤 */
+.tl-switch-input:checked + .tl-switch { background: #f59e0b; }
+.tl-switch-input:checked + .tl-switch .tl-switch-knob { transform: translateX(14px); }
+.tl-switch-input:focus-visible + .tl-switch { outline: 2px solid var(--accent, #3b82f6); outline-offset: 2px; }
+.tl-switch-label.is-disabled { opacity: .45; cursor: not-allowed; }
+.tl-switch-count {
+    min-width: 20px; padding: 0 6px; border-radius: 999px; text-align: center;
+    font-size: 10px; line-height: 16px; background: rgba(245, 158, 11, .15); color: #d97706;
+}
+#modal-timeline.hide-tap .tl-row-tap { display: none; }
+
 /* ===== 검수 계정 테이블 컬럼 폭 ===== */
 #accountTable th:nth-child(1), #accountTable td:nth-child(1) { width: 80px; }   /* 번호 */
 #accountTable th:nth-child(2), #accountTable td:nth-child(2) { width: auto; }   /* 로그인 ID */

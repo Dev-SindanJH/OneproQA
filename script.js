@@ -1926,8 +1926,9 @@ async function openDetailModal(logId) {
                 detailContent ||= `<div class="mt-2 text-[12px] text-slate-600 bg-slate-50 p-3 rounded border border-dashed whitespace-pre-wrap">${item.logContent}</div>`;
             }
 
+            const isTap = item.logType === 'Input' || item.logType === 4;
             const logRow = document.createElement('div');
-            logRow.className = 'relative pl-8 pb-4 group';
+            logRow.className = `relative pl-8 pb-4 group tl-row${isTap ? ' tl-row-tap' : ''}`;
             logRow.innerHTML = `
                 <div class="absolute left-0 top-1 w-6 h-6 rounded-full ${config.bgColor} flex items-center justify-center z-10 border-2 border-white"><i class="fas ${config.icon} text-[10px] text-white"></i></div>
                 <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden transition-all">
@@ -1939,8 +1940,48 @@ async function openDetailModal(logId) {
                 </div>`;
             timelineEl.appendChild(logRow);
         });
+
+        // TAP만 있는 로그에서 TAP을 숨겼을 때 보여줄 안내
+        const tapOnlyEmpty = document.createElement('p');
+        tapOnlyEmpty.id = 'timeline-tap-empty';
+        tapOnlyEmpty.className = 'hidden text-gray-400 italic text-sm pl-8 py-4';
+        tapOnlyEmpty.textContent = 'TAP 외에 표시할 로그가 없습니다.';
+        timelineEl.appendChild(tapOnlyEmpty);
     }
+
+    const tapCount = logs.filter(item => item.logType === 'Input' || item.logType === 4).length;
+    document.getElementById('timeline-tap-count').textContent = tapCount;
+    const tapToggle = document.getElementById('timeline-tap-toggle');
+    tapToggle.checked = getTimelineTapPref();
+    tapToggle.disabled = tapCount === 0;
+    document.getElementById('timeline-tap-toggle-wrap').classList.toggle('is-disabled', tapCount === 0);
+    applyTimelineTapFilter();
+
     openModal('detailModal');
+}
+
+/** 상세 리포트 - 인앱 로그 타임라인의 TAP(입력) 로그 표시 토글 **/
+const TIMELINE_TAP_PREF_KEY = 'timeline_show_tap';
+
+function getTimelineTapPref() {
+    try { return localStorage.getItem(TIMELINE_TAP_PREF_KEY) !== '0'; } catch (e) { return true; }
+}
+
+function setTimelineTapVisible(show) {
+    try { localStorage.setItem(TIMELINE_TAP_PREF_KEY, show ? '1' : '0'); } catch (e) { /* 저장 불가 시 이번 화면에만 적용 */ }
+    applyTimelineTapFilter();
+}
+
+function applyTimelineTapFilter() {
+    const timelineEl = document.getElementById('modal-timeline');
+    const show = document.getElementById('timeline-tap-toggle').checked;
+    timelineEl.classList.toggle('hide-tap', !show);
+
+    const emptyEl = document.getElementById('timeline-tap-empty');
+    if (emptyEl) {
+        const hasOtherLogs = !!timelineEl.querySelector('.tl-row:not(.tl-row-tap)');
+        emptyEl.classList.toggle('hidden', show || hasOtherLogs);
+    }
 }
 
 function escapeHtml(value) {
