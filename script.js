@@ -1879,6 +1879,8 @@ async function openDetailModal(logId) {
     const timelineEl = document.getElementById('modal-timeline');
     timelineEl.innerHTML = '';
 
+    await ensureRewardLookup();
+
     let logs = [];
     try { logs = typeof log.inAppLogs === 'string' ? JSON.parse(log.inAppLogs) : (log.inAppLogs || []); } catch (e) { console.error(e); }
 
@@ -1891,6 +1893,7 @@ async function openDetailModal(logId) {
             let config = { icon: 'fa-info-circle', color: 'text-slate-400', bgColor: 'bg-slate-400', label: 'INFO' };
             let headerContent = '';
             let detailContent = '';
+            let hasGrantedReward = false;
 
             if (item.logType === 'API' || item.logType === 2) {
                 config = { icon: 'fa-network-wired', color: 'text-emerald-500', bgColor: 'bg-emerald-500', label: 'API' };
@@ -1905,13 +1908,17 @@ async function openDetailModal(logId) {
                     ? `<span class="text-[10px] font-black ml-2 whitespace-nowrap ${elapsedSec >= 2 ? 'text-red-500' : elapsedSec >= 1 ? 'text-amber-500' : 'text-slate-400'}"><i class="fas fa-stopwatch mr-0.5"></i>${elapsedMatch[1]}s</span>`
                     : '';
 
-                headerContent = `<div class="flex items-start"><span class="method-badge bg-emerald-100 text-emerald-700 mt-0.5">${method}</span><span class="text-[11px] font-bold text-slate-700 break-all leading-relaxed flex-1">${url}</span>${elapsedBadge}</div>`;
+                let resMatch = raw.match(/Response\[(\d+)\]:\s*([\s\S]*)$/);
+                // 응답에 보상 내용이 있으면 헤더 배지 + 전용 패널로 따로 보여준다
+                const apiRewards = resMatch ? extractApiRewards(resMatch[2]) : null;
+                hasGrantedReward = !!apiRewards && apiRewards.granted.length > 0;
+
+                headerContent = `<div class="flex items-start"><span class="method-badge bg-emerald-100 text-emerald-700 mt-0.5">${method}</span><span class="text-[11px] font-bold text-slate-700 break-all leading-relaxed flex-1">${url}</span>${renderRewardBadge(apiRewards)}${elapsedBadge}</div>`;
 
                 const formatJson = (s) => { try { return JSON.stringify(JSON.parse(s.trim()), null, 2); } catch(e) { return s; } };
                 let reqPart = raw.includes('Request:') ? `<div class="json-label"><i class="fas fa-arrow-right"></i> REQUEST</div><pre class="json-block">${formatJson(raw.split('Request:')[1].split('Elapsed:')[0].split('Response')[0])}</pre>` : '';
-                let resMatch = raw.match(/Response\[(\d+)\]:\s*([\s\S]*)$/);
                 let resPart = resMatch ? `<div class="json-label mt-2"><span><i class="fas fa-arrow-left"></i> RESPONSE</span><span class="${resMatch[1].startsWith('2')?'text-emerald-500':'text-red-500'} font-black">HTTP ${resMatch[1]}</span></div><pre class="json-block">${formatJson(resMatch[2])}</pre>` : '';
-                detailContent = `<div class="mt-3 border-t border-slate-100 pt-3">${reqPart}${resPart}</div>`;
+                detailContent = `<div class="mt-3 border-t border-slate-100 pt-3">${renderRewardPanel(apiRewards, rewardLookup)}${reqPart}${resPart}</div>`;
             } else {
                 if (item.logType === 'Scene' || item.logType === 0) config = { icon: 'fa-film', color: 'text-blue-500', bgColor: 'bg-blue-500', label: 'SCENE' };
                 else if (item.logType === 'Popup' || item.logType === 1) config = { icon: 'fa-clone', color: 'text-purple-500', bgColor: 'bg-purple-500', label: 'POPUP' };
@@ -1928,7 +1935,7 @@ async function openDetailModal(logId) {
 
             const isTap = item.logType === 'Input' || item.logType === 4;
             const logRow = document.createElement('div');
-            logRow.className = `relative pl-8 pb-4 group tl-row${isTap ? ' tl-row-tap' : ''}`;
+            logRow.className = `relative pl-8 pb-4 group tl-row${isTap ? ' tl-row-tap' : ''}${hasGrantedReward ? ' tl-row-reward' : ''}`;
             logRow.innerHTML = `
                 <div class="absolute left-0 top-1 w-6 h-6 rounded-full ${config.bgColor} flex items-center justify-center z-10 border-2 border-white"><i class="fas ${config.icon} text-[10px] text-white"></i></div>
                 <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden transition-all">
@@ -1957,7 +1964,201 @@ async function openDetailModal(logId) {
     document.getElementById('timeline-tap-toggle-wrap').classList.toggle('is-disabled', tapCount === 0);
     applyTimelineTapFilter();
 
+    // 보상 지급 API만 보기 토글 (리포트를 열 때마다 꺼진 상태로 시작)
+    const rewardToggle = document.getElementById('timeline-reward-toggle');
+    if (rewardToggle) {
+        const rewardCount = timelineEl.querySelectorAll('.tl-row-reward').length;
+        document.getElementById('timeline-reward-count').textContent = rewardCount;
+        rewardToggle.checked = false;
+        rewardToggle.disabled = rewardCount === 0;
+        document.getElementById('timeline-reward-toggle-wrap').classList.toggle('is-disabled', rewardCount === 0);
+        applyTimelineRewardFilter();
+    }
+
     openModal('detailModal');
+}
+
+/** 상세 리포트 - 인앱 로그 타임라인의 API 보상(rewards) 전용 뷰 **/
+// 서버 응답은 { status, data, rewards: [{ rewardId, code, value, translation: { translationKey, variables } }], maintenance } 형태.
+// 최상위 rewards[] = 이 호출로 서버가 실제 지급한 보상, data 안의 보상 객체 = 조회성 정보(미션 보상 등).
+let rewardLookup = null; // { rewards: { [rewardId]: row }, translations: { [key]: value } }
+let rewardLookupPromise = null;
+
+function buildRewardLookup(rewardMd, translationMd) {
+    const rewards = {};
+    const translations = {};
+    (rewardMd?.rewards ?? []).forEach(r => { rewards[r.rewardId] = r; });
+    (translationMd?.translations ?? []).forEach(t => { translations[t.translationKey] = t.value; });
+    return { rewards, translations };
+}
+
+/** 보상 타입/문구 매칭용 마스터 데이터 준비. 실패해도 null만 돌려주고 throw하지 않는다. */
+async function ensureRewardLookup() {
+    // 마스터 데이터 탭에서 받아둔 최신 데이터가 있으면 정적 파일보다 우선
+    const cached = (masterDataCache.ko || Object.values(masterDataCache)[0])?.masterData;
+    if (cached?.rewardMasterData) {
+        rewardLookup = buildRewardLookup(cached.rewardMasterData, cached.translationMasterData);
+        return rewardLookup;
+    }
+    if (rewardLookup) return rewardLookup;
+    rewardLookupPromise ||= (async () => {
+        try {
+            const fetchJson = async (path) => { const r = await fetch(path); return r.ok ? r.json() : null; };
+            const [reward, translation] = await Promise.all([
+                fetchJson('MasterData/RewardMasterData.json'),
+                fetchJson('MasterData/ko/TranslationMasterData.json'),
+            ]);
+            if (reward) rewardLookup = buildRewardLookup(reward, translation);
+        } catch (e) {
+            console.warn('보상 마스터 데이터 로드 실패', e);
+        }
+        if (!rewardLookup) rewardLookupPromise = null; // 다음에 다시 시도
+        return rewardLookup;
+    })();
+    return rewardLookupPromise;
+}
+
+/** { translationKey, variables: [문자열 | 중첩 translation] } 을 번역 문구로 풀어낸다. 못 풀면 '' */
+function resolveTranslationText(t, map) {
+    if (t == null) return '';
+    if (typeof t !== 'object') return String(t);
+    const tpl = map?.[t.translationKey];
+    if (tpl == null) return '';
+    const vars = (t.variables || []).map(v => resolveTranslationText(v, map));
+    return tpl.replace(/\{(\d+)\}/g, (m, i) => vars[i] ?? m).replace(/\\n|\n/g, ' ');
+}
+
+const isRewardObject = o => !!o && typeof o === 'object' && !Array.isArray(o) && 'rewardId' in o && 'code' in o;
+
+/** API 응답 본문에서 보상을 추출. granted: 최상위 rewards[], info: data 안에 들어있는 보상 객체 */
+function extractApiRewards(resText) {
+    const result = { granted: [], info: [], truncated: false };
+    let json = null;
+    try { json = JSON.parse(resText.trim()); } catch (e) { /* 긴 응답은 앱에서 잘려서 올 수 있음 */ }
+
+    if (!json || typeof json !== 'object') {
+        // 잘린 응답: 최상위 rewards[]는 맨 끝이라 유실됨. 남아있는 보상 객체만 건진다
+        const re = /\{"rewardId":(\d+),"code":"([^"]*)","value":(null|-?[\d.]+)(?:,"translation":\{"translationKey":(null|"[^"]*"))?/g;
+        let m;
+        while ((m = re.exec(resText)) !== null) {
+            result.info.push({
+                path: '',
+                reward: {
+                    rewardId: Number(m[1]), code: m[2], value: m[3] === 'null' ? null : Number(m[3]),
+                    translation: m[4] === undefined ? undefined : { translationKey: m[4] === 'null' ? null : m[4].slice(1, -1), variables: [] },
+                },
+            });
+        }
+        result.truncated = result.info.length > 0;
+        return result;
+    }
+
+    if (Array.isArray(json.rewards)) result.granted = json.rewards.filter(isRewardObject);
+
+    const walk = (node, path) => {
+        if (!node || typeof node !== 'object') return;
+        if (isRewardObject(node)) { result.info.push({ path, reward: node }); return; }
+        if (Array.isArray(node)) node.forEach((v, i) => walk(v, `${path}[${i}]`));
+        else Object.keys(node).forEach(k => walk(node[k], `${path}.${k}`));
+    };
+    walk(json.data, 'data');
+    return result;
+}
+
+function renderRewardBadge(apiRewards) {
+    if (!apiRewards) return '';
+    if (apiRewards.granted.length > 0) {
+        return `<span class="reward-badge" title="이 호출로 서버가 지급한 보상 ${apiRewards.granted.length}건"><i class="fas fa-gift"></i>보상 ${apiRewards.granted.length}</span>`;
+    }
+    if (apiRewards.info.length > 0) {
+        return `<span class="reward-badge reward-badge-info" title="응답 data에 포함된 보상 정보 ${apiRewards.info.length}건 (지급 아님)"><i class="fas fa-gift"></i>보상 정보 ${apiRewards.info.length}</span>`;
+    }
+    return '';
+}
+
+const REWARD_TYPE_ICONS = {
+    DIAMOND: 'fa-gem', ITEM: 'fa-shirt', TITLE: 'fa-award', CHARACTER: 'fa-user', SHIELD: 'fa-shield-halved', NOTHING: 'fa-ban',
+};
+
+function renderRewardTable(entries, lookup, showPath) {
+    const flag = (text, cls) => `<span class="reward-flag ${cls}">${escapeHtml(text)}</span>`;
+    const rows = entries.map(({ path, reward }) => {
+        const master = lookup?.rewards?.[reward.rewardId];
+        const tKey = reward.translation?.translationKey;
+        const text = lookup ? resolveTranslationText(reward.translation, lookup.translations) : '';
+        const hasValue = reward.value !== null && reward.value !== undefined;
+
+        const flags = [];
+        if (reward.translation && !tKey) flags.push(flag('translationKey 없음', 'is-error'));
+        if (lookup) {
+            if (!master) flags.push(flag('마스터 미확인', 'is-muted'));
+            else if (master.code !== reward.code) flags.push(flag(`code 불일치 (마스터: ${master.code})`, 'is-error'));
+            if (master?.type === 'DIAMOND' && !reward.value) flags.push(flag('수량 없음', 'is-warn'));
+            if (tKey && !(tKey in lookup.translations)) flags.push(flag('번역 미확인', 'is-muted'));
+        }
+
+        const typeCell = master
+            ? `<i class="fas ${REWARD_TYPE_ICONS[master.type] || 'fa-gift'} mr-1 opacity-60"></i>${escapeHtml(master.type)}`
+            : '<span class="text-slate-300">-</span>';
+        const textCell = text
+            ? escapeHtml(text)
+            : (tKey ? `<span class="font-mono text-[10px] text-slate-400">${escapeHtml(tKey)}</span>` : '<span class="text-slate-300">-</span>');
+
+        return `<tr>
+            ${showPath ? `<td class="font-mono text-[10px] text-slate-400">${escapeHtml(path || '-')}</td>` : ''}
+            <td class="font-mono">${escapeHtml(reward.rewardId)}</td>
+            <td class="font-mono font-bold">${escapeHtml(reward.code)}</td>
+            <td>${typeCell}</td>
+            <td class="reward-value">${hasValue ? escapeHtml(master?.type === 'DIAMOND' ? Number(reward.value).toLocaleString() : reward.value) :'<span class="text-slate-300 font-normal">null</span>'}</td>
+            <td>${textCell}</td>
+            <td>${flags.join(' ')}</td>
+        </tr>`;
+    }).join('');
+
+    return `<div class="reward-table-wrap"><table class="reward-table">
+        <thead><tr>${showPath ? '<th>위치</th>' : ''}<th>rewardId</th><th>code</th><th>타입</th><th>value</th><th>표시 문구</th><th>확인</th></tr></thead>
+        <tbody>${rows}</tbody>
+    </table></div>`;
+}
+
+function renderRewardPanel(apiRewards, lookup) {
+    if (!apiRewards || (apiRewards.granted.length === 0 && apiRewards.info.length === 0)) return '';
+    const lookupNote = lookup ? '' : ' · 마스터 데이터를 불러오지 못해 타입/문구는 생략';
+    let html = '';
+
+    if (apiRewards.granted.length > 0) {
+        // 재화(DIAMOND) 보상은 합계를 같이 보여줘서 화면에 찍힌 수량과 바로 비교할 수 있게 한다
+        const diamondSum = lookup
+            ? apiRewards.granted.reduce((sum, r) => sum + (lookup.rewards[r.rewardId]?.type === 'DIAMOND' ? (Number(r.value) || 0) : 0), 0)
+            : 0;
+        html += `<div class="reward-panel">
+            <div class="reward-panel-head">
+                <span><i class="fas fa-gift mr-1"></i>서버 지급 보상 ${apiRewards.granted.length}건</span>
+                ${diamondSum > 0 ? `<span class="reward-sum"><i class="fas fa-gem mr-1"></i>DIAMOND 합계 +${diamondSum.toLocaleString()}</span>` : ''}
+            </div>
+            ${renderRewardTable(apiRewards.granted.map(reward => ({ path: '', reward })), lookup, false)}
+            <div class="reward-panel-note">응답 최상위 <code>rewards[]</code> 기준${lookupNote}. 이 값이 기대와 다르면 서버, 값은 맞는데 화면 표시가 다르면 클라이언트를 확인하세요.</div>
+        </div>`;
+    }
+
+    if (apiRewards.info.length > 0) {
+        html += `<div class="reward-panel reward-panel-info">
+            <div class="reward-panel-head">
+                <span><i class="fas fa-gift mr-1"></i>보상 정보 ${apiRewards.info.length}건 <span class="font-medium normal-case">(조회 데이터 · 지급 아님)</span></span>
+            </div>
+            ${renderRewardTable(apiRewards.info, lookup, true)}
+            <div class="reward-panel-note">${apiRewards.truncated
+                ? '응답이 잘려서 저장되어 본문에 남아있는 보상 객체만 표시합니다. 최상위 <code>rewards[]</code>(지급 내역)는 확인할 수 없습니다.'
+                : `응답 <code>data</code> 안에 들어있는 보상 객체${lookupNote}.`}</div>
+        </div>`;
+    }
+    return html;
+}
+
+function applyTimelineRewardFilter() {
+    const toggle = document.getElementById('timeline-reward-toggle');
+    if (!toggle) return;
+    document.getElementById('modal-timeline').classList.toggle('only-reward', toggle.checked);
 }
 
 /** 상세 리포트 - 인앱 로그 타임라인의 TAP(입력) 로그 표시 토글 **/

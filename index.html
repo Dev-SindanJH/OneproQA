@@ -770,13 +770,22 @@
                             <h4 class="text-[12px] font-black text-indigo-500 uppercase tracking-widest">
                                 <i class="fas fa-history mr-1"></i> 인앱 로그 타임라인 (In-App Activity)
                             </h4>
-                            <!-- TAP(입력) 로그 표시 토글: 선택값은 localStorage에 저장 -->
-                            <label id="timeline-tap-toggle-wrap" class="tl-switch-label" title="TAP(터치 입력) 로그 표시/숨김">
-                                <input type="checkbox" id="timeline-tap-toggle" role="switch" class="tl-switch-input" onchange="setTimelineTapVisible(this.checked)" checked>
-                                <span class="tl-switch" aria-hidden="true"><span class="tl-switch-knob"></span></span>
-                                <span><i class="fas fa-hand-pointer mr-1"></i>TAP 표시</span>
-                                <span id="timeline-tap-count" class="tl-switch-count">0</span>
-                            </label>
+                            <div class="flex flex-wrap items-center gap-4">
+                                <!-- 보상을 지급한 API(응답 rewards[]가 비어있지 않은 호출)만 보기 -->
+                                <label id="timeline-reward-toggle-wrap" class="tl-switch-label is-reward" title="서버가 보상을 지급한 API만 표시">
+                                    <input type="checkbox" id="timeline-reward-toggle" role="switch" class="tl-switch-input" onchange="applyTimelineRewardFilter()">
+                                    <span class="tl-switch" aria-hidden="true"><span class="tl-switch-knob"></span></span>
+                                    <span><i class="fas fa-gift mr-1"></i>보상만 보기</span>
+                                    <span id="timeline-reward-count" class="tl-switch-count">0</span>
+                                </label>
+                                <!-- TAP(입력) 로그 표시 토글: 선택값은 localStorage에 저장 -->
+                                <label id="timeline-tap-toggle-wrap" class="tl-switch-label" title="TAP(터치 입력) 로그 표시/숨김">
+                                    <input type="checkbox" id="timeline-tap-toggle" role="switch" class="tl-switch-input" onchange="setTimelineTapVisible(this.checked)" checked>
+                                    <span class="tl-switch" aria-hidden="true"><span class="tl-switch-knob"></span></span>
+                                    <span><i class="fas fa-hand-pointer mr-1"></i>TAP 표시</span>
+                                    <span id="timeline-tap-count" class="tl-switch-count">0</span>
+                                </label>
+                            </div>
                         </div>
                         <div id="modal-timeline" class="space-y-1 relative before:absolute before:inset-y-0 before:left-[11px] before:w-0.5 before:bg-slate-200">
                         </div>
