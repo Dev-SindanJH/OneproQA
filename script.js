@@ -392,6 +392,7 @@ function closeModal(id) {
     modal.classList.add('hidden');
 
     if (id === 'detailModal') {
+        setDetailLinkParam(null);
         const loginPanel = document.getElementById('modal-login-info-section');
         if (loginPanel) loginPanel.classList.add('hidden');
     }
@@ -425,6 +426,37 @@ function copyContentKey(key, type) {
         console.error('복사 실패:', err);
         showToast('복사에 실패했습니다.', 'error');
     });
+}
+
+// 주소의 ?id= 를 상세 모달에 열린 항목과 맞춘다 (logId 가 없으면 제거)
+function setDetailLinkParam(logId) {
+    const url = new URL(window.location.href);
+    if (logId) url.searchParams.set('id', logId);
+    else url.searchParams.delete('id');
+    history.replaceState(null, '', url);
+}
+
+// 상세 모달에 열린 항목으로 바로 들어오는 링크 복사
+function copyLogLink() {
+    const logId = document.getElementById('modal-id').innerText.trim();
+    if (!logId) return;
+    const link = `${window.location.origin}${window.location.pathname}?id=${encodeURIComponent(logId)}`;
+    navigator.clipboard.writeText(link).then(() => {
+        showToast('항목 링크가 복사되었습니다.', 'success');
+    }).catch(err => {
+        console.error('복사 실패:', err);
+        showToast('복사에 실패했습니다.', 'error');
+    });
+}
+
+// ?id= 링크로 들어온 경우 해당 항목의 상세 모달을 연다
+async function openSharedLog(logId) {
+    showSection('list');
+    await openDetailModal(logId);
+    if (document.getElementById('detailModal').classList.contains('hidden')) {
+        setDetailLinkParam(null);
+        showToast('링크의 검수 항목을 찾을 수 없습니다.', 'error');
+    }
 }
 
 // 상세 모달의 로그를 앱 프로젝트 Claude Code 세션에서 분석하도록 /qa-fix 명령 복사
@@ -2332,6 +2364,7 @@ async function openDetailModal(logId) {
     }
 
     openModal('detailModal');
+    setDetailLinkParam(log.id);
 }
 
 /** 상세 리포트 - 인앱 로그 타임라인의 API 보상(rewards) 전용 뷰 **/
@@ -3268,6 +3301,10 @@ window.onload = async () => {
 
     await fetchLogsCount(); // 총 개수 로드
     await fetchLogs(); // 첫 페이지 로드
+
+    // 항목 링크(?id=)로 들어온 경우 상세 모달 바로 열기
+    const sharedLogId = urlParams.get('id');
+    if (sharedLogId) openSharedLog(sharedLogId);
 
     // 로그인 정보 패널 드래그 이동
     initLoginInfoPanelDrag();
