@@ -12,7 +12,8 @@ let currentPageLogs = []; // 현재 페이지의 데이터
 let totalLogsCount = 0; // 전체(필터링된) 로그 개수
 let currentPage = 1;
 const itemsPerPage = 10;
-let currentBundleCode = ''; // 현재 검수 번들 코드
+let currentBundleCode = ''; // 현재 검수 번들 코드 (안드로이드)
+let currentIosBundleCode = ''; // 현재 검수 번들 코드 (iOS)
 let currentAppVersion = ''; // 현재 앱 버전
 let currentServerInfo = 'dev'; // 현재 서버 환경: 'dev' | 'prod'
 let currentQAInfo = null; // 홈에 표시 중인 검수 정보 행 (검수 정보 입력 모달의 수정 대상)
@@ -554,42 +555,43 @@ document.addEventListener('DOMContentLoaded', () => {
         return `<span class="whitespace-nowrap inline-block bg-slate-50 text-slate-500 px-3 py-1.5 rounded-md text-[11px] font-bold border border-slate-200">${s || '신규 등록'}</span>`;
     }
 
-    // 수정 완료 시점의 번들코드(코멘트 끝의 "(숫자)")를 현재 검수 번들코드와 비교
-    // 배지 대상이면 { fixedBundle, verifiable, displayComment(번들코드 제거된 코멘트) } 반환
-    function getFixBundleInfo(log) {
-        const state = (log.state || log.status || '').trim();
-        if (state !== '수정 완료') return null;
-
-        const comment = log.developer_comment || '';
-        const match = comment.match(/\((\d+)\)\s*$/);
-        if (!match) return null;
-
-        const fixedBundle = parseInt(match[1], 10);
-        const nowBundle = parseInt(currentBundleCode, 10);
-        if (isNaN(fixedBundle) || isNaN(nowBundle)) return null;
-
-        return {
-            fixedBundle,
-            verifiable: nowBundle > fixedBundle,
-            displayComment: comment.replace(/\s*\(\d+\)\s*$/, '')
-        };
-    }
-
-    // 현재 검수 버전에서 수정 사항을 확인할 수 있는지 여부를 배지로 반환 (앞에 수정 시점 번들코드 표시)
+    // 플랫폼별 수정 반영 번들(이 번들부터 확인 가능)을 현재 검수 번들과 비교해 배지로 반환
     function getFixVerifyBadge(log) {
-        const info = getFixBundleInfo(log);
-        if (!info) return '';
+        const state = (log.state || log.status || '').trim();
+        if (state !== '수정 완료' && state !== '수정 확인') return '';
 
-        if (info.verifiable) {
-            return `<div class="mt-1.5"><span class="inline-flex items-center gap-1 bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full text-[10px] font-black whitespace-nowrap"><i class="fas fa-check-circle"></i>(${info.fixedBundle}) 현재 버전에서 확인 가능</span></div>`;
-        }
-        return `<div class="mt-1.5"><span class="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full text-[10px] font-black whitespace-nowrap"><i class="fas fa-hourglass-half"></i>(${info.fixedBundle}) 현재 버전에서 확인 불가</span></div>`;
+        const chip = (cls, icon, text) =>
+            `<span class="inline-flex items-center gap-1 ${cls} px-2 py-0.5 rounded-full text-[10px] font-black whitespace-nowrap"><i class="fas ${icon}"></i>${text}</span>`;
+
+        const chips = [
+            ['AOS', log.fixed_bundle_android, currentBundleCode],
+            ['iOS', log.fixed_bundle_ios, currentIosBundleCode]
+        ].filter(([, fixed]) => fixed != null).map(([label, fixed, now]) => {
+            const nowBundle = parseInt(now, 10);
+            // 확인 대기 중(수정 완료)이고 해당 플랫폼의 현재 검수 번들을 알 때만 확인 가능 여부를 표시
+            if (state !== '수정 완료' || isNaN(nowBundle)) {
+                return chip('bg-slate-50 text-slate-500 border border-slate-200', 'fa-code-branch', `${label} ${fixed}부터 반영`);
+            }
+            return nowBundle >= fixed
+                ? chip('bg-green-50 text-green-700 border border-green-200', 'fa-check-circle', `${label} ${fixed} 확인 가능`)
+                : chip('bg-amber-50 text-amber-700 border border-amber-200', 'fa-hourglass-half', `${label} ${fixed} 확인 불가`);
+        });
+
+        return chips.length ? `<div class="mt-1.5 flex flex-wrap gap-1">${chips.join('')}</div>` : '';
     }
 
-    // 표시용 개발자 코멘트: 배지가 표시되는 경우 끝의 (번들코드)를 제거
-    function getDisplayDevComment(log) {
-        const info = getFixBundleInfo(log);
-        return info ? info.displayComment : (log.developer_comment || '');
+    // 번들 입력값 파싱: 빈 값은 null, 0 이상의 정수가 아니면 undefined
+    function parseBundleInput(elId) {
+        const raw = document.getElementById(elId).value.trim();
+        if (!raw) return null;
+        const n = Number(raw);
+        return Number.isInteger(n) && n >= 0 ? n : undefined;
+    }
+
+    // 수정 반영 번들 기본값: 현재 검수 번들의 다음 번들과 마지막으로 입력한 값 중 큰 쪽
+    function defaultFixedBundle(nowBundle, storageKey) {
+        const candidates = [parseInt(nowBundle, 10) + 1, parseInt(localStorage.getItem(storageKey), 10)].filter(n => !isNaN(n));
+        return candidates.length ? Math.max(...candidates) : '';
     }
 
 /** 데이터 로드 및 처리 함수 **/
@@ -611,7 +613,7 @@ async function fetchQAInformation(forceRefresh = false) {
     console.log('↓ QA Information Supabase에서 로드 (최적화: 필요 컬럼만)');
     const { data } = await supabaseClient
         .from('qa_information')
-        .select('id,version,round,start_at,end_at,bundleCode,serverInfo,created_at')
+        .select('id,version,round,start_at,end_at,bundleCode,iosBundleCode,serverInfo,created_at')
         .lte('start_at', now)
         .gte('end_at', now)
         .order('created_at', { ascending: false })
@@ -645,7 +647,7 @@ async function openQaInfoModal() {
         // 진행 중인 회차가 없으면 가장 최근에 등록한 회차의 버전·번들·서버를 기본값으로 사용
         const { data } = await supabaseClient
             .from('qa_information')
-            .select('version,bundleCode,serverInfo')
+            .select('version,bundleCode,iosBundleCode,serverInfo')
             .order('created_at', { ascending: false })
             .limit(1);
         base = (data && data[0]) || {};
@@ -653,6 +655,7 @@ async function openQaInfoModal() {
 
     document.getElementById('qa-info-version').value = base.version || '';
     document.getElementById('qa-info-bundle').value = base.bundleCode ?? '';
+    document.getElementById('qa-info-bundle-ios').value = base.iosBundleCode ?? '';
     document.getElementById('qa-info-server').value = base.serverInfo === 'prod' ? 'prod' : 'dev';
     document.getElementById('qa-info-round').value = isEdit ? (currentQAInfo.round || '') : '';
     document.getElementById('qa-info-start').value = toKstInputValue(isEdit ? currentQAInfo.start_at : new Date().toISOString());
@@ -674,15 +677,17 @@ async function submitQaInfo(mode) {
     const startAt = fromKstInputValue(document.getElementById('qa-info-start').value);
     const endAt = fromKstInputValue(document.getElementById('qa-info-end').value);
     const bundleCode = Number(bundleRaw);
+    const iosBundleCode = parseBundleInput('qa-info-bundle-ios');
 
     if (!version) return showToast('검수 버전을 입력해주세요.', 'error');
-    if (!bundleRaw || !Number.isInteger(bundleCode) || bundleCode < 0) return showToast('번들 코드는 0 이상의 정수로 입력해주세요.', 'error');
+    if (!bundleRaw || !Number.isInteger(bundleCode) || bundleCode < 0) return showToast('안드로이드 번들 코드는 0 이상의 정수로 입력해주세요.', 'error');
+    if (iosBundleCode === undefined) return showToast('iOS 번들 코드는 0 이상의 정수로 입력해주세요.', 'error');
     if (!round) return showToast('검수 회차를 입력해주세요.', 'error');
     if (!startAt || !endAt) return showToast('검수 시작·종료 일시를 입력해주세요.', 'error');
     if (new Date(endAt) <= new Date(startAt)) return showToast('검수 종료는 시작보다 뒤여야 합니다.', 'error');
     if (mode === 'update' && !currentQAInfo) return showToast('수정할 진행 중인 회차가 없습니다.', 'error');
 
-    const payload = { version, bundleCode, round, serverInfo, start_at: startAt, end_at: endAt };
+    const payload = { version, bundleCode, iosBundleCode, round, serverInfo, start_at: startAt, end_at: endAt };
     const buttons = ['qa-info-update-btn', 'qa-info-insert-btn'].map(id => document.getElementById(id));
     buttons.forEach(b => b.disabled = true);
 
@@ -720,11 +725,14 @@ function updateQAInformationUI(qaInfo) {
     if (qaInfo) {
         // bundleCode 저장
         currentBundleCode = qaInfo.bundleCode || '';
+        currentIosBundleCode = qaInfo.iosBundleCode || '';
         // 앱 버전 저장
         currentAppVersion = qaInfo.version || '3.0.0';
 
         // 버전 표시 (bundleCode 포함)
-        if (currentBundleCode) {
+        if (currentBundleCode && currentIosBundleCode) {
+            versionEl.innerText = `v${qaInfo.version} (AOS ${currentBundleCode} · iOS ${currentIosBundleCode})`;
+        } else if (currentBundleCode) {
             versionEl.innerText = `v${qaInfo.version} (${currentBundleCode})`;
         } else {
             versionEl.innerText = `v${qaInfo.version}`;
@@ -752,6 +760,7 @@ function updateQAInformationUI(qaInfo) {
         }
     } else {
         currentBundleCode = '';
+        currentIosBundleCode = '';
         currentAppVersion = '3.0.0'; // 기본값
         currentServerInfo = 'dev';
         versionEl.innerText = "없음"; 
@@ -917,7 +926,7 @@ async function fetchLogs(forceRefresh = false) {
 
     let query = supabaseClient
         .from('qa_logs')
-        .select('id,user_name,state,current_scene,current_popup,user_description,developer_comment,created_at,updated_at,image_url,is_delete,inAppLogs,login_info,device_info,content_context,screen_history');
+        .select('id,user_name,state,current_scene,current_popup,user_description,developer_comment,fixed_bundle_android,fixed_bundle_ios,created_at,updated_at,image_url,is_delete,inAppLogs,login_info,device_info,content_context,screen_history');
 
     // 필터 적용
     query = applyFiltersToQuery(query, currentFilters);
@@ -1332,8 +1341,8 @@ function renderTable() {
             <td class="px-4 py-4 text-center border-b border-gray-100">${imageActionHtml}</td>
             <td class="px-4 py-4 text-gray-600 border-b border-gray-100 ${currentState === '수정 완료' ? 'cursor-pointer hover:bg-blue-50/30' : ''}" ${currentState === '수정 완료' ? `onclick="openDevCommentEditModal('${log.id}')" title="클릭하여 코멘트 수정"` : ''}>
                 <div class="tooltip-container">
-                    <div class="line-clamp-3 w-full text-xs leading-relaxed">${getDisplayDevComment(log) || '<span class="text-gray-300 italic">코멘트 없음</span>'}</div>
-                    <span class="tooltip-text-left">${getDisplayDevComment(log) || '코멘트 없음'}</span>
+                    <div class="line-clamp-3 w-full text-xs leading-relaxed">${log.developer_comment || '<span class="text-gray-300 italic">코멘트 없음</span>'}</div>
+                    <span class="tooltip-text-left">${log.developer_comment || '코멘트 없음'}</span>
                 </div>
                 ${getFixVerifyBadge(log)}
             </td>
@@ -1388,7 +1397,7 @@ function renderTable() {
                         <span class="mobile-card-meta-item" title="작성: ${formatKST(log.created_at)}"><i class="fas fa-calendar-alt"></i> ${formatRelativeTime(log.created_at)}</span>
                         ${log.updated_at ? `<span class="mobile-card-meta-item text-blue-500" title="업데이트: ${formatKST(log.updated_at)}"><i class="fas fa-sync-alt"></i> ${formatRelativeTime(log.updated_at)}</span>` : ''}
                     </div>
-                    ${log.developer_comment ? `<div class="mobile-card-comment ${currentState === '수정 완료' ? 'cursor-pointer hover:bg-blue-50/30 active:bg-blue-100/30 transition' : ''}" ${currentState === '수정 완료' ? `onclick="openDevCommentEditModal('${log.id}')"` : ''}><div class="mobile-card-comment-label">${currentState === '수정 완료' ? '<i class="fas fa-edit mr-1 text-blue-500"></i>' : ''}개발자 코멘트</div>${getDisplayDevComment(log)}${getFixVerifyBadge(log)}</div>` : ''}
+                    ${log.developer_comment ? `<div class="mobile-card-comment ${currentState === '수정 완료' ? 'cursor-pointer hover:bg-blue-50/30 active:bg-blue-100/30 transition' : ''}" ${currentState === '수정 완료' ? `onclick="openDevCommentEditModal('${log.id}')"` : ''}><div class="mobile-card-comment-label">${currentState === '수정 완료' ? '<i class="fas fa-edit mr-1 text-blue-500"></i>' : ''}개발자 코멘트</div>${log.developer_comment}${getFixVerifyBadge(log)}</div>` : ''}
                     <div class="mobile-card-actions">
                         ${mobileActionButtons}
                         ${mobileImageBtn}
@@ -1837,7 +1846,7 @@ async function openDetailModal(logId) {
     const devCommentSection = document.getElementById('modal-dev-comment-section');
     const modalDevComment = document.getElementById('modal-dev-comment');
     if (log.developer_comment) {
-        modalDevComment.innerText = getDisplayDevComment(log);
+        modalDevComment.innerText = log.developer_comment;
         devCommentSection.classList.remove('hidden');
     } else {
         devCommentSection.classList.add('hidden');
@@ -2337,7 +2346,7 @@ async function openReRequestModal(logId) {
     const log = await findLogById(logId);
     if (!log) return;
     document.getElementById('request-log-id').value = logId; document.getElementById('request-text').value = ''; 
-    document.getElementById('request-existing-desc').innerText = log.user_description || '-'; document.getElementById('request-existing-comment').innerText = getDisplayDevComment(log) || '-';
+    document.getElementById('request-existing-desc').innerText = log.user_description || '-'; document.getElementById('request-existing-comment').innerText = log.developer_comment || '-';
     openModal('requestModal');
 }
 
@@ -2346,7 +2355,7 @@ async function submitReRequest() {
     if (!t) return alert('내용을 입력해주세요.');
     const log = await findLogById(id);
     if (!log) return alert('로그를 찾을 수 없습니다.');
-    const { error } = await supabaseClient.from('qa_logs').update({ state: '수정 필요', user_description: `${log.user_description || ''}\n\n[재수정 요청] ${t}` }).eq('id', id);
+    const { error } = await supabaseClient.from('qa_logs').update({ state: '수정 필요', fixed_bundle_android: null, fixed_bundle_ios: null, user_description: `${log.user_description || ''}\n\n[재수정 요청] ${t}` }).eq('id', id);
     if (error) { 
         alert('실패: ' + error.message); 
     } else { 
@@ -2573,6 +2582,11 @@ async function openDevProcessModal(logId, fromState = '수정 필요') {
     document.getElementById('dev-process-log-id').value = logId;
     document.getElementById('dev-comment-text').value = log.developer_comment || '';
 
+    // 수정 반영 번들: 서버 수정 완료 처리에는 쓰지 않으므로 숨김
+    document.getElementById('dev-fixed-bundle-section').classList.toggle('hidden', fromState === '서버 수정 요청');
+    document.getElementById('dev-fixed-bundle-android').value = log.fixed_bundle_android ?? defaultFixedBundle(currentBundleCode, 'qaLastFixedBundleAndroid');
+    document.getElementById('dev-fixed-bundle-ios').value = log.fixed_bundle_ios ?? defaultFixedBundle(currentIosBundleCode, 'qaLastFixedBundleIos');
+
     // 상태에 따라 버튼 동적 표시
     const btnArea = document.getElementById('dev-process-action-btns');
     if (btnArea) {
@@ -2597,20 +2611,20 @@ async function submitDevProcess(targetState) {
     const comment = document.getElementById('dev-comment-text').value.trim();
 
     // 코멘트가 비어있으면 상태값을 기본 코멘트로 사용
-    let finalComment = comment || targetState;
+    const finalComment = comment || targetState;
 
-    // 수정완료, 보류/패스, 서버 수정 요청 상태인 경우 bundleCode 추가
-    if ((targetState === '수정 완료' || targetState === '보류/패스' || targetState === '서버 수정 요청') && currentBundleCode) {
-        if (!comment) {
-            // 코멘트가 비어있으면 기본 메시지 + 번들 코드
-            finalComment = `${targetState} (${currentBundleCode})`;
-        } else {
-            // 코멘트가 있으면 코멘트 뒤에 번들 코드 추가
-            finalComment = `${comment} (${currentBundleCode})`;
-        }
+    // 수정 반영 번들은 수정 완료일 때만 저장
+    let fixedAndroid = null, fixedIos = null;
+    if (targetState === '수정 완료') {
+        fixedAndroid = parseBundleInput('dev-fixed-bundle-android');
+        fixedIos = parseBundleInput('dev-fixed-bundle-ios');
+        if (fixedAndroid === undefined || fixedIos === undefined) return showToast('수정 반영 번들은 0 이상의 정수로 입력해주세요.', 'error');
+        if (fixedAndroid === null && fixedIos === null) return showToast('수정 반영 번들을 하나 이상 입력해주세요.', 'error');
+        if (fixedAndroid !== null) localStorage.setItem('qaLastFixedBundleAndroid', fixedAndroid);
+        if (fixedIos !== null) localStorage.setItem('qaLastFixedBundleIos', fixedIos);
     }
 
-    const { error } = await supabaseClient.from('qa_logs').update({ state: targetState, developer_comment: finalComment, updated_at: new Date().toISOString() }).eq('id', id);
+    const { error } = await supabaseClient.from('qa_logs').update({ state: targetState, developer_comment: finalComment, fixed_bundle_android: fixedAndroid, fixed_bundle_ios: fixedIos, updated_at: new Date().toISOString() }).eq('id', id);
     if (error) { 
         alert('실패: ' + error.message); 
     } else { 
@@ -2628,6 +2642,8 @@ async function openDevCommentEditModal(logId) {
     if (!log) return;
     document.getElementById('edit-dev-comment-log-id').value = logId;
     document.getElementById('edit-dev-comment-text').value = log.developer_comment || '';
+    document.getElementById('edit-fixed-bundle-android').value = log.fixed_bundle_android ?? '';
+    document.getElementById('edit-fixed-bundle-ios').value = log.fixed_bundle_ios ?? '';
     openModal('editDevCommentModal');
 }
 
@@ -2636,12 +2652,18 @@ async function submitDevCommentEdit() {
     const comment = document.getElementById('edit-dev-comment-text').value.trim();
     if (!comment) return alert('코멘트를 입력해주세요.');
 
+    const fixedAndroid = parseBundleInput('edit-fixed-bundle-android');
+    const fixedIos = parseBundleInput('edit-fixed-bundle-ios');
+    if (fixedAndroid === undefined || fixedIos === undefined) return showToast('수정 반영 번들은 0 이상의 정수로 입력해주세요.', 'error');
+
     const btn = document.getElementById('edit-dev-comment-submit-btn');
     btn.innerText = '저장중...';
     btn.disabled = true;
 
     const { error } = await supabaseClient.from('qa_logs').update({ 
         developer_comment: comment,
+        fixed_bundle_android: fixedAndroid,
+        fixed_bundle_ios: fixedIos,
         updated_at: new Date().toISOString()
     }).eq('id', id);
 

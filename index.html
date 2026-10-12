@@ -664,14 +664,18 @@
                 <p class="text-xs text-blue-600 mt-1" id="qa-info-mode-desc">새 검수 회차를 등록합니다.</p>
             </div>
             <div class="p-6 space-y-4 overflow-y-auto">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                         <label for="qa-info-version" class="text-[11px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">검수 버전 <span class="text-red-400">*</span></label>
                         <input type="text" id="qa-info-version" placeholder="예: 3.1.1" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
                     </div>
                     <div>
-                        <label for="qa-info-bundle" class="text-[11px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">번들 코드 <span class="text-red-400">*</span></label>
+                        <label for="qa-info-bundle" class="text-[11px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">AOS 번들 <span class="text-red-400">*</span></label>
                         <input type="number" id="qa-info-bundle" min="0" step="1" placeholder="예: 755" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                    </div>
+                    <div>
+                        <label for="qa-info-bundle-ios" class="text-[11px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">iOS 번들</label>
+                        <input type="number" id="qa-info-bundle-ios" min="0" step="1" placeholder="예: 262" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
                     </div>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -841,6 +845,20 @@
                     <h4 class="text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">개발자 코멘트</h4>
                     <textarea id="dev-comment-text" class="w-full h-32 bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none" placeholder="수정 내용이나 보류 사유를 입력하세요."></textarea>
                     <input type="hidden" id="dev-process-log-id">
+                </div>
+                <div id="dev-fixed-bundle-section">
+                    <h4 class="text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">수정 반영 번들</h4>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label for="dev-fixed-bundle-android" class="text-[11px] font-bold text-slate-500 block mb-1">안드로이드</label>
+                            <input type="number" id="dev-fixed-bundle-android" min="0" step="1" placeholder="예: 789" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                        </div>
+                        <div>
+                            <label for="dev-fixed-bundle-ios" class="text-[11px] font-bold text-slate-500 block mb-1">iOS</label>
+                            <input type="number" id="dev-fixed-bundle-ios" min="0" step="1" placeholder="예: 263" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-slate-400 mt-1.5">수정 사항이 처음 포함되는 번들 번호입니다. '수정 완료' 처리 시에만 저장되며, 해당 없는 플랫폼은 비워두세요.</p>
                 </div>
             </div>
             <div class="p-5 bg-slate-50 border-t flex justify-between gap-3">
@@ -1033,6 +1051,18 @@
                 <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest">코멘트 수정</label>
                 <textarea id="edit-dev-comment-text" class="w-full h-32 bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none leading-relaxed" placeholder="개발자 코멘트를 입력하세요."></textarea>
                 <input type="hidden" id="edit-dev-comment-log-id">
+                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest pt-2">수정 반영 번들</label>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label for="edit-fixed-bundle-android" class="text-[11px] font-bold text-slate-500 block mb-1">안드로이드</label>
+                        <input type="number" id="edit-fixed-bundle-android" min="0" step="1" placeholder="예: 789" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                    </div>
+                    <div>
+                        <label for="edit-fixed-bundle-ios" class="text-[11px] font-bold text-slate-500 block mb-1">iOS</label>
+                        <input type="number" id="edit-fixed-bundle-ios" min="0" step="1" placeholder="예: 263" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                    </div>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-1.5">수정 사항이 처음 포함되는 번들 번호입니다. 해당 없는 플랫폼은 비워두세요.</p>
             </div>
             <div class="p-5 bg-slate-50 border-t flex justify-end gap-3">
                 <button onclick="closeModal('editDevCommentModal')" class="bg-slate-200 text-slate-600 px-5 py-2 rounded-xl font-bold hover:bg-slate-300 transition text-sm">취소</button>
