@@ -215,6 +215,14 @@
                         </div>
                 </div>
 
+                <!-- 버전 필터 (데스크탑) — 상태 칩 숫자와 아래 필터가 모두 이 버전 기준으로 바뀐다 -->
+                <div class="hidden md:flex items-center gap-3 mb-3">
+                    <label for="versionFilter" class="filter-label">버전</label>
+                    <select id="versionFilter" onchange="onVersionFilterChange()" class="filter-select" style="min-width: 200px;" title="해당 버전의 검수 기간에 작성된 항목만 봅니다">
+                        <option value="all">전체 보기</option>
+                    </select>
+                </div>
+
                 <!-- 상태 필터 토글 버튼 (데스크탑) -->
                 <div class="state-filter-bar" id="stateFilterBar">
                     <button class="state-filter-btn active" data-state="all" onclick="setStateFilter('all')">전체 <span class="state-count" id="scnt-all">0</span></button>
@@ -228,12 +236,6 @@
 
                 <!-- 필터 영역 (데스크탑) -->
                 <div class="desktop-filters">
-                    <div class="filter-item">
-                        <label class="filter-label">버전</label>
-                        <select id="versionFilter" onchange="applyFilters()" class="filter-select" title="해당 버전의 검수 기간에 작성된 항목만 봅니다">
-                            <option value="all">전체 보기</option>
-                        </select>
-                    </div>
                     <div class="filter-item">
                         <label class="filter-label">작성자</label>
                         <select id="authorFilter" onchange="applyFilters()" class="filter-select">

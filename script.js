@@ -1085,21 +1085,60 @@ function renderStatusCounts(counts, total) {
     // 전역 변수에 카운트 저장
     window.statusCounts = counts;
 
-    // 상태 필터 토글 버튼 카운트 업데이트
+    window.statusTotal = total;
+
+    updateStateChipCounts();
+}
+
+// 선택한 버전의 작성 기간에 해당하는 요약 데이터 (전체 보기면 그대로)
+function logsInSelectedVersion() {
+    const version = document.getElementById('versionFilter')?.value || 'all';
+    const range = qaVersionRanges.find(r => r.version === version);
+    if (!range) return globalLogs;
+
+    const from = range.from ? Date.parse(range.from) : -Infinity;
+    const to = range.to ? Date.parse(range.to) : Infinity;
+    return globalLogs.filter(log => {
+        const t = Date.parse(log.created_at);
+        return t >= from && t < to;
+    });
+}
+
+// 상태 필터 칩 숫자: 버전을 고르면 그 버전 안에서의 상태별 개수
+function updateStateChipCounts() {
+    const version = document.getElementById('versionFilter')?.value || 'all';
+    let counts = window.statusCounts || {};
+    let total = window.statusTotal ?? 0;
+
+    if (version !== 'all' && qaVersionRanges.some(r => r.version === version)) {
+        const logs = logsInSelectedVersion();
+        counts = Object.fromEntries(STATUS_KEYS.map(s => [s, 0]));
+        logs.forEach(log => {
+            const s = (log.state || log.status || '').trim();
+            if (counts[s] !== undefined) counts[s]++;
+        });
+        total = logs.length;
+    }
+
+    const chipIds = {
+        'scnt-revision': '수정 필요', 'scnt-fixed': '수정 완료', 'scnt-verified': '수정 확인',
+        'scnt-hold': '보류/패스', 'scnt-server': '서버 수정 요청', 'scnt-server-done': '서버 수정 완료'
+    };
     const scntAll = document.getElementById('scnt-all');
-    const scntRevision = document.getElementById('scnt-revision');
-    const scntFixed = document.getElementById('scnt-fixed');
-    const scntVerified = document.getElementById('scnt-verified');
-    const scntHold = document.getElementById('scnt-hold');
-    const scntServer = document.getElementById('scnt-server');
-    const scntServerDone = document.getElementById('scnt-server-done');
     if (scntAll) scntAll.textContent = total;
-    if (scntRevision) scntRevision.textContent = counts['수정 필요'];
-    if (scntFixed) scntFixed.textContent = counts['수정 완료'];
-    if (scntVerified) scntVerified.textContent = counts['수정 확인'];
-    if (scntHold) scntHold.textContent = counts['보류/패스'];
-    if (scntServer) scntServer.textContent = counts['서버 수정 요청'];
-    if (scntServerDone) scntServerDone.textContent = counts['서버 수정 완료'];
+    Object.entries(chipIds).forEach(([id, state]) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = counts[state] ?? 0;
+    });
+}
+
+// 버전 변경: 상태 칩 숫자와 콘텐츠 목록을 그 버전 기준으로 다시 맞춘 뒤 목록 조회
+function onVersionFilterChange() {
+    const contentFilter = document.getElementById('contentFilter');
+    if (contentFilter) contentFilter.value = 'all';
+    updateStateChipCounts();
+    updateContentDropdown();
+    applyFilters();
 }
 
 function setStateFilter(value) {
@@ -1135,6 +1174,9 @@ function navigateToListWithFilter(state) {
 
     // 검수 목록 페이지로 이동
     showSection('list');
+
+    // 홈 카드 숫자는 전체 버전 기준이므로 버전 필터를 전체로 되돌림
+    document.getElementById('versionFilter').value = 'all';
 
     // 상태 필터 적용 (토글 버튼 + hidden select 동기화)
     setStateFilter(state);
@@ -1326,6 +1368,7 @@ async function fetchQaVersionRanges() {
         mobileVersionFilter.innerHTML = '<option value="all">버전: 전체</option>' + options('버전: ');
         mobileVersionFilter.value = selection;
     }
+    updateStateChipCounts();
 }
 
 function updateAuthorDropdown() {
@@ -1358,11 +1401,12 @@ function updateContentDropdown() {
     const mobileContentFilter = document.getElementById('mobileContentFilter');
     const contents = new Set();
 
-    // 현재 상태 필터에 해당하는 항목만 콘텐츠 목록에 포함
+    // 현재 버전·상태 필터에 해당하는 항목만 콘텐츠 목록에 포함
     const currentState = document.getElementById('stateFilter')?.value || 'all';
+    const versionLogs = logsInSelectedVersion();
     const logsForContent = currentState === 'all'
-        ? globalLogs
-        : globalLogs.filter(log => (log.state || log.status || '').trim() === currentState);
+        ? versionLogs
+        : versionLogs.filter(log => (log.state || log.status || '').trim() === currentState);
 
     logsForContent.forEach(log => {
         if (log.current_scene) {
@@ -1436,6 +1480,8 @@ function syncFilters(type) {
 
     if (type === 'version') {
         document.getElementById('versionFilter').value = document.getElementById('mobileVersionFilter').value;
+        onVersionFilterChange();
+        return;
     } else if (type === 'author' && mobileAuthorFilter) {
         authorFilter.value = mobileAuthorFilter.value;
     } else if (type === 'content' && mobileContentFilter) {
@@ -1453,6 +1499,7 @@ async function applyFilters() {
     currentFilters.version = document.getElementById('versionFilter').value;
     const mobileVersionFilter = document.getElementById('mobileVersionFilter');
     if (mobileVersionFilter) mobileVersionFilter.value = currentFilters.version;
+    updateStateChipCounts();
     currentFilters.author = document.getElementById('authorFilter').value;
     currentFilters.content = document.getElementById('contentFilter').value;
     currentFilters.state = document.getElementById('stateFilter').value;
