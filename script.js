@@ -16,7 +16,8 @@ let currentBundleCode = ''; // 현재 검수 번들 코드 (안드로이드)
 let currentIosBundleCode = ''; // 현재 검수 번들 코드 (iOS)
 let currentAppVersion = ''; // 현재 앱 버전
 let currentServerInfo = 'dev'; // 현재 서버 환경: 'dev' | 'prod'
-let currentQAInfo = null; // 홈에 표시 중인 검수 정보 행 (검수 정보 입력 모달의 수정 대상)
+let currentQAInfo = null; // 홈에 표시 중인 검수 정보 행
+let qaInfoEditTarget = null; // 검수 정보 입력 모달의 수정 대상 행
 let dateSortOrder = 'desc'; // 날짜 정렬 순서: 'asc' (오름차순), 'desc' (내림차순), 'none' (정렬 없음)
 
 // 현재 필터 상태 저장
@@ -628,6 +629,219 @@ async function fetchQAInformation(forceRefresh = false) {
     }
 }
 
+/** 홈 - 검수 일정 히스토리 팝업 (현재 검수 기간이 아닌 회차 포함 전체) **/
+let qaHistoryRows = [];
+let qaHistoryView = 'list'; // 'list' | 'version' | 'calendar'
+let qaHistoryCalMonth = ''; // 달력에 표시 중인 달 'YYYY-MM' (KST)
+
+// ISO 시각 → KST 날짜 키 'YYYY-MM-DD'
+function toKstDateKey(iso) {
+    return new Date(new Date(iso).getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+function qaHistoryStatus(row) {
+    const now = Date.now();
+    if (now < new Date(row.start_at).getTime()) return { label: '예정', cls: 'bg-amber-50 text-amber-700 border border-amber-200' };
+    if (now > new Date(row.end_at).getTime()) return { label: '종료', cls: 'bg-slate-50 text-slate-500 border border-slate-200' };
+    return { label: '진행 중', cls: 'bg-green-50 text-green-700 border border-green-200' };
+}
+
+function openQaHistoryModal() {
+    qaHistoryCalMonth = toKstDateKey(new Date().toISOString()).slice(0, 7);
+    openModal('qaHistoryModal');
+    fetchQaHistory();
+}
+
+async function fetchQaHistory() {
+    const content = document.getElementById('qaHistoryContent');
+    const countEl = document.getElementById('qaHistoryCount');
+    const message = (html) => `<p class="text-center py-10 text-gray-400 text-sm">${html}</p>`;
+
+    if (!qaHistoryRows.length) content.innerHTML = message('<i class="fas fa-spinner fa-spin mr-2"></i>불러오는 중...');
+
+    const { data, error } = await supabaseClient
+        .from('qa_information')
+        .select('id,version,round,start_at,end_at,bundleCode,iosBundleCode,serverInfo,created_at')
+        .order('start_at', { ascending: false });
+
+    if (error) {
+        console.error('검수 일정 히스토리 조회 실패:', error);
+        qaHistoryRows = [];
+        countEl.textContent = '';
+        content.innerHTML = message('히스토리를 불러오지 못했습니다.');
+        return;
+    }
+
+    qaHistoryRows = data;
+    countEl.textContent = `(${data.length}건)`;
+    renderQaHistory();
+}
+
+function setQaHistoryView(view) {
+    qaHistoryView = view;
+    renderQaHistory();
+}
+
+function renderQaHistory() {
+    document.querySelectorAll('[data-qa-history-view]').forEach(btn =>
+        btn.classList.toggle('active', btn.dataset.qaHistoryView === qaHistoryView));
+
+    const content = document.getElementById('qaHistoryContent');
+    if (!qaHistoryRows.length) {
+        content.innerHTML = '<p class="text-center py-10 text-gray-400 text-sm">등록된 검수 일정이 없습니다.</p>';
+        return;
+    }
+
+    if (qaHistoryView === 'calendar') content.innerHTML = renderQaHistoryCalendar();
+    else if (qaHistoryView === 'version') content.innerHTML = renderQaHistoryByVersion();
+    else content.innerHTML = renderQaHistoryTable(qaHistoryRows, true);
+}
+
+function renderQaHistoryTable(rows, showVersion) {
+    const body = rows.map(row => {
+        const status = qaHistoryStatus(row);
+        const server = row.serverInfo === 'prod' ? '운영서버' : row.serverInfo === 'dev' || !row.serverInfo ? '개발서버' : row.serverInfo;
+        const isCurrent = currentQAInfo && currentQAInfo.id === row.id;
+        const id = escapeHtml(row.id);
+
+        return `<tr class="cursor-pointer hover:bg-slate-50 transition ${isCurrent ? 'bg-slate-50 font-bold' : ''}" onclick="editQaHistory('${id}')">
+            <td class="px-3 py-3 text-center"><span class="inline-flex items-center ${status.cls} px-2 py-0.5 rounded-full text-[10px] font-black">${status.label}</span></td>
+            ${showVersion ? `<td class="px-3 py-3 text-center">v${escapeHtml(row.version)}</td>` : ''}
+            <td class="px-3 py-3 text-center">${escapeHtml(row.round)}회차</td>
+            <td class="px-3 py-3 text-center font-mono">${escapeHtml(row.bundleCode ?? '-')}</td>
+            <td class="px-3 py-3 text-center font-mono">${escapeHtml(row.iosBundleCode ?? '-')}</td>
+            <td class="px-3 py-3 text-center">${escapeHtml(server)}</td>
+            <td class="px-3 py-3 text-slate-500">${formatKST(row.start_at)} ~ ${formatKST(row.end_at)}</td>
+            <td class="px-3 py-3 text-center">
+                <button type="button" class="text-slate-400 hover:text-blue-600 transition" title="수정" aria-label="수정"><i class="fas fa-pen"></i></button>
+            </td>
+        </tr>`;
+    }).join('');
+
+    return `<div class="overflow-x-auto">
+        <table class="w-full table-auto text-left border-collapse text-sm whitespace-nowrap">
+            <thead class="bg-slate-50 text-gray-500 text-xs uppercase">
+                <tr>
+                    <th class="px-3 py-3 font-bold border-b text-center">상태</th>
+                    ${showVersion ? '<th class="px-3 py-3 font-bold border-b text-center">버전</th>' : ''}
+                    <th class="px-3 py-3 font-bold border-b text-center">회차</th>
+                    <th class="px-3 py-3 font-bold border-b text-center">AOS 번들</th>
+                    <th class="px-3 py-3 font-bold border-b text-center">iOS 번들</th>
+                    <th class="px-3 py-3 font-bold border-b text-center">서버</th>
+                    <th class="px-3 py-3 font-bold border-b">검수 기간</th>
+                    <th class="px-3 py-3 font-bold border-b text-center">수정</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">${body}</tbody>
+        </table>
+    </div>`;
+}
+
+// 버전별 묶음: 높은 버전이 위로
+function renderQaHistoryByVersion() {
+    const groups = new Map();
+    qaHistoryRows.forEach(row => {
+        const key = row.version || '';
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(row);
+    });
+
+    const compareVersion = (a, b) => {
+        const pa = a.split('.').map(n => parseInt(n, 10) || 0);
+        const pb = b.split('.').map(n => parseInt(n, 10) || 0);
+        for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+            if ((pa[i] || 0) !== (pb[i] || 0)) return (pb[i] || 0) - (pa[i] || 0);
+        }
+        return 0;
+    };
+
+    return [...groups.keys()].sort(compareVersion).map(version => {
+        const rows = groups.get(version);
+        const first = rows.reduce((min, r) => r.start_at < min ? r.start_at : min, rows[0].start_at);
+        const last = rows.reduce((max, r) => r.end_at > max ? r.end_at : max, rows[0].end_at);
+
+        return `<details open class="mb-4 border border-gray-100 rounded-xl overflow-hidden">
+            <summary class="cursor-pointer select-none bg-slate-50 px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span class="text-base font-black text-blue-600">v${escapeHtml(version || '-')}</span>
+                <span class="text-xs font-bold text-slate-500">${rows.length}개 회차</span>
+                <span class="text-xs text-slate-400 ml-auto">${formatKST(first)} ~ ${formatKST(last)}</span>
+            </summary>
+            ${renderQaHistoryTable(rows, false)}
+        </details>`;
+    }).join('');
+}
+
+function shiftQaHistoryMonth(delta) {
+    const [y, m] = qaHistoryCalMonth.split('-').map(Number);
+    qaHistoryCalMonth = delta === 0
+        ? toKstDateKey(new Date().toISOString()).slice(0, 7)
+        : new Date(Date.UTC(y, m - 1 + delta, 1)).toISOString().slice(0, 7);
+    renderQaHistory();
+}
+
+function renderQaHistoryCalendar() {
+    const [y, m] = qaHistoryCalMonth.split('-').map(Number);
+    const firstDow = new Date(Date.UTC(y, m - 1, 1)).getUTCDay();
+    const daysInMonth = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    const todayKey = toKstDateKey(new Date().toISOString());
+
+    // 시작이 빠른 회차가 위로 오도록 정렬
+    const events = qaHistoryRows
+        .map(row => ({ row, start: toKstDateKey(row.start_at), end: toKstDateKey(row.end_at) }))
+        .sort((a, b) => a.row.start_at < b.row.start_at ? -1 : 1);
+
+    const cells = [];
+    for (let i = 0; i < firstDow; i++) cells.push('<div class="min-h-[92px] border-b border-r bg-slate-50"></div>');
+
+    for (let day = 1; day <= daysInMonth; day++) {
+        const key = `${qaHistoryCalMonth}-${String(day).padStart(2, '0')}`;
+        const dow = (firstDow + day - 1) % 7;
+        const isToday = key === todayKey;
+        const dayColor = isToday ? 'text-blue-600 font-black' : dow === 0 ? 'text-red-400' : 'text-slate-500';
+
+        const chips = events.filter(e => e.start <= key && key <= e.end).map(({ row }) => {
+            const status = qaHistoryStatus(row);
+            const label = `v${row.version} ${row.round}회차`;
+            const title = `${label} (${status.label})\n${formatKST(row.start_at)} ~ ${formatKST(row.end_at)}`;
+            return `<button type="button" onclick="editQaHistory('${escapeHtml(row.id)}')" title="${escapeHtml(title)}" class="block w-full text-left truncate ${status.cls} px-1.5 py-0.5 rounded text-[10px] font-bold hover:opacity-70 transition">${escapeHtml(label)}</button>`;
+        }).join('');
+
+        cells.push(`<div class="min-h-[92px] min-w-0 border-b border-r p-1.5 ${isToday ? 'bg-blue-50' : ''}">
+            <p class="text-xs mb-1 ${dayColor}">${day}${isToday ? ' <span class="text-[10px]">오늘</span>' : ''}</p>
+            <div class="space-y-1">${chips}</div>
+        </div>`);
+    }
+
+    while (cells.length % 7 !== 0) cells.push('<div class="min-h-[92px] border-b border-r bg-slate-50"></div>');
+
+    const navBtn = 'bg-white border border-gray-200 text-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-slate-50 transition';
+    const legend = [['예정', 'bg-amber-50 text-amber-700 border border-amber-200'], ['진행 중', 'bg-green-50 text-green-700 border border-green-200'], ['종료', 'bg-slate-50 text-slate-500 border border-slate-200']]
+        .map(([label, cls]) => `<span class="${cls} px-2 py-0.5 rounded-full text-[10px] font-black">${label}</span>`).join('');
+
+    return `<div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div class="flex items-center gap-2">
+                <button type="button" onclick="shiftQaHistoryMonth(-1)" class="${navBtn}" aria-label="이전 달"><i class="fas fa-chevron-left"></i></button>
+                <p class="text-lg font-black text-slate-800 w-28 text-center">${y}년 ${m}월</p>
+                <button type="button" onclick="shiftQaHistoryMonth(1)" class="${navBtn}" aria-label="다음 달"><i class="fas fa-chevron-right"></i></button>
+                <button type="button" onclick="shiftQaHistoryMonth(0)" class="${navBtn}">오늘</button>
+            </div>
+            <div class="flex items-center gap-1.5">${legend}</div>
+        </div>
+        <div class="overflow-x-auto">
+            <div class="min-w-[640px] border-t border-l rounded-lg overflow-hidden">
+                <div class="grid grid-cols-7 bg-slate-50 text-xs font-bold text-gray-500 text-center">
+                    ${['일', '월', '화', '수', '목', '금', '토'].map(d => `<div class="py-2 border-b border-r">${d}</div>`).join('')}
+                </div>
+                <div class="grid grid-cols-7">${cells.join('')}</div>
+            </div>
+        </div>`;
+}
+
+function editQaHistory(id) {
+    const row = qaHistoryRows.find(r => String(r.id) === String(id));
+    if (row) openQaInfoModal(row);
+}
+
 /** 홈 - 검수 정보(버전·회차·기간) 직접 입력 **/
 // ISO 시각 → datetime-local 입력값 (KST)
 function toKstInputValue(iso) {
@@ -640,9 +854,11 @@ function fromKstInputValue(value) {
     return value ? new Date(`${value}:00+09:00`).toISOString() : null;
 }
 
-async function openQaInfoModal() {
-    const isEdit = !!currentQAInfo;
-    let base = currentQAInfo;
+// target: 히스토리 팝업에서 고른 회차. 없으면 홈에 표시 중인 현재 회차를 수정 대상으로 한다
+async function openQaInfoModal(target) {
+    qaInfoEditTarget = target || currentQAInfo;
+    const isEdit = !!qaInfoEditTarget;
+    let base = qaInfoEditTarget;
     if (!base) {
         // 진행 중인 회차가 없으면 가장 최근에 등록한 회차의 버전·번들·서버를 기본값으로 사용
         const { data } = await supabaseClient
@@ -657,14 +873,19 @@ async function openQaInfoModal() {
     document.getElementById('qa-info-bundle').value = base.bundleCode ?? '';
     document.getElementById('qa-info-bundle-ios').value = base.iosBundleCode ?? '';
     document.getElementById('qa-info-server').value = base.serverInfo === 'prod' ? 'prod' : 'dev';
-    document.getElementById('qa-info-round').value = isEdit ? (currentQAInfo.round || '') : '';
-    document.getElementById('qa-info-start').value = toKstInputValue(isEdit ? currentQAInfo.start_at : new Date().toISOString());
-    document.getElementById('qa-info-end').value = isEdit ? toKstInputValue(currentQAInfo.end_at) : '';
+    document.getElementById('qa-info-round').value = isEdit ? (qaInfoEditTarget.round || '') : '';
+    document.getElementById('qa-info-start').value = toKstInputValue(isEdit ? qaInfoEditTarget.start_at : new Date().toISOString());
+    document.getElementById('qa-info-end').value = isEdit ? toKstInputValue(qaInfoEditTarget.end_at) : '';
 
-    document.getElementById('qa-info-update-btn').classList.toggle('hidden', !isEdit);
-    document.getElementById('qa-info-mode-desc').textContent = isEdit
-        ? `현재 진행 중인 ${currentQAInfo.round}회차 정보를 수정하거나, 입력값으로 새 회차를 등록합니다.`
-        : '진행 중인 회차가 없습니다. 새 검수 회차를 등록합니다.';
+    const updateBtn = document.getElementById('qa-info-update-btn');
+    updateBtn.classList.toggle('hidden', !isEdit);
+    updateBtn.textContent = target ? '이 회차 수정' : '현재 회차 수정';
+    document.getElementById('qa-info-insert-btn').classList.toggle('hidden', !!target);
+    document.getElementById('qa-info-mode-desc').textContent = target
+        ? `v${target.version} ${target.round}회차 일정을 수정합니다.`
+        : isEdit
+            ? `현재 진행 중인 ${currentQAInfo.round}회차 정보를 수정하거나, 입력값으로 새 회차를 등록합니다.`
+            : '진행 중인 회차가 없습니다. 새 검수 회차를 등록합니다.';
 
     openModal('qaInfoModal');
 }
@@ -685,14 +906,14 @@ async function submitQaInfo(mode) {
     if (!round) return showToast('검수 회차를 입력해주세요.', 'error');
     if (!startAt || !endAt) return showToast('검수 시작·종료 일시를 입력해주세요.', 'error');
     if (new Date(endAt) <= new Date(startAt)) return showToast('검수 종료는 시작보다 뒤여야 합니다.', 'error');
-    if (mode === 'update' && !currentQAInfo) return showToast('수정할 진행 중인 회차가 없습니다.', 'error');
+    if (mode === 'update' && !qaInfoEditTarget) return showToast('수정할 회차가 없습니다.', 'error');
 
     const payload = { version, bundleCode, iosBundleCode, round, serverInfo, start_at: startAt, end_at: endAt };
     const buttons = ['qa-info-update-btn', 'qa-info-insert-btn'].map(id => document.getElementById(id));
     buttons.forEach(b => b.disabled = true);
 
     const { error } = mode === 'update'
-        ? await supabaseClient.from('qa_information').update(payload).eq('id', currentQAInfo.id)
+        ? await supabaseClient.from('qa_information').update(payload).eq('id', qaInfoEditTarget.id)
         : await supabaseClient.from('qa_information').insert([payload]);
 
     buttons.forEach(b => b.disabled = false);
@@ -705,6 +926,7 @@ async function submitQaInfo(mode) {
     closeModal('qaInfoModal');
     await invalidateQAInfoCache();
     await fetchQAInformation(true);
+    fetchQaHistory();
 
     const now = Date.now();
     const isActive = new Date(startAt).getTime() <= now && now <= new Date(endAt).getTime();

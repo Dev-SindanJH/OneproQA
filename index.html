@@ -76,6 +76,9 @@
                 <div class="flex justify-between items-start mb-3">
                     <h2 class="text-3xl font-bold text-slate-800">Overview</h2>
                     <div class="flex items-center gap-2">
+                        <button onclick="openQaHistoryModal()" class="bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-800 shadow-md transition" title="지난·예정 회차를 포함한 전체 검수 일정을 봅니다">
+                            <i class="fas fa-clock-rotate-left mr-2"></i>검수 일정 히스토리
+                        </button>
                         <button onclick="openQaInfoModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 shadow-md shadow-blue-200 transition" title="검수 버전·회차·기간을 직접 입력합니다">
                             <i class="fas fa-pen mr-2"></i>검수 정보 입력
                         </button>
@@ -653,6 +656,27 @@
                 <button onclick="closeModal('addQaMemberModal')" class="bg-slate-200 text-slate-600 px-4 py-2 rounded-xl font-bold hover:bg-slate-300 transition text-sm">취소</button>
                 <button onclick="submitAddQaMember()" id="qa-member-submit-btn" class="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-blue-700 transition text-sm shadow-md">등록하기</button>
             </div>
+        </div>
+    </div>
+
+    <!-- 검수 일정 히스토리 모달 -->
+    <div id="qaHistoryModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100001]">
+        <div class="bg-white rounded-2xl w-full max-w-5xl overflow-hidden shadow-2xl flex flex-col h-[85vh]">
+            <div class="p-6 border-b bg-slate-50 flex-shrink-0 flex flex-wrap justify-between items-center gap-3">
+                <div>
+                    <h3 class="text-lg font-black text-slate-800"><i class="fas fa-clock-rotate-left mr-2"></i>검수 일정 히스토리 <span id="qaHistoryCount" class="text-sm text-slate-400 font-medium ml-1"></span></h3>
+                    <p class="text-xs text-slate-500 mt-1">회차를 클릭하면 해당 일정을 수정할 수 있습니다.</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="flex flex-wrap gap-1.5">
+                        <button onclick="setQaHistoryView('list')" data-qa-history-view="list" class="md-tab-btn active"><i class="fas fa-list mr-1"></i>목록</button>
+                        <button onclick="setQaHistoryView('version')" data-qa-history-view="version" class="md-tab-btn"><i class="fas fa-layer-group mr-1"></i>버전별</button>
+                        <button onclick="setQaHistoryView('calendar')" data-qa-history-view="calendar" class="md-tab-btn"><i class="fas fa-calendar-days mr-1"></i>달력</button>
+                    </div>
+                    <button onclick="closeModal('qaHistoryModal')" class="text-gray-400 hover:text-red-500 text-2xl transition" aria-label="닫기">&times;</button>
+                </div>
+            </div>
+            <div id="qaHistoryContent" class="flex-1 overflow-auto custom-scrollbar p-6"></div>
         </div>
     </div>
 
