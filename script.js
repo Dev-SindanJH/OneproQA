@@ -784,35 +784,53 @@ function renderQaHistoryCalendar() {
     const firstDow = new Date(Date.UTC(y, m - 1, 1)).getUTCDay();
     const daysInMonth = new Date(Date.UTC(y, m, 0)).getUTCDate();
     const todayKey = toKstDateKey(new Date().toISOString());
+    const dayKey = (day) => `${qaHistoryCalMonth}-${String(day).padStart(2, '0')}`;
 
-    // 시작이 빠른 회차가 위로 오도록 정렬
+    // 이 달에 걸친 회차만, 시작이 빠른 순으로
     const events = qaHistoryRows
         .map(row => ({ row, start: toKstDateKey(row.start_at), end: toKstDateKey(row.end_at) }))
+        .filter(e => e.start <= dayKey(daysInMonth) && e.end >= dayKey(1))
         .sort((a, b) => a.row.start_at < b.row.start_at ? -1 : 1);
 
-    const cells = [];
-    for (let i = 0; i < firstDow; i++) cells.push('<div class="min-h-[92px] border-b border-r bg-slate-50"></div>');
+    // 주 단위로 그려서 한 회차를 여러 날에 걸친 하나의 막대로 잇는다
+    const weeks = [];
+    for (let weekStart = 1 - firstDow; weekStart <= daysInMonth; weekStart += 7) {
+        const from = Math.max(weekStart, 1);
+        const to = Math.min(weekStart + 6, daysInMonth);
+        const fromKey = dayKey(from);
+        const toKey = dayKey(to);
+        const laneEnds = []; // 줄(lane)별로 마지막으로 차지한 열 — 겹치는 회차는 다음 줄로 내린다
 
-    for (let day = 1; day <= daysInMonth; day++) {
-        const key = `${qaHistoryCalMonth}-${String(day).padStart(2, '0')}`;
-        const dow = (firstDow + day - 1) % 7;
-        const isToday = key === todayKey;
-        const dayColor = isToday ? 'text-blue-600 font-black' : dow === 0 ? 'text-red-400' : 'text-slate-500';
+        const bars = events.filter(e => e.start <= toKey && e.end >= fromKey).map(({ row, start, end }) => {
+            const startsHere = start >= fromKey;
+            const endsHere = end <= toKey;
+            const colStart = (startsHere ? Number(start.slice(8)) : from) - weekStart;
+            const colEnd = (endsHere ? Number(end.slice(8)) : to) - weekStart;
+            let lane = laneEnds.findIndex(lastCol => lastCol < colStart);
+            if (lane === -1) lane = laneEnds.length;
+            laneEnds[lane] = colEnd;
 
-        const chips = events.filter(e => e.start <= key && key <= e.end).map(({ row }) => {
             const status = qaHistoryStatus(row);
             const label = `v${row.version} ${row.round}회차`;
             const title = `${label} (${status.label})\n${formatKST(row.start_at)} ~ ${formatKST(row.end_at)}`;
-            return `<button type="button" onclick="editQaHistory('${escapeHtml(row.id)}')" title="${escapeHtml(title)}" class="block w-full text-left truncate ${status.cls} px-1.5 py-0.5 rounded text-[10px] font-bold hover:opacity-70 transition">${escapeHtml(label)}</button>`;
+            // 주가 바뀌어도 이어지는 쪽은 모서리를 각지게 두어 계속됨을 표시
+            const edges = `${startsHere ? 'rounded-l ml-1' : 'border-l-0'} ${endsHere ? 'rounded-r mr-1' : 'border-r-0'}`;
+            return `<button type="button" onclick="editQaHistory('${escapeHtml(row.id)}')" title="${escapeHtml(title)}" style="grid-column: ${colStart + 1} / span ${colEnd - colStart + 1}; grid-row: ${lane + 2};" class="relative z-10 self-center min-w-0 truncate text-left ${status.cls} ${edges} px-1.5 py-0.5 text-[10px] font-bold hover:opacity-70 transition">${escapeHtml(label)}</button>`;
         }).join('');
 
-        cells.push(`<div class="min-h-[92px] min-w-0 border-b border-r p-1.5 ${isToday ? 'bg-blue-50' : ''}">
-            <p class="text-xs mb-1 ${dayColor}">${day}${isToday ? ' <span class="text-[10px]">오늘</span>' : ''}</p>
-            <div class="space-y-1">${chips}</div>
-        </div>`);
-    }
+        let cells = '';
+        for (let i = 0; i < 7; i++) {
+            const day = weekStart + i;
+            const inMonth = day >= 1 && day <= daysInMonth;
+            const isToday = inMonth && dayKey(day) === todayKey;
+            const dayColor = isToday ? 'text-blue-600 font-black' : i === 0 ? 'text-red-400' : 'text-slate-500';
+            cells += `<div class="border-r px-1.5 pt-1 ${!inMonth ? 'bg-slate-50' : isToday ? 'bg-blue-50' : ''}" style="grid-column: ${i + 1}; grid-row: 1 / -1;">
+                ${inMonth ? `<p class="text-xs ${dayColor}">${day}${isToday ? ' <span class="text-[10px]">오늘</span>' : ''}</p>` : ''}
+            </div>`;
+        }
 
-    while (cells.length % 7 !== 0) cells.push('<div class="min-h-[92px] border-b border-r bg-slate-50"></div>');
+        weeks.push(`<div class="grid grid-cols-7 border-b" style="grid-template-rows: 26px repeat(${laneEnds.length}, 24px) minmax(8px, 1fr); min-height: 92px;">${cells}${bars}</div>`);
+    }
 
     const navBtn = 'bg-white border border-gray-200 text-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-slate-50 transition';
     const legend = [['예정', 'bg-amber-50 text-amber-700 border border-amber-200'], ['진행 중', 'bg-green-50 text-green-700 border border-green-200'], ['종료', 'bg-slate-50 text-slate-500 border border-slate-200']]
@@ -832,7 +850,7 @@ function renderQaHistoryCalendar() {
                 <div class="grid grid-cols-7 bg-slate-50 text-xs font-bold text-gray-500 text-center">
                     ${['일', '월', '화', '수', '목', '금', '토'].map(d => `<div class="py-2 border-b border-r">${d}</div>`).join('')}
                 </div>
-                <div class="grid grid-cols-7">${cells.join('')}</div>
+                ${weeks.join('')}
             </div>
         </div>`;
 }
