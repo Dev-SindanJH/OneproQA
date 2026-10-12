@@ -22,11 +22,15 @@ let dateSortOrder = 'desc'; // 날짜 정렬 순서: 'asc' (오름차순), 'desc
 
 // 현재 필터 상태 저장
 let currentFilters = {
+    version: 'all',
     author: 'all',
     content: 'all',
     state: 'all',
     search: ''
 };
+
+// 버전별 작성 기간 [{ version, from, to }] — qa_logs 에 버전 컬럼이 없어 작성일로 버전을 구분한다
+let qaVersionRanges = [];
 
 // Choices.js 인스턴스 저장
 let contentFilterChoices = null;
@@ -65,7 +69,7 @@ async function refreshAllData() {
 /**
  * 필터 조건을 Supabase 쿼리에 적용하는 헬퍼 함수
  * @param {Object} query - Supabase 쿼리 빌더
- * @param {Object} filters - 필터 조건 { author, content, state, search }
+ * @param {Object} filters - 필터 조건 { version, author, content, state, search }
  * @returns {Object} 필터가 적용된 쿼리
  */
 function applyFiltersToQuery(query, filters) {
@@ -75,6 +79,15 @@ function applyFiltersToQuery(query, filters) {
     // 상태 필터
     if (filters.state && filters.state !== 'all') {
         query = query.eq('state', filters.state);
+    }
+
+    // 버전 필터 (해당 버전의 검수 기간에 작성된 항목)
+    if (filters.version && filters.version !== 'all') {
+        const range = qaVersionRanges.find(r => r.version === filters.version);
+        if (range) {
+            if (range.from) query = query.gte('created_at', range.from);
+            if (range.to) query = query.lt('created_at', range.to);
+        }
     }
 
     // 작성자 필터
@@ -945,6 +958,7 @@ async function submitQaInfo(mode) {
     await invalidateQAInfoCache();
     await fetchQAInformation(true);
     fetchQaHistory();
+    fetchQaVersionRanges();
 
     const now = Date.now();
     const isActive = new Date(startAt).getTime() <= now && now <= new Date(endAt).getTime();
@@ -1274,6 +1288,46 @@ async function fetchSummaryData(forceRefresh = false) {
     updateAuthorDropdown();
 }
 
+/**
+ * 검수 일정(qa_information)으로 버전별 작성 기간을 만들고 버전 드롭다운을 채운다.
+ * 한 버전의 기간은 그 버전의 첫 회차 시작부터 다음 버전의 첫 회차 시작 전까지이며,
+ * 가장 오래된 버전은 그 이전 전체를, 최신 버전은 이후 전체를 포함한다.
+ */
+async function fetchQaVersionRanges() {
+    const { data, error } = await supabaseClient
+        .from('qa_information')
+        .select('version,start_at')
+        .order('start_at', { ascending: true });
+
+    if (error) {
+        console.error('버전 목록 조회 실패:', error);
+        return;
+    }
+
+    const starts = [];
+    data.forEach(row => {
+        if (row.version && !starts.some(s => s.version === row.version)) starts.push({ version: row.version, from: row.start_at });
+    });
+    qaVersionRanges = starts.map((s, i) => ({
+        version: s.version,
+        from: i === 0 ? null : s.from,
+        to: i === starts.length - 1 ? null : starts[i + 1].from
+    }));
+
+    const versionFilter = document.getElementById('versionFilter');
+    const mobileVersionFilter = document.getElementById('mobileVersionFilter');
+    const versions = qaVersionRanges.map(r => r.version).reverse(); // 최신 버전이 위로
+    const selection = versions.includes(versionFilter.value) ? versionFilter.value : 'all';
+    const options = (prefix) => versions.map(v => `<option value="${escapeHtml(v)}">${prefix}v${escapeHtml(v)}</option>`).join('');
+
+    versionFilter.innerHTML = '<option value="all">전체 보기</option>' + options('');
+    versionFilter.value = selection;
+    if (mobileVersionFilter) {
+        mobileVersionFilter.innerHTML = '<option value="all">버전: 전체</option>' + options('버전: ');
+        mobileVersionFilter.value = selection;
+    }
+}
+
 function updateAuthorDropdown() {
     const authorFilter = document.getElementById('authorFilter');
     const mobileAuthorFilter = document.getElementById('mobileAuthorFilter');
@@ -1380,7 +1434,9 @@ function syncFilters(type) {
     const stateFilter = document.getElementById('stateFilter');
     const mobileStateFilter = document.getElementById('mobileStateFilter');
 
-    if (type === 'author' && mobileAuthorFilter) {
+    if (type === 'version') {
+        document.getElementById('versionFilter').value = document.getElementById('mobileVersionFilter').value;
+    } else if (type === 'author' && mobileAuthorFilter) {
         authorFilter.value = mobileAuthorFilter.value;
     } else if (type === 'content' && mobileContentFilter) {
         contentFilter.value = mobileContentFilter.value;
@@ -1394,6 +1450,9 @@ function syncFilters(type) {
 
 async function applyFilters() {
     // 현재 필터 상태 업데이트
+    currentFilters.version = document.getElementById('versionFilter').value;
+    const mobileVersionFilter = document.getElementById('mobileVersionFilter');
+    if (mobileVersionFilter) mobileVersionFilter.value = currentFilters.version;
     currentFilters.author = document.getElementById('authorFilter').value;
     currentFilters.content = document.getElementById('contentFilter').value;
     currentFilters.state = document.getElementById('stateFilter').value;
@@ -1497,6 +1556,7 @@ function renderTable() {
         const authorName = log.user_name || '알 수 없음';
         const currentState = (log.state || log.status || '').trim();
         const devComment = log.developer_comment || '<span class="text-gray-300 italic">코멘트 없음</span>';
+        const canEditComment = currentState === '수정 완료' || currentState === '보류/패스';
 
         let imageActionHtml = log.image_url 
             ? `<button onclick="openImageViewerModal('${log.id}')" class="text-blue-700 hover:text-blue-900 text-[10px] font-black border border-blue-200 px-2.5 py-1 rounded-md bg-blue-50/50 shadow-sm transition"><i class="fas fa-image mr-1"></i>이미지 보기</button>`
@@ -1579,7 +1639,7 @@ function renderTable() {
                 ${stageBadgeHtml}
             </td>
             <td class="px-4 py-4 text-center border-b border-gray-100">${imageActionHtml}</td>
-            <td class="px-4 py-4 text-gray-600 border-b border-gray-100 ${currentState === '수정 완료' ? 'cursor-pointer hover:bg-blue-50/30' : ''}" ${currentState === '수정 완료' ? `onclick="openDevCommentEditModal('${log.id}')" title="클릭하여 코멘트 수정"` : ''}>
+            <td class="px-4 py-4 text-gray-600 border-b border-gray-100 ${canEditComment ? 'cursor-pointer hover:bg-blue-50/30' : ''}" ${canEditComment ? `onclick="openDevCommentEditModal('${log.id}')" title="클릭하여 코멘트 수정"` : ''}>
                 <div class="tooltip-container">
                     <div class="line-clamp-3 w-full text-xs leading-relaxed">${log.developer_comment || '<span class="text-gray-300 italic">코멘트 없음</span>'}</div>
                     <span class="tooltip-text-left">${log.developer_comment || '코멘트 없음'}</span>
@@ -1637,7 +1697,7 @@ function renderTable() {
                         <span class="mobile-card-meta-item" title="작성: ${formatKST(log.created_at)}"><i class="fas fa-calendar-alt"></i> ${formatRelativeTime(log.created_at)}</span>
                         ${log.updated_at ? `<span class="mobile-card-meta-item text-blue-500" title="업데이트: ${formatKST(log.updated_at)}"><i class="fas fa-sync-alt"></i> ${formatRelativeTime(log.updated_at)}</span>` : ''}
                     </div>
-                    ${log.developer_comment ? `<div class="mobile-card-comment ${currentState === '수정 완료' ? 'cursor-pointer hover:bg-blue-50/30 active:bg-blue-100/30 transition' : ''}" ${currentState === '수정 완료' ? `onclick="openDevCommentEditModal('${log.id}')"` : ''}><div class="mobile-card-comment-label">${currentState === '수정 완료' ? '<i class="fas fa-edit mr-1 text-blue-500"></i>' : ''}개발자 코멘트</div>${log.developer_comment}${getFixVerifyBadge(log)}</div>` : ''}
+                    ${log.developer_comment ? `<div class="mobile-card-comment ${canEditComment ? 'cursor-pointer hover:bg-blue-50/30 active:bg-blue-100/30 transition' : ''}" ${canEditComment ? `onclick="openDevCommentEditModal('${log.id}')"` : ''}><div class="mobile-card-comment-label">${canEditComment ?'<i class="fas fa-edit mr-1 text-blue-500"></i>' : ''}개발자 코멘트</div>${log.developer_comment}${getFixVerifyBadge(log)}</div>` : ''}
                     <div class="mobile-card-actions">
                         ${mobileActionButtons}
                         ${mobileImageBtn}
@@ -2884,6 +2944,9 @@ async function openDevCommentEditModal(logId) {
     document.getElementById('edit-dev-comment-text').value = log.developer_comment || '';
     document.getElementById('edit-fixed-bundle-android').value = log.fixed_bundle_android ?? '';
     document.getElementById('edit-fixed-bundle-ios').value = log.fixed_bundle_ios ?? '';
+    // 수정 반영 번들은 수정 완료 항목에만 해당하므로 그 외(보류/패스)에는 숨김
+    const isFixed = (log.state || log.status || '').trim() === '수정 완료';
+    document.getElementById('edit-fixed-bundle-section').classList.toggle('hidden', !isFixed);
     openModal('editDevCommentModal');
 }
 
@@ -2892,20 +2955,22 @@ async function submitDevCommentEdit() {
     const comment = document.getElementById('edit-dev-comment-text').value.trim();
     if (!comment) return alert('코멘트를 입력해주세요.');
 
-    const fixedAndroid = parseBundleInput('edit-fixed-bundle-android');
-    const fixedIos = parseBundleInput('edit-fixed-bundle-ios');
-    if (fixedAndroid === undefined || fixedIos === undefined) return showToast('수정 반영 번들은 0 이상의 정수로 입력해주세요.', 'error');
+    const updates = { developer_comment: comment, updated_at: new Date().toISOString() };
+
+    // 번들 영역이 숨겨진 항목(보류/패스)은 번들 값을 건드리지 않는다
+    if (!document.getElementById('edit-fixed-bundle-section').classList.contains('hidden')) {
+        const fixedAndroid = parseBundleInput('edit-fixed-bundle-android');
+        const fixedIos = parseBundleInput('edit-fixed-bundle-ios');
+        if (fixedAndroid === undefined || fixedIos === undefined) return showToast('수정 반영 번들은 0 이상의 정수로 입력해주세요.', 'error');
+        updates.fixed_bundle_android = fixedAndroid;
+        updates.fixed_bundle_ios = fixedIos;
+    }
 
     const btn = document.getElementById('edit-dev-comment-submit-btn');
     btn.innerText = '저장중...';
     btn.disabled = true;
 
-    const { error } = await supabaseClient.from('qa_logs').update({ 
-        developer_comment: comment,
-        fixed_bundle_android: fixedAndroid,
-        fixed_bundle_ios: fixedIos,
-        updated_at: new Date().toISOString()
-    }).eq('id', id);
+    const { error } = await supabaseClient.from('qa_logs').update(updates).eq('id', id);
 
     btn.innerText = '수정 완료';
     btn.disabled = false;
@@ -3136,6 +3201,7 @@ window.onload = async () => {
 
     showSection('home'); 
     await fetchQAInformation();
+    fetchQaVersionRanges();
 
     // 첫 로드 시 Summary 데이터는 강제로 새로고침 (1000개 제한 문제 방지)
     // URL에 ?refresh 파라미터가 있거나, 로컬스토리지에 마지막 로드 시간이 1시간 이상 지났으면 강제 새로고침

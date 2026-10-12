@@ -229,6 +229,12 @@
                 <!-- 필터 영역 (데스크탑) -->
                 <div class="desktop-filters">
                     <div class="filter-item">
+                        <label class="filter-label">버전</label>
+                        <select id="versionFilter" onchange="applyFilters()" class="filter-select" title="해당 버전의 검수 기간에 작성된 항목만 봅니다">
+                            <option value="all">전체 보기</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
                         <label class="filter-label">작성자</label>
                         <select id="authorFilter" onchange="applyFilters()" class="filter-select">
                             <option value="all">전체 보기</option>
@@ -256,6 +262,9 @@
                 <div class="bg-white rounded-xl shadow-md border border-gray-200 relative z-10">
                     <!-- 모바일 필터 -->
                     <div class="mobile-filters">
+                        <select id="mobileVersionFilter" onchange="syncFilters('version')" class="mobile-filter-select">
+                            <option value="all">버전: 전체</option>
+                        </select>
                         <select id="mobileAuthorFilter" onchange="syncFilters('author')" class="mobile-filter-select">
                             <option value="all">작성자: 전체</option>
                         </select>
@@ -1075,18 +1084,20 @@
                 <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest">코멘트 수정</label>
                 <textarea id="edit-dev-comment-text" class="w-full h-32 bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none leading-relaxed" placeholder="개발자 코멘트를 입력하세요."></textarea>
                 <input type="hidden" id="edit-dev-comment-log-id">
-                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest pt-2">수정 반영 번들</label>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label for="edit-fixed-bundle-android" class="text-[11px] font-bold text-slate-500 block mb-1">안드로이드</label>
-                        <input type="number" id="edit-fixed-bundle-android" min="0" step="1" placeholder="예: 789" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                <div id="edit-fixed-bundle-section" class="space-y-3">
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest pt-2">수정 반영 번들</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label for="edit-fixed-bundle-android" class="text-[11px] font-bold text-slate-500 block mb-1">안드로이드</label>
+                            <input type="number" id="edit-fixed-bundle-android" min="0" step="1" placeholder="예: 789" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                        </div>
+                        <div>
+                            <label for="edit-fixed-bundle-ios" class="text-[11px] font-bold text-slate-500 block mb-1">iOS</label>
+                            <input type="number" id="edit-fixed-bundle-ios" min="0" step="1" placeholder="예: 263" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                        </div>
                     </div>
-                    <div>
-                        <label for="edit-fixed-bundle-ios" class="text-[11px] font-bold text-slate-500 block mb-1">iOS</label>
-                        <input type="number" id="edit-fixed-bundle-ios" min="0" step="1" placeholder="예: 263" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
-                    </div>
+                    <p class="text-[11px] text-slate-400 mt-1.5">수정 사항이 처음 포함되는 번들 번호입니다. 해당 없는 플랫폼은 비워두세요.</p>
                 </div>
-                <p class="text-[11px] text-slate-400 mt-1.5">수정 사항이 처음 포함되는 번들 번호입니다. 해당 없는 플랫폼은 비워두세요.</p>
             </div>
             <div class="p-5 bg-slate-50 border-t flex justify-end gap-3">
                 <button onclick="closeModal('editDevCommentModal')" class="bg-slate-200 text-slate-600 px-5 py-2 rounded-xl font-bold hover:bg-slate-300 transition text-sm">취소</button>
