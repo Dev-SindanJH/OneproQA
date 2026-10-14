@@ -16,6 +16,7 @@
     <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="theme-glass.css">
+    <link rel="stylesheet" href="stage-audit.css">
 </head>
 <body class="bg-gray-50 font-sans text-gray-900">
     <div class="app-backdrop" aria-hidden="true"></div>
@@ -45,6 +46,10 @@
                 <button onclick="showSection('list')" id="nav-list" class="nav-item" title="검수 목록">
                     <i class="fas fa-list-check nav-icon" aria-hidden="true"></i>
                     <span class="nav-label">검수 목록</span>
+                </button>
+                <button onclick="showSection('stageaudit')" id="nav-stageaudit" class="nav-item" title="[QAI] 스테이지 검수">
+                    <i class="fas fa-microscope nav-icon" aria-hidden="true"></i>
+                    <span class="nav-label">[QAI] 스테이지 검수</span>
                 </button>
                 <button onclick="showSection('masterdata')" id="nav-masterdata" class="nav-item" title="마스터 데이터">
                     <i class="fas fa-database nav-icon" aria-hidden="true"></i>
@@ -627,6 +632,96 @@
                     </div>
                 </div>
             </section>
+
+            <!-- [QAI] 스테이지 검수: tools/stage_audit/stage_audit.py 가 올린 정적 분석 결과 -->
+            <section id="stageaudit" class="section">
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold mb-1 text-slate-800">[QAI] 스테이지 검수</h2>
+                        <p class="text-sm text-gray-500">QAI가 스테이지 코드·프리팹을 정적 분석해 찾은 의심 지점입니다. 실제 문제인지는 판정과 실기 확인으로 가립니다.</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <select id="sa-run-select" onchange="onStageAuditRunChange()" class="filter-select" style="min-width: 240px;" title="검수 실행 회차"></select>
+                        <button onclick="loadStageAudit(true)" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-emerald-700 shadow-md transition">
+                            <i class="fas fa-sync-alt mr-2"></i>새로고침
+                        </button>
+                    </div>
+                </div>
+
+                <div id="sa-loading" class="bg-white rounded-xl border border-gray-100 shadow-sm p-16 text-center text-gray-400 hidden">
+                    <i class="fas fa-spinner fa-spin text-2xl mb-3 block"></i>검수 결과를 불러오는 중...
+                </div>
+                <div id="sa-empty" class="bg-white rounded-xl border border-gray-100 shadow-sm p-16 text-center text-gray-500 hidden"></div>
+
+                <div id="sa-content" class="hidden">
+                    <div id="sa-run-bar" class="bg-white rounded-xl border border-gray-100 shadow-sm px-5 py-3 mb-4 flex flex-wrap gap-x-5 gap-y-1 items-center text-xs text-slate-500"></div>
+
+                    <div id="sa-summary" class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-5"></div>
+
+                    <div class="flex flex-wrap gap-1.5 mb-3" id="sa-cat-tabs"></div>
+                    <div class="flex flex-wrap gap-1.5 mb-4" id="sa-rule-chips"></div>
+
+                    <div class="flex flex-wrap items-end gap-3 mb-4">
+                        <div class="filter-item">
+                            <label class="filter-label" for="sa-f-level">레벨</label>
+                            <select id="sa-f-level" onchange="renderStageAudit(true)" class="filter-select"></select>
+                        </div>
+                        <div class="filter-item">
+                            <label class="filter-label" for="sa-f-sev">심각도</label>
+                            <select id="sa-f-sev" onchange="renderStageAudit(true)" class="filter-select">
+                                <option value="all">전체</option>
+                                <option value="high">높음</option>
+                                <option value="medium">중간</option>
+                                <option value="low">낮음</option>
+                            </select>
+                        </div>
+                        <div class="filter-item">
+                            <label class="filter-label" for="sa-f-ai">QAI 판정</label>
+                            <select id="sa-f-ai" onchange="renderStageAudit(true)" class="filter-select">
+                                <option value="all">전체</option>
+                                <option value="미판정">미판정</option>
+                                <option value="문제 있음">문제 있음</option>
+                                <option value="의심">의심</option>
+                                <option value="문제 없음">문제 없음</option>
+                            </select>
+                        </div>
+                        <div class="filter-item">
+                            <label class="filter-label" for="sa-f-qa">QA 확인</label>
+                            <select id="sa-f-qa" onchange="renderStageAudit(true)" class="filter-select">
+                                <option value="all">전체</option>
+                                <option value="미확인">미확인</option>
+                                <option value="재현됨">재현됨</option>
+                                <option value="재현 안 됨">재현 안 됨</option>
+                                <option value="수정 완료">수정 완료</option>
+                                <option value="보류">보류</option>
+                            </select>
+                        </div>
+                        <label class="flex items-center gap-2 text-sm text-gray-500 pb-2 cursor-pointer select-none">
+                            <input type="checkbox" id="sa-f-unused" onchange="renderStageAudit(true)">
+                            미사용 스테이지·공통 코드 포함
+                        </label>
+                        <div class="relative flex-1 min-w-[220px]">
+                            <input type="text" id="sa-search" placeholder="스테이지 ID·코드·프리팹·파일 검색..." oninput="renderStageAudit(true)"
+                                   class="w-full bg-white border border-gray-300 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
+                            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        </div>
+                        <div class="flex items-center bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+                            <button onclick="setStageAuditView('stage')" id="sa-view-stage" class="md-lang-btn active px-3 py-2 text-sm font-bold transition"><i class="fas fa-layer-group mr-1"></i>스테이지별</button>
+                            <button onclick="setStageAuditView('finding')" id="sa-view-finding" class="md-lang-btn px-3 py-2 text-sm font-bold transition"><i class="fas fa-list mr-1"></i>항목별</button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-sm" id="sa-table">
+                                <thead id="sa-thead" class="bg-gray-50 text-xs text-gray-500"></thead>
+                                <tbody id="sa-tbody" class="divide-y divide-gray-100"></tbody>
+                            </table>
+                        </div>
+                        <div id="sa-pagination" class="flex justify-center items-center gap-1 p-4 bg-white border-t border-gray-100"></div>
+                    </div>
+                </div>
+            </section>
         </main>
     </div>
 
@@ -1180,7 +1275,66 @@
 
     <div id="toast-container"></div>
 
+    <!-- [QAI] 스테이지 검수 상세 모달 -->
+    <div id="saDetailModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" style="z-index: 100001;" onclick="if (event.target === this) closeModal('saDetailModal')">
+        <div class="bg-white rounded-2xl w-full max-w-5xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="p-5 border-b flex items-start justify-between gap-4 flex-shrink-0">
+                <div class="min-w-0">
+                    <div id="sa-d-badges" class="flex flex-wrap gap-1.5 mb-2"></div>
+                    <h3 id="sa-d-title" class="text-lg font-black text-slate-800"></h3>
+                    <p id="sa-d-stage" class="text-xs text-gray-500 mt-1"></p>
+                </div>
+                <button onclick="closeModal('saDetailModal')" class="text-gray-400 hover:text-gray-600 p-2" aria-label="닫기"><i class="fas fa-times text-lg"></i></button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-5 space-y-5">
+                <div id="sa-d-siblings" class="flex flex-wrap gap-1.5"></div>
+                <div>
+                    <div class="sa-d-label">무엇이 문제인가</div>
+                    <p id="sa-d-desc" class="text-sm text-slate-800 leading-relaxed"></p>
+                </div>
+                <div>
+                    <div class="sa-d-label">QA 확인 방법</div>
+                    <p id="sa-d-guide" class="text-sm text-slate-800 leading-relaxed"></p>
+                </div>
+                <div id="sa-d-ai-wrap">
+                    <div class="sa-d-label">QAI 판정</div>
+                    <div id="sa-d-ai" class="text-sm text-slate-800"></div>
+                </div>
+                <div>
+                    <div class="sa-d-label">코드 위치 <span id="sa-d-loc-count" class="font-normal"></span></div>
+                    <div id="sa-d-locations" class="sa-locations"></div>
+                </div>
+                <div class="border-t border-gray-100 pt-4">
+                    <div class="sa-d-label">QA 확인 기록</div>
+                    <div class="flex flex-wrap gap-3 items-end mb-3">
+                        <div class="filter-item">
+                            <label class="filter-label" for="sa-d-qa-status">상태</label>
+                            <select id="sa-d-qa-status" class="filter-select">
+                                <option value="미확인">미확인</option>
+                                <option value="재현됨">재현됨</option>
+                                <option value="재현 안 됨">재현 안 됨</option>
+                                <option value="수정 완료">수정 완료</option>
+                                <option value="보류">보류</option>
+                            </select>
+                        </div>
+                        <div class="filter-item">
+                            <label class="filter-label" for="sa-d-qa-by">확인자</label>
+                            <select id="sa-d-qa-by" class="filter-select"></select>
+                        </div>
+                        <span id="sa-d-qa-meta" class="text-xs text-gray-500 pb-2"></span>
+                    </div>
+                    <textarea id="sa-d-qa-note" rows="3" placeholder="재현 조건, 배속·문제 수 설정, 현상 등을 적어주세요." class="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"></textarea>
+                </div>
+            </div>
+            <div class="p-4 border-t flex justify-end gap-2 flex-shrink-0">
+                <button onclick="closeModal('saDetailModal')" class="px-4 py-2 rounded-lg text-sm font-bold text-gray-500 hover:bg-gray-50 transition">닫기</button>
+                <button id="sa-d-save" onclick="saveStageAuditQa()" class="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 shadow-md transition"><i class="fas fa-check mr-2"></i>저장</button>
+            </div>
+        </div>
+    </div>
+
     <script src="cache-manager.js"></script>
     <script src="script.js"></script>
+    <script src="stage-audit.js"></script>
 </body>
 </html>

@@ -366,6 +366,11 @@ function showSection(sectionId) {
         _rkStopCountdown();
     }
 
+    // [QAI] 스테이지 검수 탭 첫 진입 시 자동 로드 (stage-audit.js)
+    if (sectionId === 'stageaudit' && typeof loadStageAudit === 'function') {
+        loadStageAudit(false);
+    }
+
     // 모바일에서 섹션 전환 시 사이드바 자동 닫기
     if (window.innerWidth < 768) {
         const sidebar = document.getElementById('sidebar');

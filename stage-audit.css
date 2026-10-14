@@ -1,0 +1,79 @@
+/* =====================================================================
+ * [QAI] 스테이지 검수 탭 (stage-audit.js)
+ * 라이트 기본값 + html[data-theme="dark"] 덮어쓰기 — theme-glass.css 규칙을 따른다
+ * ===================================================================== */
+
+/* 심각도 배지 */
+.sa-sev { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 800; white-space: nowrap; border: 1px solid transparent; }
+.sa-sev-high   { background: #fef2f2; color: #b91c1c; border-color: #fca5a5; }
+.sa-sev-medium { background: #fff7ed; color: #c2410c; border-color: #fdba74; }
+.sa-sev-low    { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
+html[data-theme="dark"] .sa-sev-high   { background: rgba(239,68,68,.16);  color: #fca5a5; border-color: rgba(239,68,68,.5); }
+html[data-theme="dark"] .sa-sev-medium { background: rgba(249,115,22,.16); color: #fdba74; border-color: rgba(249,115,22,.5); }
+html[data-theme="dark"] .sa-sev-low    { background: rgba(148,163,184,.14); color: #cbd5e1; border-color: rgba(148,163,184,.4); }
+
+.sa-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+.sa-dot-high { background: #ef4444; }
+.sa-dot-medium { background: #f97316; }
+.sa-dot-low { background: #94a3b8; }
+
+/* 분류·규칙 코드 태그 */
+.sa-cat { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; background: #f1f5f9; color: #475569; }
+html[data-theme="dark"] .sa-cat { background: rgba(255,255,255,.07); color: #AEB6C6; }
+
+/* 규칙 필터 칩 */
+.sa-rule-chip { display: inline-flex; align-items: center; gap: 2px; padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 700;
+    border: 1px solid #e2e8f0; background: #fff; color: #475569; transition: background .15s, border-color .15s; white-space: nowrap; }
+.sa-rule-chip:hover { border-color: #94a3b8; }
+.sa-rule-chip.active { background: #1e293b; border-color: #1e293b; color: #fff; }
+.sa-rule-count { margin-left: 6px; font-size: 11px; opacity: .7; }
+html[data-theme="dark"] .sa-rule-chip { background: var(--glass); border-color: var(--line); color: #AEB6C6; }
+html[data-theme="dark"] .sa-rule-chip:hover { border-color: var(--line-strong); }
+html[data-theme="dark"] .sa-rule-chip.active { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+
+/* 스테이지별 보기의 항목 칩 */
+.sa-hit-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 8px; font-size: 12px; font-weight: 700;
+    border: 1px solid; cursor: pointer; transition: filter .15s; white-space: nowrap; }
+.sa-hit-chip:hover { filter: brightness(.96); }
+.sa-hit-chip.current { outline: 2px solid #2743F2; outline-offset: 1px; }
+.sa-hit-high   { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+.sa-hit-medium { background: #fff7ed; color: #9a3412; border-color: #fed7aa; }
+.sa-hit-low    { background: #f8fafc; color: #475569; border-color: #e2e8f0; }
+html[data-theme="dark"] .sa-hit-high   { background: rgba(239,68,68,.12);  color: #fca5a5; border-color: rgba(239,68,68,.35); }
+html[data-theme="dark"] .sa-hit-medium { background: rgba(249,115,22,.12); color: #fdba74; border-color: rgba(249,115,22,.35); }
+html[data-theme="dark"] .sa-hit-low    { background: rgba(255,255,255,.04); color: #AEB6C6; border-color: var(--line); }
+html[data-theme="dark"] .sa-hit-chip:hover { filter: brightness(1.2); }
+html[data-theme="dark"] .sa-hit-chip.current { outline-color: var(--accent); }
+.sa-hit-n { font-size: 10px; font-weight: 800; padding: 0 5px; border-radius: 999px; background: rgba(0,0,0,.07); }
+html[data-theme="dark"] .sa-hit-n { background: rgba(255,255,255,.1); }
+.sa-hit-ai { font-size: 10px; font-weight: 800; padding: 0 5px; border-radius: 4px; background: #e2e8f0; color: #334155; }
+.sa-hit-ai[data-v="문제 있음"] { background: #b91c1c; color: #fff; }
+.sa-hit-ai[data-v="문제 없음"] { background: #15803d; color: #fff; }
+
+/* 판정·QA 상태 배지 */
+.sa-status { display: inline-flex; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 800; white-space: nowrap; background: #f1f5f9; color: #64748b; }
+.sa-status[data-v="문제 있음"], .sa-status[data-v="재현됨"]   { background: #fef2f2; color: #b91c1c; }
+.sa-status[data-v="의심"]                                    { background: #fff7ed; color: #c2410c; }
+.sa-status[data-v="문제 없음"], .sa-status[data-v="재현 안 됨"] { background: #f0fdf4; color: #15803d; }
+.sa-status[data-v="수정 완료"]                                { background: #eff6ff; color: #1d4ed8; }
+html[data-theme="dark"] .sa-status { background: rgba(255,255,255,.07); color: #9AA3B5; }
+html[data-theme="dark"] .sa-status[data-v="문제 있음"], html[data-theme="dark"] .sa-status[data-v="재현됨"] { background: rgba(239,68,68,.16); color: #fca5a5; }
+html[data-theme="dark"] .sa-status[data-v="의심"] { background: rgba(249,115,22,.16); color: #fdba74; }
+html[data-theme="dark"] .sa-status[data-v="문제 없음"], html[data-theme="dark"] .sa-status[data-v="재현 안 됨"] { background: rgba(34,197,94,.16); color: #86efac; }
+html[data-theme="dark"] .sa-status[data-v="수정 완료"] { background: rgba(59,130,246,.16); color: #93c5fd; }
+
+/* 상세 모달 */
+.sa-d-label { font-size: 11px; font-weight: 900; color: #94a3b8; margin-bottom: 6px; letter-spacing: .02em; }
+html[data-theme="dark"] .sa-d-label { color: #8A93A6; }
+.sa-locations { display: flex; flex-direction: column; gap: 8px; }
+.sa-loc { border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
+.sa-loc-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 10px; font-size: 12px; color: #475569; background: #f8fafc; }
+.sa-loc-head .font-mono { overflow-wrap: anywhere; }
+.sa-loc-code { margin: 0; padding: 8px 10px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 1.5;
+    white-space: pre-wrap; overflow-wrap: anywhere; color: #0f172a; background: #fff; }
+.sa-copy { color: #94a3b8; padding: 2px 4px; flex-shrink: 0; }
+.sa-copy:hover { color: #2743F2; }
+html[data-theme="dark"] .sa-loc { border-color: var(--line); }
+html[data-theme="dark"] .sa-loc-head { background: rgba(255,255,255,.04); color: #AEB6C6; }
+html[data-theme="dark"] .sa-loc-code { background: rgba(0,0,0,.25); color: #E8ECF4; }
+html[data-theme="dark"] .sa-copy:hover { color: var(--accent); }

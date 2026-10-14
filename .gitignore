@@ -51,3 +51,5 @@ yarn-error.log*
 [Oo]bj/
 *.user
 *.suo
+# QAI 스테이지 검수 스캐너 출력
+tools/stage_audit/out/
