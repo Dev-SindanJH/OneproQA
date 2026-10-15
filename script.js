@@ -1061,6 +1061,9 @@ function updateQAInformationUI(qaInfo) {
         serverEl.className = 'text-lg font-black text-slate-700';
         appDownloadBtn.href = '#';
     }
+
+    // 검수 버전이 바뀌면 줄다리기 기준 기간도 바뀜
+    if (window.updateTugOfWar) window.updateTugOfWar();
 }
 
 const STATUS_KEYS = ['수정 필요', '수정 완료', '수정 확인', '보류/패스', '서버 수정 요청', '서버 수정 완료'];
@@ -1167,6 +1170,9 @@ function updateStateChipCounts() {
         const el = document.getElementById(id);
         if (el) el.textContent = counts[state] ?? 0;
     });
+
+    // 줄다리기는 버전 필터와 무관하게 현재 검수 버전 기준 (tug-of-war.js)
+    if (window.updateTugOfWar) window.updateTugOfWar();
 }
 
 // 버전 변경: 상태 칩 숫자와 콘텐츠 목록을 그 버전 기준으로 다시 맞춘 뒤 목록 조회

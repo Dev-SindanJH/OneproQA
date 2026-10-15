@@ -1,0 +1,170 @@
+/* =====================================================================
+ * 검수 목록 줄다리기 (tug-of-war.js)
+ * 토끼(왼쪽, 재검수) vs 거북이(오른쪽, 업데이트 배포)
+ * 라이트 기본값 + html[data-theme="dark"] 덮어쓰기 — theme-glass.css 규칙을 따른다
+ * ===================================================================== */
+
+.tug-card {
+    --team-w: 340px;
+    --goal-w: 84px;
+    --p: 0;
+    position: relative;
+    margin-bottom: 14px;
+    padding: 12px 16px 10px;
+    border-radius: 18px;
+    border: 1px solid var(--glass-line, #e2e8f0);
+    background: var(--glass, #fff);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    backdrop-filter: blur(18px) saturate(140%);
+    box-shadow: var(--shadow, 0 1px 2px rgba(0,0,0,.05));
+    color: var(--text, #0f172a);
+    overflow: hidden;
+}
+
+.tug-head { display: flex; align-items: center; gap: 10px; }
+.tug-title { font-size: 13px; font-weight: 900; white-space: nowrap; }
+.tug-msg { flex: 1; min-width: 0; font-size: 12px; font-weight: 700; color: var(--muted, #64748b); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tug-hide {
+    flex-shrink: 0; font-size: 11px; font-weight: 700; color: var(--muted, #64748b);
+    padding: 3px 8px; border-radius: 8px; border: 1px solid var(--line, #e2e8f0); background: transparent; cursor: pointer;
+}
+.tug-hide:hover { color: var(--text, #0f172a); border-color: var(--line-strong, #cbd5e1); }
+
+/* ---------- 경기장 ---------- */
+.tug-field { position: relative; height: 128px; margin-top: 4px; }
+
+.tug-ground {
+    position: absolute; left: 0; right: 0; bottom: 14px; height: 3px; border-radius: 3px;
+    background: repeating-linear-gradient(90deg, #86efac 0 14px, #4ade80 14px 28px);
+    opacity: .7;
+}
+.tug-centerline {
+    position: absolute; left: 50%; top: 18px; bottom: 10px; width: 0;
+    border-left: 2px dashed var(--line-strong, #cbd5e1);
+}
+
+/* 골인 지점 */
+.tug-goal {
+    position: absolute; bottom: 4px; width: var(--goal-w);
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    font-size: 11px; font-weight: 900; text-align: center; line-height: 1.15;
+}
+.tug-goal-left  { left: 0; color: #e11d48; }
+.tug-goal-right { right: 0; color: #059669; }
+.tug-goal svg { width: 40px; height: 72px; overflow: visible; }
+/* 깃발 위 이름표 (배경 없이 글자만) */
+.tug-goal-label { white-space: nowrap; }
+.tug-goal.reached svg { animation: tug-flag-cheer .6s ease-in-out infinite alternate; transform-origin: bottom center; }
+.tug-goal.reached .tug-goal-label { text-shadow: 0 0 10px currentColor; }
+
+/* 토끼 + 줄 + 거북이 (한 몸으로 좌우 이동) */
+.tug-team {
+    position: absolute; bottom: 14px; width: var(--team-w); height: 92px;
+    left: calc(50% + var(--p) * max(0px, 50% - var(--team-w) / 2 - var(--goal-w)));
+    transform: translateX(-50%);
+    transition: left 1.2s cubic-bezier(.34, 1.4, .5, 1);
+    display: flex; align-items: flex-end; justify-content: space-between;
+}
+.tug-team.jolt { animation: tug-jolt .45s ease-out; }
+
+.tug-rope {
+    position: absolute; left: 62px; right: 70px; top: 50px; height: 6px; border-radius: 6px;
+    background: repeating-linear-gradient(-55deg, #d6a96b 0 5px, #b07d43 5px 9px);
+    box-shadow: 0 1px 0 rgba(0,0,0,.12);
+    animation: tug-rope 0.9s ease-in-out infinite;
+}
+.tug-ribbon {
+    position: absolute; left: 50%; top: 4px; width: 12px; height: 20px; margin-left: -6px;
+    background: #ef4444; clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 72%, 0 100%);
+    transform-origin: top center; animation: tug-ribbon 1.1s ease-in-out infinite alternate;
+}
+
+/* 줄은 얇아서 위아래로 누를 영역을 넓힘 */
+.tug-rope { cursor: pointer; }
+.tug-rope::before { content: ''; position: absolute; left: 0; right: 0; top: -12px; bottom: -12px; }
+
+.tug-actor { position: relative; z-index: 1; line-height: 0; cursor: pointer; transform-origin: 50% 100%; -webkit-tap-highlight-color: transparent; }
+.tug-actor.hop    { animation: tug-hop .5s cubic-bezier(.3, 1.6, .5, 1); }
+.tug-actor.wiggle { animation: tug-wiggle .6s ease-in-out; }
+.tug-team.heave   { animation: tug-heave .5s ease-out; }
+
+.tug-char { display: block; height: 92px; transform-origin: 50% 100%; }
+.tug-rabbit { width: 82px; animation: tug-pull-left var(--rabbit-speed, 1s) ease-in-out infinite alternate; }
+.tug-turtle { width: 96px; animation: tug-pull-right var(--turtle-speed, 1s) ease-in-out infinite alternate; }
+
+/* 터치 반응: 말풍선 + 반짝이 */
+.tug-bubble {
+    position: absolute; left: 50%; bottom: calc(100% + 4px); z-index: 3;
+    padding: 4px 9px; border-radius: 10px; white-space: nowrap; line-height: 1.3;
+    font-size: 11px; font-weight: 800; color: var(--text, #0f172a);
+    background: var(--glass-strong, #fff); border: 1px solid var(--line-strong, #cbd5e1);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, .12);
+    pointer-events: none;
+    animation: tug-bubble 1.8s ease-out forwards;
+}
+.tug-bubble::after {
+    content: ''; position: absolute; left: 50%; top: 100%; margin-left: -5px;
+    border: 5px solid transparent; border-top-color: var(--line-strong, #cbd5e1);
+}
+.tug-sparkle {
+    position: absolute; z-index: 4; font-size: 14px; line-height: 1; pointer-events: none;
+    transform: translate(-50%, -50%); opacity: 0;
+    animation: tug-sparkle .9s ease-out forwards;
+}
+
+/* 점수 */
+.tug-score {
+    display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    font-size: 12px; font-weight: 800; color: var(--muted, #64748b);
+}
+.tug-score b { font-size: 15px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.tug-score-left b  { color: #e11d48; }
+.tug-score-right b { color: #059669; }
+.tug-score-mid { font-size: 11px; font-weight: 700; opacity: .8; }
+
+/* 접힌 상태 */
+.tug-card.collapsed .tug-field,
+.tug-card.collapsed .tug-score { display: none; }
+.tug-card.collapsed { padding-bottom: 12px; }
+
+/* ---------- 애니메이션 ---------- */
+@keyframes tug-pull-left  { from { transform: rotate(calc(var(--rabbit-lean, 8deg) * -1 + 3deg)); } to { transform: rotate(calc(var(--rabbit-lean, 8deg) * -1 - 2deg)) translateX(-2px); } }
+@keyframes tug-pull-right { from { transform: rotate(calc(var(--turtle-lean, 8deg) - 3deg)); } to { transform: rotate(calc(var(--turtle-lean, 8deg) + 2deg)) translateX(2px); } }
+@keyframes tug-rope   { 50% { transform: translateY(1px); } }
+@keyframes tug-ribbon { from { transform: rotate(-8deg); } to { transform: rotate(8deg); } }
+@keyframes tug-jolt   { 30% { margin-top: -4px; filter: brightness(1.15); } }
+@keyframes tug-flag-cheer { from { transform: rotate(-4deg) scale(1); } to { transform: rotate(4deg) scale(1.08); } }
+@keyframes tug-hop    { 0% { transform: translateY(0) scale(1, 1); } 20% { transform: translateY(0) scale(1.08, .9); } 50% { transform: translateY(-18px) scale(.95, 1.06); } 80% { transform: translateY(0) scale(1.06, .94); } 100% { transform: translateY(0) scale(1, 1); } }
+@keyframes tug-wiggle { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(-7deg) scale(1.05); } 40% { transform: rotate(6deg); } 60% { transform: rotate(-4deg); } 80% { transform: rotate(2deg); } }
+@keyframes tug-heave  { 30% { margin-left: -6px; } 60% { margin-left: 6px; } }
+@keyframes tug-bubble { 0% { opacity: 0; transform: translate(-50%, 6px) scale(.8); } 12% { opacity: 1; transform: translate(-50%, 0) scale(1); } 80% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, -6px); } }
+@keyframes tug-sparkle { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.5); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% - 34px)) scale(1.2); } }
+
+@media (prefers-reduced-motion: reduce) {
+    .tug-team { transition: none; }
+    .tug-char, .tug-rope, .tug-ribbon, .tug-goal.reached svg,
+    .tug-actor.hop, .tug-actor.wiggle, .tug-team.heave { animation: none; }
+}
+
+/* ---------- 좁은 화면 ---------- */
+@media (max-width: 640px) {
+    .tug-card { --team-w: 168px; --goal-w: 44px; padding: 10px 12px 8px; }
+    .tug-field { height: 96px; }
+    .tug-team { height: 60px; }
+    .tug-char { height: 60px; }
+    .tug-rabbit { width: 50px; }
+    .tug-turtle { width: 60px; }
+    .tug-rope { left: 38px; right: 44px; top: 31px; height: 4px; }
+    .tug-ribbon { top: 3px; width: 9px; height: 15px; margin-left: -4.5px; }
+    .tug-goal svg { width: 26px; height: 46px; }
+    .tug-goal { font-size: 9px; }
+    .tug-goal-label { white-space: normal; word-break: keep-all; }
+    .tug-msg, .tug-score-mid { display: none; }
+}
+
+/* ---------- 다크 ---------- */
+html[data-theme="dark"] .tug-goal-left  { color: #fb7185; }
+html[data-theme="dark"] .tug-goal-right { color: #34d399; }
+html[data-theme="dark"] .tug-score-left b  { color: #fb7185; }
+html[data-theme="dark"] .tug-score-right b { color: #34d399; }
+html[data-theme="dark"] .tug-ground { opacity: .35; }

@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="theme-glass.css">
     <link rel="stylesheet" href="stage-audit.css">
+    <link rel="stylesheet" href="tug-of-war.css">
 </head>
 <body class="bg-gray-50 font-sans text-gray-900">
     <div class="app-backdrop" aria-hidden="true"></div>
@@ -219,6 +220,9 @@
                             </button>
                         </div>
                 </div>
+
+                <!-- 줄다리기: 수정 필요(토끼, 재검수) vs 수정 완료(거북이, 업데이트 배포) — tug-of-war.js -->
+                <div class="tug-card" id="tugOfWar"></div>
 
                 <!-- 버전 필터 (데스크탑) — 상태 칩 숫자와 아래 필터가 모두 이 버전 기준으로 바뀐다 -->
                 <div class="hidden md:flex items-center gap-3 mb-3">
@@ -1391,5 +1395,6 @@
     <script src="cache-manager.js"></script>
     <script src="script.js"></script>
     <script src="stage-audit.js"></script>
+    <script src="tug-of-war.js"></script>
 </body>
 </html>
