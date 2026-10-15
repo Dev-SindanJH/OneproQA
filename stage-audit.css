@@ -49,6 +49,8 @@ html[data-theme="dark"] .sa-hit-n { background: rgba(255,255,255,.1); }
 .sa-hit-ai { font-size: 10px; font-weight: 800; padding: 0 5px; border-radius: 4px; background: #e2e8f0; color: #334155; }
 .sa-hit-ai[data-v="문제 있음"] { background: #b91c1c; color: #fff; }
 .sa-hit-ai[data-v="문제 없음"] { background: #15803d; color: #fff; }
+.sa-hit-ai[data-v="의심"] { background: #c2410c; color: #fff; }
+.sa-hit-ai[data-v="추가"] { background: #7e22ce; color: #fff; }
 
 /* 판정·QA 상태 배지 */
 .sa-status { display: inline-flex; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 800; white-space: nowrap; background: #f1f5f9; color: #64748b; }
@@ -77,3 +79,40 @@ html[data-theme="dark"] .sa-loc { border-color: var(--line); }
 html[data-theme="dark"] .sa-loc-head { background: rgba(255,255,255,.04); color: #AEB6C6; }
 html[data-theme="dark"] .sa-loc-code { background: rgba(0,0,0,.25); color: #E8ECF4; }
 html[data-theme="dark"] .sa-copy:hover { color: var(--accent); }
+
+/* 문제 수 안전 범위 */
+.sa-lim-strip { display: grid; grid-template-columns: repeat(50, 1fr); gap: 1px; max-width: 300px; }
+.sa-lim-cell { height: 12px; border-radius: 1px; }
+.sa-lim-cell.ok  { background: #4ade80; }
+.sa-lim-cell.bad { background: #fca5a5; }
+.sa-lim-cell.server { outline: 2px solid #0f172a; outline-offset: -1px; height: 16px; margin-top: -2px; }
+.sa-lim-cell.try { box-shadow: 0 0 0 2px #2743F2; }
+.sa-lim-axis { display: flex; justify-content: space-between; max-width: 300px; font-size: 10px; color: #94a3b8; margin-top: 2px; }
+.sa-lim-legend-server { display: inline-block; width: 8px; height: 12px; outline: 2px solid #0f172a; outline-offset: -1px; vertical-align: middle; background: #4ade80; }
+html[data-theme="dark"] .sa-lim-cell.ok  { background: rgba(74,222,128,.7); }
+html[data-theme="dark"] .sa-lim-cell.bad { background: rgba(248,113,113,.55); }
+html[data-theme="dark"] .sa-lim-cell.server,
+html[data-theme="dark"] .sa-lim-legend-server { outline-color: #E8ECF4; }
+html[data-theme="dark"] .sa-lim-cell.try { box-shadow: 0 0 0 2px var(--accent); }
+html[data-theme="dark"] .sa-lim-axis { color: #8A93A6; }
+
+.sa-lim-state { display: inline-flex; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 800; white-space: nowrap; }
+.sa-lim-state[data-v="live"]  { background: #fef2f2; color: #b91c1c; }
+.sa-lim-state[data-v="limit"] { background: #fff7ed; color: #c2410c; }
+.sa-lim-state[data-v="room"]  { background: #f1f5f9; color: #475569; }
+html[data-theme="dark"] .sa-lim-state[data-v="live"]  { background: rgba(239,68,68,.16); color: #fca5a5; }
+html[data-theme="dark"] .sa-lim-state[data-v="limit"] { background: rgba(249,115,22,.16); color: #fdba74; }
+html[data-theme="dark"] .sa-lim-state[data-v="room"]  { background: rgba(255,255,255,.07); color: #9AA3B5; }
+
+.sa-lim-conds { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: #475569; }
+html[data-theme="dark"] .sa-lim-conds { color: #AEB6C6; }
+.sa-lim-sev { display: inline-block; min-width: 36px; text-align: center; padding: 0 5px; margin-right: 4px; border-radius: 4px; font-size: 10px; font-weight: 800; background: #e2e8f0; color: #334155; }
+.sa-lim-sev[data-v="멈춤"]  { background: #b91c1c; color: #fff; }
+.sa-lim-sev[data-v="오출제"] { background: #c2410c; color: #fff; }
+.sa-lim-sev[data-v="연출"]  { background: #64748b; color: #fff; }
+.sa-lim-ok  { font-weight: 800; color: #15803d; }
+.sa-lim-bad { font-weight: 800; color: #b91c1c; }
+html[data-theme="dark"] .sa-lim-ok  { color: #86efac; }
+html[data-theme="dark"] .sa-lim-bad { color: #fca5a5; }
+.sa-lim-fixed { margin-top: 6px; font-size: 12px; font-weight: 700; color: #1d4ed8; }
+html[data-theme="dark"] .sa-lim-fixed { color: #93c5fd; }

@@ -115,6 +115,12 @@ function _saFillLevelFilter() {
 }
 
 // ---------------------------------------------------------------- 필터
+// QAI가 짚은 패턴과 별개로 같은 코드에서 찾은 버그는 ai_note 에 "[추가]"로 남긴다.
+// 판정이 '문제 없음'이어도 놓치지 않도록 따로 표시·필터한다.
+function _saHasExtra(f) {
+    return /\[추가\]/.test(f.ai_note || '');
+}
+
 function _saStageLabel(f) {
     if (f.stage_id != null) return `#${f.stage_id}`;
     const [kind, name] = f.stage_key.split('/');
@@ -134,7 +140,8 @@ function _saBaseFiltered() {
         if (!includeUnused && f.in_use !== true) return false;
         if (level !== 'all' && String(f.level) !== level) return false;
         if (sev !== 'all' && f.severity !== sev) return false;
-        if (ai !== 'all' && f.ai_verdict !== ai) return false;
+        if (ai === 'extra') { if (!_saHasExtra(f)) return false; }
+        else if (ai !== 'all' && f.ai_verdict !== ai) return false;
         if (qa !== 'all' && f.qa_status !== qa) return false;
         if (q) {
             const hay = [f.stage_key, f.stage_id, f.prefab, f.stage_code, f.rule_code,
@@ -160,7 +167,14 @@ function setStageAuditView(view) {
     saState.view = view;
     document.getElementById('sa-view-stage').classList.toggle('active', view === 'stage');
     document.getElementById('sa-view-finding').classList.toggle('active', view === 'finding');
-    renderStageAudit(true);
+    document.getElementById('sa-view-limits').classList.toggle('active', view === 'limits');
+    document.getElementById('sa-findings-view').classList.toggle('hidden', view === 'limits');
+    document.getElementById('sa-limits-view').classList.toggle('hidden', view !== 'limits');
+    if (view === 'limits') {
+        _saLoadLimits();
+    } else {
+        renderStageAudit(true);
+    }
 }
 
 // ---------------------------------------------------------------- 렌더
@@ -212,7 +226,8 @@ function _saRenderSummary(base) {
         card('의심 지점이 있는 스테이지', stages.size, `걸린 곳 없음 ${s.stages_clean ?? '-'}개`),
         card('검수 항목', base.length,
              `<span class="sa-sev sa-sev-high">높음 ${sev.high}</span> <span class="sa-sev sa-sev-medium">중간 ${sev.medium}</span> <span class="sa-sev sa-sev-low">낮음 ${sev.low}</span>`),
-        card('QAI 판정 완료', base.filter(f => f.ai_verdict !== '미판정').length, `문제 있음 ${base.filter(f => f.ai_verdict === '문제 있음').length}`),
+        card('QAI 판정 완료', base.filter(f => f.ai_verdict !== '미판정').length,
+             `문제 있음 ${base.filter(f => f.ai_verdict === '문제 있음').length} · 의심 ${base.filter(f => f.ai_verdict === '의심').length} · 추가 발견 ${base.filter(_saHasExtra).length}`),
         card('QA 확인 진행', `${checked}<span class="text-sm text-gray-500 font-bold"> / ${base.length}</span>`,
              `재현됨 ${base.filter(f => f.qa_status === '재현됨').length} · 수정 완료 ${base.filter(f => f.qa_status === '수정 완료').length}`),
     ].join('');
@@ -275,6 +290,7 @@ function _saRenderStageTable(filtered) {
             <button onclick="openStageAuditDetail(${x.id})" class="sa-hit-chip sa-hit-${x.severity}" title="${escapeHtml(saState.rules[x.rule_code]?.description || '')}">
                 ${escapeHtml(saState.rules[x.rule_code]?.title || x.rule_code)}<span class="sa-hit-n">${x.hit_count}</span>
                 ${x.ai_verdict !== '미판정' ? `<span class="sa-hit-ai" data-v="${escapeHtml(x.ai_verdict)}">${escapeHtml(x.ai_verdict)}</span>` : ''}
+                ${_saHasExtra(x) ? `<span class="sa-hit-ai" data-v="추가">+추가</span>` : ''}
             </button>`).join('');
         const done = r.list.filter(x => x.qa_status !== '미확인').length;
         return `<tr class="hover:bg-gray-50">
@@ -304,13 +320,13 @@ function _saRenderFindingTable(filtered) {
             <td class="p-3"><div class="font-bold text-slate-800">${escapeHtml(saState.rules[f.rule_code]?.title || f.rule_code)}</div>
                 <div class="text-xs text-gray-500">${SA_CATEGORY_LABEL[f.category] || f.category}</div></td>
             <td class="p-3 text-center">${f.hit_count}</td>
-            <td class="p-3 text-center">${_saStatusBadge('ai', f.ai_verdict)}</td>
+            <td class="p-3 text-center">${_saStatusBadge('ai', f.ai_verdict)}${_saHasExtra(f) ? ` <span class="sa-hit-ai" data-v="추가">+추가</span>` : ''}</td>
             <td class="p-3 text-center">${_saStatusBadge('qa', f.qa_status)}</td>
         </tr>`, 7);
 }
 
-function _saPaginate(rows, renderRow, colSpan) {
-    const tbody = document.getElementById('sa-tbody');
+function _saPaginate(rows, renderRow, colSpan, ids = { tbody: 'sa-tbody', pag: 'sa-pagination', go: 'goStageAuditPage' }) {
+    const tbody = document.getElementById(ids.tbody);
     const pages = Math.max(1, Math.ceil(rows.length / SA_PAGE_SIZE));
     saState.page = Math.min(saState.page, pages);
     const slice = rows.slice((saState.page - 1) * SA_PAGE_SIZE, saState.page * SA_PAGE_SIZE);
@@ -318,10 +334,10 @@ function _saPaginate(rows, renderRow, colSpan) {
         ? slice.map(renderRow).join('')
         : `<tr><td colspan="${colSpan}" class="p-12 text-center text-gray-400">조건에 맞는 항목이 없습니다.</td></tr>`;
 
-    const pag = document.getElementById('sa-pagination');
+    const pag = document.getElementById(ids.pag);
     if (pages <= 1) { pag.innerHTML = `<span class="text-xs text-gray-500">${rows.length}건</span>`; return; }
     const btn = (p, label, disabled, active) =>
-        `<button ${disabled ? 'disabled' : ''} onclick="goStageAuditPage(${p})" class="px-3 py-1.5 rounded-lg text-sm font-bold transition ${active ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-gray-50'} ${disabled ? 'opacity-40 cursor-default' : ''}">${label}</button>`;
+        `<button ${disabled ? 'disabled' : ''} onclick="${ids.go}(${p})" class="px-3 py-1.5 rounded-lg text-sm font-bold transition ${active ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-gray-50'} ${disabled ? 'opacity-40 cursor-default' : ''}">${label}</button>`;
     const nums = [];
     const start = Math.max(1, saState.page - 3), end = Math.min(pages, start + 6);
     for (let p = start; p <= end; p++) nums.push(btn(p, p, false, p === saState.page));
@@ -334,6 +350,152 @@ function goStageAuditPage(p) {
     saState.page = p;
     renderStageAudit(false);
     document.getElementById('stageaudit').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ---------------------------------------------------------------- 문제 수 안전 범위
+const SA_LIMIT_MAX = 50;
+
+async function _saLoadLimits(force) {
+    if (!force && saState.limitsRunId === saState.runId) {
+        renderStageAuditLimits(true);
+        return;
+    }
+    document.getElementById('sa-l-tbody').innerHTML =
+        `<tr><td colspan="6" class="p-12 text-center text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>불러오는 중...</td></tr>`;
+    const { data, error } = await supabaseClient
+        .from('stage_audit_count_limits')
+        .select('*')
+        .eq('run_id', saState.runId)
+        .order('stage_id')
+        .limit(5000);
+    if (error) {
+        console.error('[QAI 스테이지 검수] 안전 범위 로드 실패', error);
+        showToast('안전 범위를 불러오지 못했습니다.', 'error');
+        return;
+    }
+    saState.limits = data || [];
+    saState.limitsRunId = saState.runId;
+    const sel = document.getElementById('sa-l-level');
+    const levels = [...new Set(saState.limits.map(l => l.level).filter(l => l != null))].sort((a, b) => a - b);
+    sel.innerHTML = `<option value="all">전체</option>` + levels.map(l => `<option value="${l}">Level ${l}</option>`).join('');
+    renderStageAuditLimits(true);
+}
+
+function _saLimitState(l) {
+    if (l.live) return 'live';
+    if (l.server_at_limit) return 'limit';
+    return 'room';
+}
+
+const SA_LIMIT_STATE_LABEL = { live: '지금 서버 값에서도 발생', limit: '서버 값이 한도', room: '여유 있음' };
+
+function _saLimitTry() {
+    const v = parseInt(document.getElementById('sa-l-try').value, 10);
+    return Number.isFinite(v) && v >= 1 && v <= SA_LIMIT_MAX ? v : null;
+}
+
+function _saLimitFiltered() {
+    const level = document.getElementById('sa-l-level').value;
+    const state = document.getElementById('sa-l-state').value;
+    const q = document.getElementById('sa-l-search').value.trim().toLowerCase();
+    const tryN = _saLimitTry();
+    const onlyBroken = document.getElementById('sa-l-broken').checked;
+    return (saState.limits || []).filter(l => {
+        if (level !== 'all' && String(l.level) !== level) return false;
+        if (state !== 'all' && _saLimitState(l) !== state) return false;
+        if (tryN && onlyBroken && (l.safe_values || []).includes(tryN)) return false;
+        if (q && ![l.stage_id, l.stage_code, l.prefab].join(' ').toLowerCase().includes(q)) return false;
+        return true;
+    });
+}
+
+// 1~50 칸 막대: 초록=안전, 빨강=깨짐, 테두리=현재 서버 값, 파랑 테두리=바꿀 문제 수
+function _saLimitStrip(l, tryN) {
+    const safe = new Set(l.safe_values || []);
+    let cells = '';
+    for (let n = 1; n <= SA_LIMIT_MAX; n++) {
+        const cls = ['sa-lim-cell', safe.has(n) ? 'ok' : 'bad'];
+        if (n === l.server_count) cls.push('server');
+        if (n === tryN) cls.push('try');
+        cells += `<span class="${cls.join(' ')}" title="${n}문제: ${safe.has(n) ? '안전' : '깨짐'}${n === l.server_count ? ' (현재 서버 값)' : ''}"></span>`;
+    }
+    return `<div class="sa-lim-strip">${cells}</div><div class="sa-lim-axis"><span>1</span><span>25</span><span>50</span></div>`;
+}
+
+function renderStageAuditLimits(resetPage) {
+    if (resetPage) saState.page = 1;
+    const tryN = _saLimitTry();
+    const rows = _saLimitFiltered();
+    const all = saState.limits || [];
+    const brokenAtTry = tryN ? all.filter(l => !(l.safe_values || []).includes(tryN)).length : 0;
+    document.getElementById('sa-l-count').innerHTML =
+        `제한이 확인된 스테이지 ${all.length}개 · 지금 서버 값에서도 발생 ${all.filter(l => l.live).length}개 · 서버 값이 한도 ${all.filter(l => !l.live && l.server_at_limit).length}개` +
+        (tryN ? ` · <b>${tryN}문제로 바꾸면 깨지는 스테이지 ${brokenAtTry}개</b>` : '');
+
+    document.getElementById('sa-l-thead').innerHTML = `<tr>
+        <th class="p-3">스테이지</th><th class="p-3 w-16 text-center">레벨</th><th class="p-3 w-20 text-center">서버 문제 수</th>
+        <th class="p-3">안전한 문제 수</th>${tryN ? `<th class="p-3 w-20 text-center">${tryN}문제</th>` : ''}
+        <th class="p-3">깨지는 조건</th></tr>`;
+
+    const colSpan = tryN ? 6 : 5;
+    _saPaginate(rows, l => {
+        const state = _saLimitState(l);
+        const conds = (l.conditions || []).map(c => `
+            <li><span class="sa-lim-sev" data-v="${escapeHtml(c.severity || '')}">${escapeHtml(c.severity || '')}</span>
+                <b>${escapeHtml(c.when || '')}</b> → ${escapeHtml(c.symptom || '')}${c.probabilistic ? ' <span class="text-gray-500">(확률적)</span>' : ''}</li>`).join('');
+        const ok = tryN ? (l.safe_values || []).includes(tryN) : null;
+        return `<tr class="hover:bg-gray-50 align-top">
+            <td class="p-3">
+                <div class="font-bold text-slate-800">#${l.stage_id}</div>
+                <div class="text-xs text-gray-500 font-mono">${escapeHtml(l.prefab || '')}</div>
+                <div class="text-xs text-gray-500 font-mono">${escapeHtml(l.stage_code || '')}</div>
+            </td>
+            <td class="p-3 text-center">${l.level ?? '-'}</td>
+            <td class="p-3 text-center font-bold">${l.server_count ?? '-'}</td>
+            <td class="p-3 min-w-[240px]">
+                <div class="flex flex-wrap items-center gap-1.5 mb-1.5">
+                    <span class="sa-lim-state" data-v="${state}">${SA_LIMIT_STATE_LABEL[state]}</span>
+                    <span class="font-bold text-slate-800">${escapeHtml(l.safe_text || '-')}</span>
+                </div>
+                ${_saLimitStrip(l, tryN)}
+            </td>
+            ${tryN ? `<td class="p-3 text-center">${ok ? '<span class="sa-lim-ok">안전</span>' : '<span class="sa-lim-bad">깨짐</span>'}</td>` : ''}
+            <td class="p-3 min-w-[280px]">
+                <p class="text-slate-800 mb-1.5 leading-relaxed">${escapeHtml(l.summary || '')}</p>
+                <ul class="sa-lim-conds">${conds}</ul>
+                ${l.fixed_note ? `<div class="sa-lim-fixed"><i class="fas fa-wrench mr-1"></i>${escapeHtml(l.fixed_note)}</div>` : ''}
+            </td>
+        </tr>`;
+    }, colSpan, { tbody: 'sa-l-tbody', pag: 'sa-l-pagination', go: 'goStageAuditLimitsPage' });
+}
+
+function goStageAuditLimitsPage(p) {
+    saState.page = p;
+    renderStageAuditLimits(false);
+    document.getElementById('sa-limits-view').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function exportStageAuditLimitsCsv() {
+    const rows = _saLimitFiltered();
+    const tryN = _saLimitTry();
+    const head = ['stage_id', 'prefab', 'code', 'level', '서버 문제 수', '상태', '안전한 문제 수', '안전한 값(1~50)',
+                  ...(tryN ? [`${tryN}문제`] : []), '요약', '깨지는 조건', '수정 메모'];
+    const esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const lines = [head.map(esc).join(',')].concat(rows.map(l => [
+        l.stage_id, l.prefab, l.stage_code, l.level, l.server_count, SA_LIMIT_STATE_LABEL[_saLimitState(l)], l.safe_text,
+        (l.safe_values || []).join(' '),
+        ...(tryN ? [(l.safe_values || []).includes(tryN) ? '안전' : '깨짐'] : []),
+        l.summary,
+        (l.conditions || []).map(c => `${c.when} → ${c.symptom}${c.probabilistic ? '(확률적)' : ''}`).join(' / '),
+        l.fixed_note,
+    ].map(esc).join(',')));
+    // 엑셀이 한글을 깨뜨리지 않도록 BOM 을 붙인다
+    const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `스테이지_문제수_안전범위_run${saState.runId}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
 }
 
 // ---------------------------------------------------------------- 상세 모달
