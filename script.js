@@ -371,6 +371,11 @@ function showSection(sectionId) {
         loadStageAudit(false);
     }
 
+    // API 호출 지도 탭 첫 진입 시 자동 로드 (api-catalog.js)
+    if (sectionId === 'apicatalog' && typeof loadApiCatalog === 'function') {
+        loadApiCatalog(false);
+    }
+
     // 모바일에서 섹션 전환 시 사이드바 자동 닫기
     if (window.innerWidth < 768) {
         const sidebar = document.getElementById('sidebar');

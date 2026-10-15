@@ -1,0 +1,4544 @@
+{
+ "note": "씬·상황 설명은 코드 정적 분석 결과(실기 미확인). \"추정\" 표시는 확인 못 한 부분",
+ "endpoints": [
+  {
+   "key": "API_AppInit.Config",
+   "name": "앱 설정 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/app-init/config"
+   ],
+   "desc": "부팅 첫 단계에서 앱 설정(CDN 주소 등 Addressables 초기화 정보)을 받는다. 성공하면 로컬에 캐시해 두고 다음 실패 때 대신 쓴다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/AppInitManager.cs",
+     "line": 251,
+     "method": "IeAppInitFlow",
+     "path": "",
+     "scenes": [
+      "AssetBundleScene"
+     ],
+     "screen": "부팅(스플래시·번들 다운로드) 화면",
+     "trigger": "앱을 켜면 부팅 첫 단계에서 자동 호출. 응답을 받을 때까지 다음 단계(어드레서블 초기화)로 넘어가지 않는다.",
+     "on_fail": "재시도까지 실패하거나 150초 타임아웃이면 직전에 성공한 캐시 설정으로 진행. 캐시도 없으면 부팅 재시도 팝업(네트워크) → 확인 시 재요청",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_AppInit.ConfigWithMasterData",
+   "name": "마스터데이터 일괄 조회(언어별)",
+   "http": "GET",
+   "paths": [
+    "/api/v3/app-init/language-codes/{현재 언어코드}?translationMasterDataVersion=…&stageMasterDataVersion=…&friendsAvatarMasterDataVersion=…&titleMasterDataVersion=…&videoMasterDataVersion=…&badWordMasterDataVersion=…&inAppProductMasterDataVersion=…&rewardMasterDataVersion=…&conceptNoteMasterDataVersion=…"
+   ],
+   "desc": "번역·스테이지·아바타·칭호·영상·금칙어·인앱상품·보상·개념노트 마스터데이터를 받는다. 로컬 캐시 버전을 쿼리로 보내 바뀐 것만 내려받고(앱 버전이 바뀌면 0으로 보내 전부 받음), 받은 뒤 각 매니저에 반영한다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/AppInitManager.cs",
+     "line": 398,
+     "method": "IeAppInitFlow",
+     "path": "",
+     "scenes": [
+      "AssetBundleScene"
+     ],
+     "screen": "부팅(스플래시·번들 다운로드) 화면",
+     "trigger": "앱 실행 시 앱 설정 조회·어드레서블 초기화·언어 선택(최초 실행 때만 팝업)·로고 애니메이션이 끝난 직후 자동 호출. 성공해야 필수 리소스 다운로드와 타이틀 이동이 진행된다.",
+     "on_fail": "재시도까지 실패하거나 150초 타임아웃이면 부팅 재시도 팝업(네트워크) → 확인 시 재요청",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/AppInitManager.cs",
+     "line": 136,
+     "method": "IeRefreshMasterDataOnForeground",
+     "path": "",
+     "scenes": [
+      "공통"
+     ],
+     "screen": "(없음)",
+     "trigger": "앱이 포그라운드로 돌아올 때 갱신하려던 코드지만 OnApplicationFocus 에서 호출이 주석 처리돼 있다.",
+     "on_fail": "",
+     "note": "죽은 코드(호출부 주석 처리)"
+    }
+   ]
+  },
+  {
+   "key": "API_AppInit.MasterDataCurriculumCountryCodes",
+   "name": "국가별 커리큘럼·레벨테스트 마스터데이터 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/app-init/master-data/country-codes/{국가코드}?curriculumMasterDataVersion=…&defaultCurriculumMasterDataVersion=…&levelTestCurriculumMasterDataVersion=…&defaultLevelTestCurriculumMasterDataVersion=…"
+   ],
+   "desc": "국가별 커리큘럼과 AI 레벨테스트 커리큘럼 마스터데이터를 받는다. 로컬 캐시 버전을 보내 바뀐 경우만 내려받는다. (CommonAPI 주석의 '/curriculum/country-codes' 와 달리 실제 경로에는 curriculum 이 없다)",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/AppInitManager.cs",
+     "line": 561,
+     "method": "UpdateCountriesMasterDataMain",
+     "path": "",
+     "scenes": [
+      "TitleScene",
+      "공통"
+     ],
+     "screen": "타이틀(로그인 직후) / 사용자 정보가 바뀌는 모든 화면",
+     "trigger": "로그인·프로필 선택·프로필/계정 정보 수정 성공으로 사용자 정보가 갱신될 때마다 불리지만, 프로필 국가가 직전에 받은 국가와 같으면 통신 없이 넘어간다. 실제 통신은 앱 실행 후 첫 로그인 1회와 국가가 바뀌었을 때(국가 변경·다른 국가 프로필로 전환).",
+     "on_fail": "통신 실패 시 재시도 후 오류 토스트. 완료 콜백이 오지 않아 프로필 정보·다이아 갱신 이벤트가 돌지 않으므로 화면 정보가 갱신되지 않을 수 있음(추정)",
+     "note": "G_UserInfo.ActUpdatedUserData → onCountryChanged 경유"
+    },
+    {
+     "file": "Assets/Main/AppInitManager.cs",
+     "line": 194,
+     "method": "IeRefreshCountriesMasterDataOnForeground",
+     "path": "",
+     "scenes": [
+      "공통"
+     ],
+     "screen": "어느 화면이든(앱 복귀 시)",
+     "trigger": "부팅이 끝난 뒤 앱을 백그라운드로 보냈다가 다시 돌아오면 자동 호출(30초 쿨타임, 프로필 국가가 있을 때만). 서버에 새 커리큘럼이 있으면 '커리큘럼 업데이트' 토스트 후 타이틀로 이동한다.",
+     "on_fail": "통신 실패 시 재시도 후 오류 토스트, 화면은 그대로",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/AppInitManager.cs",
+     "line": 619,
+     "method": "UpdateCountriesMasterDataSub",
+     "path": "",
+     "scenes": [
+      "AILevelTestScene_L3",
+      "AILevelTestScene_L3_Retest",
+      "MathBattleLobby"
+     ],
+     "screen": "AI 레벨테스트 결과/분석·재시험 화면, 레벨테스트 기록 목록, 매쓰배틀 로비 > 레벨 변경 팝업",
+     "trigger": "내 프로필 국가가 아닌 다른 국가의 커리큘럼이 필요할 때(그 국가 데이터가 메모리에 없을 때만) 호출. 예: 다른 국가 기준으로 본 레벨테스트 결과·기록 열람, 매쓰배틀 레벨 변경 팝업(매쓰배틀은 KR 커리큘럼 고정). 같은 국가 1초 내 중복 요청은 무시.",
+     "on_fail": "통신 실패 시 재시도 후 오류 토스트. 콜백이 오지 않아 단원 이름 등이 표시되지 않을 수 있음(추정)",
+     "note": "CurriculumManager.GetOtherCurriculumData/GetOtherChapterData 경유. 레벨테스트 기록(L4) 화면의 씬은 추정"
+    }
+   ]
+  },
+  {
+   "key": "API_AppInit.MasterDataReward",
+   "name": "보상 마스터데이터 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/app-init/master-data/reward"
+   ],
+   "desc": "보상 마스터데이터 단독 조회용 경로. 현재는 ConfigWithMasterData 응답에 보상 데이터가 포함돼 이 경로는 쓰지 않는다.",
+   "unused": true,
+   "calls": []
+  },
+  {
+   "key": "API_AppInit.MasterDataTranslationLanguageCodes",
+   "name": "언어별 번역 마스터데이터 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/app-init/master-data/language-codes/{언어코드}?translationMasterDataVersion=…"
+   ],
+   "desc": "언어를 바꿨을 때 그 언어의 서버 번역 마스터데이터를 받는다. 로컬 캐시 버전을 보내 바뀐 경우만 내려받는다. (주석의 '/translation/' 은 실제 경로에 없음)",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/AppInitManager.cs",
+     "line": 530,
+     "method": "UpdateLanguagesMasterData",
+     "path": "",
+     "scenes": [
+      "공통"
+     ],
+     "screen": "언어 선택 팝업(설정의 언어 변경 등)",
+     "trigger": "부팅이 끝난 뒤 언어를 바꾸면(언어 테이블 로드 완료 직후) 자동 호출. 웹 버전은 URL 언어 파라미터로도 발생. 앱 최초 실행 때 부팅 중 뜨는 언어 선택에서는 아직 연결 전이라 호출되지 않는다.",
+     "on_fail": "통신 실패 시 재시도 후 오류 토스트. 완료 콜백이 안 와서 UI 언어 갱신 이벤트가 돌지 않아 일부 문구가 이전 언어로 남을 수 있음(추정)",
+     "note": "LocalizationManager.FinishLocaleChange → LanguagesMasterDataUpdate 경유. 같은 시점에 프로필 languageCode 저장(EditProfile)도 함께 나간다"
+    },
+    {
+     "file": "Assets/Main/AppInitManager.cs",
+     "line": 653,
+     "method": "UpdateLanguagesMasterData(string)",
+     "path": "",
+     "scenes": [],
+     "screen": "(없음)",
+     "trigger": "언어코드를 받는 public 오버로드인데 호출하는 곳이 없다.",
+     "on_fail": "",
+     "note": "죽은 코드(호출처 없음)"
+    }
+   ]
+  },
+  {
+   "key": "API_Authentication.SignupGuest",
+   "name": "게스트 가입(계정+첫 프로필 생성)",
+   "http": "POST",
+   "paths": [
+    "/api/v3/auth/signup/guest"
+   ],
+   "desc": "계정이 없는 기기에서 프로필 생성을 완료하면 게스트 계정과 첫 프로필을 함께 만든다. 응답의 로그인 정보로 바로 로그인 처리 후 타이틀로 이동.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/CreateProfile/01_Script/CreateProfileManager.cs",
+     "line": 427,
+     "method": "RequestGuestSignup",
+     "path": "",
+     "scenes": [
+      "CreateProfileScene"
+     ],
+     "screen": "프로필 생성 화면 > 마지막 단계",
+     "trigger": "계정이 없는 상태(앱 첫 설치, 모바일)에서 타이틀 '시작' → 프로필 생성 단계(닉네임·레벨·국가·캐릭터·알림)를 모두 마치고 완료 버튼을 누르면.",
+     "on_fail": "서버 거절 시 서버 문구 토스트 후 완료 버튼 다시 누를 수 있음. 통신 실패 시 재시도 후 오류 토스트",
+     "note": "웹(WebGL) 버전은 게스트 가입 없이 로그인 팝업으로 감"
+    }
+   ]
+  },
+  {
+   "key": "API_Authentication.UUIDLogin",
+   "name": "기기 UUID 자동 로그인",
+   "http": "POST",
+   "paths": [
+    "/api/v3/auth/login/uuid"
+   ],
+   "desc": "기기 고유값(iOS는 키체인 저장 UUID, 웹은 브라우저 저장 GUID)으로 자동 로그인해 deviceId 와 계정·프로필·이용권 정보를 받는다. deviceId 가 설정되면 FCM 토큰 등록도 이어서 나간다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/LoginManager/01_Script/LoginManager.cs",
+     "line": 248,
+     "method": "UUIDLogin",
+     "path": "",
+     "scenes": [
+      "TitleScene",
+      "MainLobbyScene_v4"
+     ],
+     "screen": "타이틀 / 설정 팝업 / 구매 복원",
+     "trigger": "아래 호출처들이 공통으로 쓰는 정적 메서드.",
+     "on_fail": "통신 실패 시 재시도 후 오류 토스트, 완료 콜백 없음",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/3_Common_renewal/01_Script/TitleSceneManager.cs",
+     "line": 85,
+     "method": "IeSettingUI",
+     "path": "",
+     "scenes": [
+      "TitleScene"
+     ],
+     "screen": "타이틀 화면",
+     "trigger": "타이틀 씬에 들어올 때마다 자동 호출(부팅 직후, 로그인·로그아웃·프로필 선택 후 타이틀 재진입 등). 웹·에디터는 이미 로그인돼 있으면 생략.",
+     "on_fail": "실패하면 로그인 완료 처리가 안 돼 로딩이 걷히지 않고 시작 버튼이 나타나지 않음(추정)",
+     "note": "LoginManager.UUIDLogin 경유"
+    },
+    {
+     "file": "Assets/Main/2_UnrelatedStages/SettingManager/01_Script/SettingManager.cs",
+     "line": 853,
+     "method": "UpdateLicenseData",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "메인 로비 > 설정 팝업 (이용권 정보 새로고침 버튼)",
+     "trigger": "설정 팝업의 이용권 정보 갱신 버튼을 누르면 프로필 저장 → 계정 정보 갱신(EditAccount) → UUID 로그인 순서로 호출 후 설정 화면 갱신. 3초 안에 다시 누르면 '잠시 후 다시 시도' 토스트.",
+     "on_fail": "통신 실패 시 재시도 후 오류 토스트, 설정 화면 갱신 안 됨",
+     "note": "LoginManager.UUIDLogin 경유. 버튼 위치는 추정"
+    },
+    {
+     "file": "Assets/Main/InAppPurchaseScene/01_Script/IAPManager.cs",
+     "line": 559,
+     "method": "PurchaseCompleted",
+     "path": "",
+     "scenes": [
+      "TitleScene"
+     ],
+     "screen": "타이틀(로그인 직후 구매 복원)",
+     "trigger": "로그인 직후 미처리 구매 복원이 끝나면 '구매 성공' 토스트 후 씬 이동 없이 유저 정보를 다시 받기 위해 호출.",
+     "on_fail": "통신 실패 시 재시도 후 오류 토스트",
+     "note": "LoginManager.UUIDLogin 경유"
+    },
+    {
+     "file": "Assets/Main/LoginManager/01_Script/LoginManager.cs",
+     "line": 271,
+     "method": "RandomUUIDLogin",
+     "path": "",
+     "scenes": [],
+     "screen": "(에디터 인스펙터)",
+     "trigger": "에디터에서 개발자 패널 인스펙터의 '랜덤 UUID 생성' 버튼으로 임의 UUID 로그인.",
+     "on_fail": "",
+     "note": "#if UNITY_EDITOR 전용(빌드에 없음)"
+    }
+   ]
+  },
+  {
+   "key": "API_Authentication.EmailLogin",
+   "name": "아이디(이메일) 로그인",
+   "http": "POST",
+   "paths": [
+    "/api/v3/auth/login/id"
+   ],
+   "desc": "이메일 아이디·비밀번호로 로그인해 계정 정보를 받고 타이틀을 다시 불러온다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/LoginManager/01_Script/LoginManager.cs",
+     "line": 285,
+     "method": "EmailLogin",
+     "path": "",
+     "scenes": [
+      "TitleScene",
+      "MainLobbyScene_v4"
+     ],
+     "screen": "로그인/회원가입 팝업 > 로그인 탭",
+     "trigger": "LoginSignupUI.EmailLogin 이 부르는 정적 메서드.",
+     "on_fail": "비밀번호 틀림 등 서버 거절 시 서버 문구 토스트, 팝업 유지. 통신 실패 시 재시도 후 오류 토스트",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/LoginManager/01_Script/LoginSignupUI.cs",
+     "line": 225,
+     "method": "EmailLogin",
+     "path": "",
+     "scenes": [
+      "TitleScene",
+      "MainLobbyScene_v4"
+     ],
+     "screen": "로그인/회원가입 팝업 > 로그인 탭",
+     "trigger": "타이틀의 '로그인' 버튼(계정 없음/게스트일 때 보임) 등으로 팝업을 열고 아이디·비밀번호 입력 후 '로그인' 버튼. 빈 칸이면 요청 없이 흔들림 안내. 성공 시 팝업 닫고 타이틀 재로드.",
+     "on_fail": "서버 거절 시 서버 문구 토스트, 팝업 유지",
+     "note": "LoginManager.EmailLogin 경유"
+    }
+   ]
+  },
+  {
+   "key": "API_Authentication.EmailSignup",
+   "name": "아이디(이메일) 회원가입",
+   "http": "POST",
+   "paths": [
+    "/api/v3/auth/signup/id"
+   ],
+   "desc": "계정이 아예 없는 상태에서 이메일 아이디로 새 회원 계정을 만들고 바로 로그인한다. 성공 후 프로필 생성 씬으로 이동.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/LoginManager/01_Script/LoginManager.cs",
+     "line": 297,
+     "method": "EmailSignUp",
+     "path": "",
+     "scenes": [
+      "TitleScene"
+     ],
+     "screen": "로그인/회원가입 팝업 > 회원가입 탭 > 약관 동의 모달",
+     "trigger": "LoginSignupUI.RequestSignUp 이 부르는 정적 메서드.",
+     "on_fail": "서버 거절 시 서버 문구 토스트, 팝업 유지",
+     "note": "성공 토스트(SuccessSignup)를 여기와 LoginSignupUI 에서 두 번 띄운다(나중 것이 덮어씀)"
+    },
+    {
+     "file": "Assets/Main/LoginManager/01_Script/LoginSignupUI.cs",
+     "line": 463,
+     "method": "RequestSignUp",
+     "path": "",
+     "scenes": [
+      "TitleScene"
+     ],
+     "screen": "로그인/회원가입 팝업 > 회원가입 탭 > 약관 동의 모달",
+     "trigger": "계정이 없는 상태(웹 버전, 또는 모바일에서 게스트 가입 전 타이틀 '로그인' 버튼)에서 회원가입 탭에 이메일·비밀번호 입력 → 약관 모달에서 필수 약관 3개 체크 후 '확인'. 필수 약관 미체크 시 토스트만.",
+     "on_fail": "서버 거절 시 서버 문구 토스트, 팝업 유지",
+     "note": "LoginManager.EmailSignUp 경유. 게스트 계정이면 이 API 대신 GuestConversion"
+    }
+   ]
+  },
+  {
+   "key": "API_Authentication.GuestConversion",
+   "name": "게스트 → 회원 전환",
+   "http": "POST",
+   "paths": [
+    "/api/v3/auth/guest/conversion/id"
+   ],
+   "desc": "게스트 계정에 이메일 아이디·비밀번호를 붙여 정식 회원으로 전환한다. 일본 신규회원 이벤트 대기 상태면 이어서 이벤트 지급을 요청한 뒤 타이틀로 이동.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/LoginManager/01_Script/LoginManager.cs",
+     "line": 311,
+     "method": "GuestConversion",
+     "path": "",
+     "scenes": [
+      "TitleScene",
+      "MainLobbyScene_v4"
+     ],
+     "screen": "로그인/회원가입 팝업 > 회원가입 탭 > 약관 동의 모달",
+     "trigger": "LoginSignupUI.RequestSignUp 이 부르는 정적 메서드.",
+     "on_fail": "서버 거절 시 서버 문구 토스트, 팝업 유지",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/LoginManager/01_Script/LoginSignupUI.cs",
+     "line": 437,
+     "method": "RequestSignUp",
+     "path": "",
+     "scenes": [
+      "TitleScene",
+      "MainLobbyScene_v4",
+      "AILevelTestScene_L3"
+     ],
+     "screen": "로그인/회원가입 팝업 > 회원가입 탭 > 약관 동의 모달",
+     "trigger": "게스트 계정 상태에서 회원가입 탭 입력 → 약관 모달 '확인'. 게스트가 팝업에 오는 경로: 타이틀 '로그인' 버튼, 이용권 있는 게스트가 '시작' 누를 때, 설정의 학습보고서 토글, 이용권 등록, 레벨테스트 결과 공유, 일본 신규회원 이벤트 팝업. 성공 시 '가입 완료' 토스트 후 타이틀.",
+     "on_fail": "서버 거절 시 서버 문구 토스트, 팝업 유지",
+     "note": "LoginManager.GuestConversion 경유. 레벨테스트 결과 공유 경로는 타이틀로 먼저 이동 후 팝업을 연다(씬은 추정)"
+    }
+   ]
+  },
+  {
+   "key": "API_Authentication.Logout",
+   "name": "로그아웃",
+   "http": "POST",
+   "paths": [
+    "/api/v3/auth/logout"
+   ],
+   "desc": "현재 기기(deviceId)의 로그인을 해제하고 로컬 유저 정보·학습 정보를 비운 뒤 타이틀로 이동한다. 마지막 로그인 아이디는 로컬에 저장해 둔다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/LoginManager/01_Script/LoginManager.cs",
+     "line": 389,
+     "method": "Logout",
+     "path": "",
+     "scenes": [
+      "TitleScene",
+      "MainLobbyScene_v4"
+     ],
+     "screen": "타이틀 / 설정 팝업",
+     "trigger": "아래 두 버튼이 부르는 정적 메서드.",
+     "on_fail": "통신 실패 시 재시도 후 오류 토스트, 로그아웃되지 않음",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/3_Common_renewal/01_Script/TitleSceneManager.cs",
+     "line": 320,
+     "method": "Logout",
+     "path": "",
+     "scenes": [
+      "TitleScene"
+     ],
+     "screen": "타이틀 화면 > 로그아웃 버튼",
+     "trigger": "정식 회원으로 로그인된 상태(게스트는 버튼 숨김)에서 타이틀의 로그아웃 버튼을 누르면. 성공 시 타이틀 재로드.",
+     "on_fail": "통신 실패 시 재시도 후 오류 토스트",
+     "note": "LoginManager.Logout 경유"
+    },
+    {
+     "file": "Assets/Main/2_UnrelatedStages/SettingManager/01_Script/SettingManager.cs",
+     "line": 827,
+     "method": "Logout",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "메인 로비 > 설정 팝업 > 로그아웃 버튼",
+     "trigger": "설정 팝업의 로그아웃 버튼을 누르면. 성공 시 타이틀로 이동하고 설정 팝업 닫힘.",
+     "on_fail": "통신 실패 시 재시도 후 오류 토스트",
+     "note": "LoginManager.Logout 경유"
+    }
+   ]
+  },
+  {
+   "key": "API_Account.ValidationID",
+   "name": "아이디(이메일) 중복 검사",
+   "http": "POST",
+   "paths": [
+    "/api/v3/accounts/id/validation"
+   ],
+   "desc": "회원가입 시 입력한 이메일 아이디가 사용 가능한지 확인한다. 결과로 입력칸 안내문과 가입 버튼 활성 상태가 바뀐다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/LoginManager/01_Script/LoginSignupUI.cs",
+     "line": 558,
+     "method": "CheckDuplicateID",
+     "path": "",
+     "scenes": [
+      "TitleScene",
+      "MainLobbyScene_v4"
+     ],
+     "screen": "로그인/회원가입 팝업 > 회원가입 탭 > 아이디 입력칸",
+     "trigger": "회원가입 탭에서 아이디 입력칸 입력을 마치면(포커스 해제/엔터) 이메일 형식이 맞을 때 자동 호출. 비었거나 형식이 틀리면 요청 없이 안내문만.",
+     "on_fail": "중복 등 서버 거절 시 토스트 대신 입력칸 아래에 서버 문구(빨강)를 띄우고 가입 버튼 잠금. 통신 실패 시 재시도 후 오류 토스트",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_Account.VerificationPassword",
+   "name": "계정 비밀번호 확인",
+   "http": "POST",
+   "paths": [
+    "/api/v3/accounts/password/verification"
+   ],
+   "desc": "accountId 와 비밀번호가 맞는지 확인한다. 회원 탈퇴 전 확인과 학교 계정 학생 선택 전 확인에 쓰인다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/DeleteAccount/01_Script/DeleteAccountPop.cs",
+     "line": 61,
+     "method": "OnClickDeleteBtn",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "메인 로비 > 설정 팝업 > 고객센터 탭(학부모 인증) > 회원 탈퇴 팝업",
+     "trigger": "회원 탈퇴 팝업에서 동의 체크 + 비밀번호 입력 후 '탈퇴' 버튼. 성공하면 곧바로 회원 탈퇴(DELETE)가 이어진다. 게스트 계정은 탈퇴 버튼 숨김.",
+     "on_fail": "비밀번호 틀림 등 서버 거절 시 서버 문구 토스트, 탈퇴 진행 안 됨",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/PasswordCheck/01_Script/PasswordCheckPoP.cs",
+     "line": 49,
+     "method": "OnClick_Confirm",
+     "path": "",
+     "scenes": [
+      "TitleScene",
+      "MainLobbyScene_v4"
+     ],
+     "screen": "학교 프로필 선택 팝업 > 비밀번호 확인 팝업",
+     "trigger": "학교 계정(교육용 이용권)으로 프로필 선택을 열어 학년→반→학생을 고른 뒤 비밀번호를 입력하고 '확인'. 성공하면 계정 선택(SelectAccount)이 이어진다.",
+     "on_fail": "비밀번호 틀림 시 서버 문구 토스트, 팝업 유지",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_Account.DeleteAccount",
+   "name": "회원 탈퇴",
+   "http": "DELETE",
+   "paths": [
+    "/api/v3/accounts/{현재 accountId}"
+   ],
+   "desc": "현재 계정을 삭제한다. 성공 시 로컬 로그아웃 처리, '탈퇴 완료' 토스트 후 타이틀로 이동.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/DeleteAccount/01_Script/DeleteAccountPop.cs",
+     "line": 63,
+     "method": "OnClickDeleteBtn",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "메인 로비 > 설정 팝업 > 고객센터 탭(학부모 인증) > 회원 탈퇴 팝업",
+     "trigger": "회원 탈퇴 팝업에서 '탈퇴' → 비밀번호 확인 성공 직후 자동 호출.",
+     "on_fail": "통신 실패 시 재시도 후 오류 토스트, 탈퇴되지 않음",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_Account.EditAccount",
+   "name": "계정 정보 수정",
+   "http": "PATCH",
+   "paths": [
+    "/api/v3/accounts/{현재 accountId}"
+   ],
+   "desc": "계정 비밀번호·아이디 등을 수정하고 응답의 계정 정보로 갱신한다. 빈 요청으로 보내 계정 정보 새로고침 용도로도 쓴다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/Script/G_UserInfo.cs",
+     "line": 634,
+     "method": "EditAccountInfo",
+     "path": "",
+     "scenes": [
+      "공통"
+     ],
+     "screen": "아래 호출처들",
+     "trigger": "아래 화면들이 공통으로 쓰는 메서드.",
+     "on_fail": "통신 실패 시 재시도 후 오류 토스트(호출처가 실패 콜백을 넘기면 그쪽 처리)",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/2_UnrelatedStages/SchoolUserPWChangePoP/01_Script/SchoolUserPWChangePoP.cs",
+     "line": 147,
+     "method": "ConfirmChangePassword",
+     "path": "",
+     "scenes": [
+      "TitleScene"
+     ],
+     "screen": "타이틀 > 학교 계정 비밀번호 변경 팝업(강제)",
+     "trigger": "학교 계정이 초기 비밀번호(0000/1234) 상태로 로그인하면 타이틀에서 화면을 덮는 비밀번호 변경 팝업이 뜨고, 새 비밀번호·확인 입력 후 확인 버튼을 누르면.",
+     "on_fail": "실패 시 팝업을 닫지 않고 '변경 실패' 토스트(school_user_pw_change_fail). 서버 거절이면 서버 문구 토스트",
+     "note": "G_UserInfo.EditAccountInfo 경유"
+    },
+    {
+     "file": "Assets/Main/2_UnrelatedStages/SettingManager/01_Script/ChangePasswordPop.cs",
+     "line": 47,
+     "method": "ConfirmChangePassword",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "메인 로비 > 설정 팝업 > 비밀번호 변경 팝업(학교 계정)",
+     "trigger": "교육용 이용권(학교) 계정이 설정에서 '비밀번호 변경'을 누르면 바로 뜨는 팝업에서 조건(8~20자, 2종 조합)을 맞춘 새 비밀번호 입력 후 확인. 일반 계정은 이 팝업 대신 재설정 링크 흐름.",
+     "on_fail": "통신 실패 시 재시도 후 오류 토스트, 팝업 유지",
+     "note": "G_UserInfo.EditAccountInfo 경유"
+    },
+    {
+     "file": "Assets/Main/2_UnrelatedStages/SettingManager/01_Script/SettingManager.cs",
+     "line": 851,
+     "method": "UpdateLicenseData",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "메인 로비 > 설정 팝업 (이용권 정보 새로고침 버튼)",
+     "trigger": "이용권 정보 갱신 버튼을 누르면 프로필 저장 성공 후 빈 요청으로 호출(계정 정보 새로고침), 이어서 UUID 로그인.",
+     "on_fail": "통신 실패 시 재시도 후 오류 토스트",
+     "note": "G_UserInfo.EditAccountInfo 경유. 버튼 위치는 추정"
+    },
+    {
+     "file": "Assets/Main/ChangeIDPop/01_Script/ChangeIDPop.cs",
+     "line": 32,
+     "method": "OnClickOK",
+     "path": "",
+     "scenes": [
+      "TitleScene"
+     ],
+     "screen": "타이틀 > 아이디 변경 팝업",
+     "trigger": "아이디 변경 팝업에서 새 아이디 입력 후 확인. 성공 시 토스트 후 타이틀 재로드.",
+     "on_fail": "서버 거절 시 서버 문구 토스트",
+     "note": "G_UserInfo.EditAccountInfo 경유. 타이틀의 아이디 변경 버튼(go_IDChangeBtn)은 항상 숨김 처리돼 실제로는 노출되지 않음(추정)"
+    }
+   ]
+  },
+  {
+   "key": "API_Account.SelectAccount",
+   "name": "학교 계정 학생 선택(비밀번호)",
+   "http": "POST",
+   "paths": [
+    "/api/v3/accounts/selection/password"
+   ],
+   "desc": "학교 계정에서 고른 학생 계정·프로필로 이 기기를 전환한다. 성공 시 현재 로그인 정보를 비우고 타이틀을 다시 불러 해당 학생으로 로그인된다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/SchoolProfileManager/01_Script/SchoolProfile.cs",
+     "line": 93,
+     "method": "OnClick",
+     "path": "",
+     "scenes": [
+      "TitleScene",
+      "MainLobbyScene_v4"
+     ],
+     "screen": "학교 프로필 선택 팝업 > 학생 목록 > 비밀번호 확인 팝업",
+     "trigger": "학교 계정으로 프로필 선택(타이틀 프로필 버튼 또는 설정의 프로필 변경)을 열고 학년→반→학생 선택 → 비밀번호 확인 성공 직후 자동 호출.",
+     "on_fail": "서버 거절 시 서버 문구 토스트, 전환 안 됨",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_Account.GetRecoveryInfo",
+   "name": "비밀번호 재설정 정보 조회",
+   "http": "POST",
+   "paths": [
+    "/api/v3/accounts/password/recovery/info"
+   ],
+   "desc": "아이디로 재설정 링크를 보낼 수 있는 연락처(마스킹된 전화번호·이메일)와 학교 계정 여부를 조회한다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/LoginManager/01_Script/LoginManager.cs",
+     "line": 402,
+     "method": "GetRecoveryInfo",
+     "path": "",
+     "scenes": [
+      "TitleScene",
+      "MainLobbyScene_v4"
+     ],
+     "screen": "로그인 팝업 > 비밀번호 찾기 / 설정 > 비밀번호 변경",
+     "trigger": "아래 두 곳이 부르는 정적 메서드.",
+     "on_fail": "없는 아이디 등 서버 거절 시 서버 문구 토스트",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/LoginManager/01_Script/FindPasswordPopup.cs",
+     "line": 13,
+     "method": "OnClickGetInfo",
+     "path": "",
+     "scenes": [
+      "TitleScene",
+      "MainLobbyScene_v4"
+     ],
+     "screen": "로그인/회원가입 팝업 > 비밀번호 찾기",
+     "trigger": "비밀번호 찾기 화면에서 아이디 입력 후 확인. 학교 계정이면 안내 토스트(FindPassword_SchoolAccount), 아니면 재설정 링크 전송 방법 팝업이 열린다.",
+     "on_fail": "서버 거절 시 서버 문구 토스트",
+     "note": "LoginManager.GetRecoveryInfo 경유"
+    },
+    {
+     "file": "Assets/Main/2_UnrelatedStages/SettingManager/01_Script/SettingManager.cs",
+     "line": 870,
+     "method": "PasswordChangePoPOn",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "메인 로비 > 설정 팝업 > 비밀번호 변경 버튼",
+     "trigger": "일반(학교 아닌) 계정이 설정에서 '비밀번호 변경'을 누르면 현재 아이디로 조회 후 재설정 링크 전송 방법 팝업이 열린다.",
+     "on_fail": "서버 거절 시 서버 문구 토스트",
+     "note": "LoginManager.GetRecoveryInfo 경유"
+    }
+   ]
+  },
+  {
+   "key": "API_Account.RecoveryPassword",
+   "name": "비밀번호 재설정 링크 발송",
+   "http": "POST",
+   "paths": [
+    "/api/v3/accounts/password/recovery"
+   ],
+   "desc": "아이디·발송 수단(phone/email)·언어코드를 보내 비밀번호 재설정 링크를 발송한다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/LoginManager/01_Script/LoginManager.cs",
+     "line": 413,
+     "method": "RecoveryPassword",
+     "path": "",
+     "scenes": [
+      "TitleScene",
+      "MainLobbyScene_v4"
+     ],
+     "screen": "비밀번호 재설정 팝업(PasswordResetPop)",
+     "trigger": "아래 두 버튼이 부르는 정적 메서드.",
+     "on_fail": "서버 거절 시 서버 문구 토스트",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/LoginManager/01_Script/PasswordResetPop.cs",
+     "line": 35,
+     "method": "SendToPhoneNumber",
+     "path": "",
+     "scenes": [
+      "TitleScene",
+      "MainLobbyScene_v4"
+     ],
+     "screen": "비밀번호 재설정 팝업 > 휴대폰으로 받기",
+     "trigger": "비밀번호 찾기/설정 비밀번호 변경으로 연 재설정 팝업에서 휴대폰 발송 버튼(등록된 전화번호가 있을 때만 보임). 성공 시 '재설정 링크 발송' 토스트.",
+     "on_fail": "서버 거절 시 서버 문구 토스트",
+     "note": "LoginManager.RecoveryPassword 경유 (deliveryMethod=phone)"
+    },
+    {
+     "file": "Assets/Main/LoginManager/01_Script/PasswordResetPop.cs",
+     "line": 49,
+     "method": "SendToEmail",
+     "path": "",
+     "scenes": [
+      "TitleScene",
+      "MainLobbyScene_v4"
+     ],
+     "screen": "비밀번호 재설정 팝업 > 이메일로 받기",
+     "trigger": "재설정 팝업에서 이메일 발송 버튼(등록된 이메일이 있을 때만 보임). 성공 시 '재설정 링크 발송' 토스트.",
+     "on_fail": "서버 거절 시 서버 문구 토스트",
+     "note": "LoginManager.RecoveryPassword 경유 (deliveryMethod=email)"
+    }
+   ]
+  },
+  {
+   "key": "API_Account.GetAccountInfo",
+   "name": "계정 정보 조회(개발용)",
+   "http": "PATCH",
+   "paths": [
+    "/api/v3/accounts/{accountId}"
+   ],
+   "desc": "이름은 조회지만 빈 PATCH 로 지정 계정 정보를 받아오는 개발용 경로. 에디터에서 다른 계정·프로필로 강제 연결할 때만 쓴다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/DeveloperFuncs.cs",
+     "line": 1837,
+     "method": "ForcedConnectProfile",
+     "path": "/api/v3/accounts/{입력한 accountId}",
+     "scenes": [],
+     "screen": "(에디터 인스펙터) 개발자 패널 '프로필 강제 연결'",
+     "trigger": "에디터에서 개발자 패널 인스펙터의 '프로필 강제 연결' 버튼에 accountId·profileId 를 넣고 실행.",
+     "on_fail": "",
+     "note": "#if UNITY_EDITOR 전용(빌드에 없음). QA 대상 아님"
+    }
+   ]
+  },
+  {
+   "key": "API_Profile.CreateProfile",
+   "name": "프로필 생성",
+   "http": "POST",
+   "paths": [
+    "/api/v3/profiles"
+   ],
+   "desc": "이미 계정이 있을 때 새 학습자 프로필을 만든다. 응답 프로필을 목록에 넣고 메인 프로필로 지정한 뒤 타이틀로 이동.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/CreateProfile/01_Script/CreateProfileManager.cs",
+     "line": 393,
+     "method": "RequestProfileInfo",
+     "path": "",
+     "scenes": [
+      "CreateProfileScene"
+     ],
+     "screen": "프로필 생성 화면 > 마지막 단계",
+     "trigger": "계정이 있는 상태(회원가입 직후, 프로필 0개인 계정, 프로필 선택 팝업의 '프로필 추가')에서 프로필 생성 단계를 마치고 완료 버튼을 누르면. 학습보고서 동의 시 한국어는 전화번호, 그 외는 이메일을 함께 보냄.",
+     "on_fail": "서버 거절(닉네임 등) 시 서버 문구 토스트 후 완료 버튼 다시 누를 수 있음. 통신 실패 시 재시도 후 오류 토스트",
+     "note": "프로필 추가는 유료 이용권이 있어야 진입 가능(없으면 업그레이드 팝업)"
+    }
+   ]
+  },
+  {
+   "key": "API_Profile.EditProfile",
+   "name": "프로필 수정",
+   "http": "PATCH",
+   "paths": [
+    "/api/v3/profiles/{현재 profileId}"
+   ],
+   "desc": "여러 화면에서 쌓아 둔 프로필 변경분(닉네임·레벨/단원·국가·언어·PIN·연락처·칭호·아바타 착용·하루 목표 등)을 한 번에 보내고 응답 프로필로 갱신한다. 보낼 변경분이 없으면 통신하지 않는다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/Script/G_UserInfo.cs",
+     "line": 688,
+     "method": "FlushProfileChanges",
+     "path": "",
+     "scenes": [
+      "공통"
+     ],
+     "screen": "아래 호출처들",
+     "trigger": "아래 화면들이 공통으로 쓰는 메서드. 프로필이 선택되지 않은 상태면 요청하지 않는다.",
+     "on_fail": "통신 실패 시 재시도 후 오류 토스트. 완료 콜백이 안 와서 팝업이 안 닫히는 등 화면 진행이 멈추고, 보내려던 변경분은 이미 비워져 다음 저장 때 다시 나가지 않음",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/2_UnrelatedStages/SettingManager/01_Script/NicknameChangePopup.cs",
+     "line": 47,
+     "method": "OnClick_ConfirmChangeNickname",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "메인 로비 > 설정 팝업 > 닉네임 변경 팝업",
+     "trigger": "사용 가능한 닉네임을 입력하고 확인을 누르면. 성공 시 팝업 닫힘.",
+     "on_fail": "서버 거절 시 서버 문구 토스트, 팝업 유지",
+     "note": "FlushProfileChanges 경유"
+    },
+    {
+     "file": "Assets/Main/2_UnrelatedStages/SettingManager/01_Script/PhoneNumberChangePopup.cs",
+     "line": 54,
+     "method": "OnClick_Confirm",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4",
+      "AILevelTestScene_L3"
+     ],
+     "screen": "전화번호 변경 팝업 (설정 / 레벨테스트 결과 공유)",
+     "trigger": "전화번호 입력 후 확인. 레벨테스트 결과 공유에서 카카오톡 공유 시 번호가 없으면 이 팝업이 먼저 뜸.",
+     "on_fail": "서버 거절 시 서버 문구 토스트, 팝업 유지",
+     "note": "FlushProfileChanges 경유. 레벨테스트 결과 공유 화면의 씬은 추정"
+    },
+    {
+     "file": "Assets/Main/2_UnrelatedStages/SettingManager/01_Script/ProfileEmailChangePopup.cs",
+     "line": 41,
+     "method": "OnClick_Confirm",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4",
+      "AILevelTestScene_L3"
+     ],
+     "screen": "이메일 변경 팝업 (설정 / 레벨테스트 결과 공유)",
+     "trigger": "이메일 형식으로 입력 후 확인. 레벨테스트 결과 이메일 공유 시 이메일이 없으면 이 팝업이 먼저 뜸.",
+     "on_fail": "서버 거절 시 서버 문구 토스트, 팝업 유지",
+     "note": "FlushProfileChanges 경유. 씬은 추정"
+    },
+    {
+     "file": "Assets/Main/2_UnrelatedStages/MainSetting_v3/01_Script/ProfilePinPoPup.cs",
+     "line": 97,
+     "method": "ChangePIN",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "메인 로비 > 설정 팝업 > 프로필 잠금 PIN 설정 팝업",
+     "trigger": "설정의 프로필 잠금 토글을 켜거나 PIN 변경 버튼 → 숫자 4자리 입력 후 완료. (한국어는 전화번호, 그 외는 이메일이 등록돼 있어야 토글 가능)",
+     "on_fail": "서버 거절 시 서버 문구 토스트, 팝업 유지",
+     "note": "FlushProfileChanges 경유"
+    },
+    {
+     "file": "Assets/Main/2_UnrelatedStages/SettingManager/01_Script/SettingManager.cs",
+     "line": 657,
+     "method": "프로필 잠금 토글",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "메인 로비 > 설정 팝업 > 프로필 잠금 토글",
+     "trigger": "프로필 잠금 토글을 끄면 PIN 해제(빈 비밀번호)로 즉시 저장.",
+     "on_fail": "통신 실패 시 재시도 후 오류 토스트",
+     "note": "FlushProfileChanges 경유"
+    },
+    {
+     "file": "Assets/Main/2_UnrelatedStages/SettingManager/01_Script/SettingManager.cs",
+     "line": 787,
+     "method": "UpdateProfileByToggle",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "메인 로비 > 설정 팝업 > 상단 탭 전환",
+     "trigger": "설정 팝업에서 다른 탭(설정/계정/고객센터/구매)으로 바꿀 때 그동안 바꾼 설정(하루 목표 스테이지 수 등)을 저장. 변경분이 없으면 통신 없음.",
+     "on_fail": "통신 실패 시 재시도 후 오류 토스트",
+     "note": "FlushProfileChanges 경유"
+    },
+    {
+     "file": "Assets/Main/2_UnrelatedStages/SettingManager/01_Script/SettingManager.cs",
+     "line": 729,
+     "method": "IeCloseCoroutine",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "메인 로비 > 설정 팝업 닫기",
+     "trigger": "설정 팝업을 닫을 때 누적된 변경분을 저장. 변경분이 없으면 통신 없음.",
+     "on_fail": "통신 실패 시 재시도 후 오류 토스트",
+     "note": "FlushProfileChanges 경유"
+    },
+    {
+     "file": "Assets/Main/2_UnrelatedStages/SettingManager/01_Script/SettingManager.cs",
+     "line": 814,
+     "method": "LevelChangePoPOn",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "메인 로비 > 설정 팝업 > 레벨 변경 버튼",
+     "trigger": "설정에서 레벨 변경 버튼을 누르면 레벨 변경 팝업을 열기 전에 누적 변경분을 먼저 저장.",
+     "on_fail": "통신 실패 시 재시도 후 오류 토스트",
+     "note": "FlushProfileChanges 경유"
+    },
+    {
+     "file": "Assets/Main/2_UnrelatedStages/SettingManager/01_Script/SettingManager.cs",
+     "line": 849,
+     "method": "UpdateLicenseData",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "메인 로비 > 설정 팝업 (이용권 정보 새로고침 버튼)",
+     "trigger": "이용권 정보 갱신 버튼 → 누적 변경분 저장 후 계정 정보 갱신·UUID 로그인으로 이어짐.",
+     "on_fail": "통신 실패 시 이후 갱신 단계가 진행되지 않음",
+     "note": "FlushProfileChanges 경유. 버튼 위치 추정"
+    },
+    {
+     "file": "Assets/Main/2_UnrelatedStages/SelectCountry/01_Script/SelectCountryPop.cs",
+     "line": 103,
+     "method": "국가 선택 확인",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "국가 선택 팝업 > 변경 안내(1개월 1회) 팝업",
+     "trigger": "프로필이 있는 상태에서 다른 국가를 고르면 '1개월에 한 번' 안내 팝업이 뜨고 '확인'을 누르면 저장. 성공 시 '국가 변경 완료' 토스트 후 타이틀로 이동(이어서 국가별 커리큘럼 조회). 같은 국가면 통신 없음.",
+     "on_fail": "쿨타임 등 서버 거절 시 서버 문구 토스트",
+     "note": "FlushProfileChanges 경유. 국가 선택 팝업을 여는 설정 화면 위치는 추정"
+    },
+    {
+     "file": "Assets/Main/2_UnrelatedStages/LevelChange/01_Script/LevelManager.cs",
+     "line": 592,
+     "method": "PatchProfile",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4",
+      "DailyStudyScene",
+      "ChallengeScene",
+      "FreeStudyScene"
+     ],
+     "screen": "레벨(단원) 변경 팝업 / 오늘의 학습 단원 변경 팝업",
+     "trigger": "레벨 변경 팝업(설정·내 프로필·상단 UI에서 열림)에서 단원을 고르고 저장을 누르면, 또는 오늘의 학습에서 다음 단원 이동 팝업을 확인하면 nationalChapterId 저장. 완전 잠금 단원은 다음 단원만 선택 가능.",
+     "on_fail": "통신 실패 시 팝업이 닫히지 않음",
+     "note": "LevelManager.Save → FlushProfileChanges 경유. 상단 UI가 있는 씬 목록은 추정"
+    },
+    {
+     "file": "Assets/Main/TitleBadge/01_Script/TitleBadgeManager.cs",
+     "line": 106,
+     "method": "SaveTitleBadge",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "메인 로비 > 칭호(배지) 팝업",
+     "trigger": "칭호 목록에서 칭호를 장착/해제해 저장하면 titleId 저장.",
+     "on_fail": "통신 실패 시 재시도 후 오류 토스트",
+     "note": "FlushProfileChanges 경유. 씬은 추정(MissionManager 프리팹에 포함)"
+    },
+    {
+     "file": "Assets/Main/FriendsAvatar_v3/01_Script/Closet/FriendsAvatarClosetManager.cs",
+     "line": 100,
+     "method": "옷장 닫기",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "메인 로비 > 옷장(FriendsAvatarCloset) 팝업",
+     "trigger": "옷장을 닫을 때 대표 캐릭터·착용 아이템을 저장(보유하지 않은 캐릭터를 골라 둔 경우 처음 캐릭터로 되돌린 뒤 저장).",
+     "on_fail": "통신 실패 시 재시도 후 오류 토스트",
+     "note": "G_UserInfo.SaveCloset → FlushProfileChanges 경유. 씬은 추정"
+    },
+    {
+     "file": "Assets/Main/FriendsAvatar_v3/01_Script/Shop/FriendsAvatarShopManager.cs",
+     "line": 479,
+     "method": "PurchaseComplete",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "메인 로비 > 아바타 상점 > 구매 완료",
+     "trigger": "아바타 아이템 구매 성공 직후 착용 정보를 저장.",
+     "on_fail": "통신 실패 시 재시도 후 오류 토스트",
+     "note": "G_UserInfo.SaveCloset 경유. 씬은 추정"
+    },
+    {
+     "file": "Assets/Main/FriendsAvatar_v3/01_Script/Shop/FriendsAvatarShopManager.cs",
+     "line": 534,
+     "method": "WearingCurrentItem",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "메인 로비 > 아바타 상점 > 구매 완료 팝업 '입기'",
+     "trigger": "구매 완료 팝업에서 '입기'를 누르면 해당 캐릭터를 대표로 바꾸고 착용 정보 저장.",
+     "on_fail": "통신 실패 시 재시도 후 오류 토스트",
+     "note": "G_UserInfo.SaveCloset 경유. 씬은 추정"
+    },
+    {
+     "file": "Assets/Main/2_UnrelatedStages/MainLobby/01_Script/MainLobbyManager.cs",
+     "line": 31,
+     "method": "OnDisable",
+     "path": "",
+     "scenes": [],
+     "screen": "(구 메인 로비)",
+     "trigger": "구 메인 로비에서 캐릭터를 바꾼 뒤 로비를 떠날 때 저장.",
+     "on_fail": "",
+     "note": "MainLobbyManager 는 구 MainLobbyScene/MainLobbyScene_mf 에만 붙어 있고 MainLobbyScene_v4 에는 없음 → 현재 사실상 미사용(추정)"
+    },
+    {
+     "file": "Assets/Main/FreeStudy/01_Script/FreeStudyManager.cs",
+     "line": 75,
+     "method": "OnDestroy",
+     "path": "",
+     "scenes": [
+      "FreeStudyScene"
+     ],
+     "screen": "자유 학습 화면",
+     "trigger": "자유 학습 씬을 나갈 때(다른 씬으로 이동) 현재 보고 있던 단원을 자동 저장. 단원이 그대로면 변경분이 남아 있을 때만 통신.",
+     "on_fail": "실패해도 화면 영향 없음(오류 토스트만)",
+     "note": "FlushProfileChanges 경유"
+    },
+    {
+     "file": "Assets/Main/Script/LocalizationScript/LocalizationManager.cs",
+     "line": 271,
+     "method": "FinishLocaleChange",
+     "path": "",
+     "scenes": [
+      "공통"
+     ],
+     "screen": "언어 변경",
+     "trigger": "프로필이 선택된 상태에서 언어를 바꾸면 languageCode 를 자동 저장(번역 마스터데이터 조회와 동시에).",
+     "on_fail": "실패해도 화면 영향 없음(오류 토스트만)",
+     "note": "FlushProfileChanges 경유"
+    },
+    {
+     "file": "Assets/Main/PhoneNumberEvent/01_Script/PhoneNumberEventPop.cs",
+     "line": 84,
+     "method": "SubmitPhoneNumber",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "메인 로비 > 사이드 배너 > 전화번호 등록 이벤트 팝업",
+     "trigger": "전화번호 등록 이벤트 참여 성공 직후 같은 번호를 프로필 전화번호로 저장하고 완료 토스트를 띄움.",
+     "on_fail": "실패 시 완료 토스트가 안 뜸",
+     "note": "FlushProfileChanges 경유"
+    }
+   ]
+  },
+  {
+   "key": "API_Profile.DeleteProfile",
+   "name": "프로필 삭제",
+   "http": "DELETE",
+   "paths": [
+    "/api/v3/profiles/{선택한 profileId}"
+   ],
+   "desc": "선택한 프로필을 삭제하고 프로필 목록을 다시 그린다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/PersonalProfileManager/01_Script/PersonalProfileManager.cs",
+     "line": 271,
+     "method": "DeleteComplete",
+     "path": "",
+     "scenes": [
+      "TitleScene",
+      "MainLobbyScene_v4"
+     ],
+     "screen": "프로필 선택 팝업 > 삭제 모드 > 삭제 확인 팝업",
+     "trigger": "프로필 선택 팝업(타이틀 프로필 버튼 / 설정의 프로필 변경)에서 삭제 모드로 바꿔 프로필을 누르고(잠긴 프로필은 PIN 확인 후) 확인 팝업에서 '확인'. 게스트는 팝업 진입 불가, 학교 계정은 학교 프로필 팝업으로 대체.",
+     "on_fail": "서버 거절 시 서버 문구 토스트, 목록 그대로",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_Profile.SelectProfile",
+   "name": "프로필 선택",
+   "http": "PUT",
+   "paths": [
+    "/api/v3/profiles/{선택한 profileId}/selection"
+   ],
+   "desc": "이 기기(deviceId)의 메인 프로필을 바꾼다. 성공 시 메인 프로필을 교체하고 타이틀을 다시 불러온다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/PersonalProfileManager/01_Script/PersonalProfileManager.cs",
+     "line": 245,
+     "method": "SelectComplete",
+     "path": "",
+     "scenes": [
+      "TitleScene",
+      "MainLobbyScene_v4"
+     ],
+     "screen": "프로필 선택 팝업",
+     "trigger": "프로필 선택 팝업에서 프로필을 누르고 확인 팝업 '확인'(잠긴 프로필은 PIN 확인 성공 시 바로). 타이틀에서 메인 프로필이 없으면 팝업이 자동으로 뜬다.",
+     "on_fail": "서버 거절 시 서버 문구 토스트, 팝업 유지",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_Profile.GetProfileInfo",
+   "name": "프로필 정보 조회(개발용)",
+   "http": "PATCH",
+   "paths": [
+    "/api/v3/profiles/{입력한 profileId}"
+   ],
+   "desc": "이름은 조회지만 빈 PATCH 로 지정 프로필 정보를 받아오는 개발용 사용. 에디터 인스펙터 버튼에서만 쓰인다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/DailyStudy/01_Script/DailyStudyManager.cs",
+     "line": 129,
+     "method": "CheckDailyStudyData",
+     "path": "",
+     "scenes": [],
+     "screen": "(에디터 인스펙터) 오늘의 학습 '오늘의 학습 데이터 체크'",
+     "trigger": "에디터에서 DailyStudyManager 인스펙터 버튼에 profileId 를 넣고 실행.",
+     "on_fail": "",
+     "note": "#if UNITY_EDITOR 전용(빌드에 없음). QA 대상 아님"
+    },
+    {
+     "file": "Assets/Main/2_UnrelatedStages/DeveloperFuncs.cs",
+     "line": 1817,
+     "method": "CheckDailyStudyData",
+     "path": "",
+     "scenes": [],
+     "screen": "(에디터 인스펙터) 개발자 패널 '오늘의 학습 데이터 체크'",
+     "trigger": "에디터 인스펙터 버튼으로 실행.",
+     "on_fail": "",
+     "note": "#if UNITY_EDITOR 전용(빌드에 없음)"
+    },
+    {
+     "file": "Assets/Main/2_UnrelatedStages/DeveloperFuncs.cs",
+     "line": 1842,
+     "method": "ForcedConnectProfile(accountId, profileId)",
+     "path": "",
+     "scenes": [],
+     "screen": "(에디터 인스펙터) 개발자 패널 '프로필 강제 연결'",
+     "trigger": "에디터 인스펙터 버튼으로 실행(계정 조회 성공 후 이어서 호출).",
+     "on_fail": "",
+     "note": "#if UNITY_EDITOR 전용(빌드에 없음)"
+    },
+    {
+     "file": "Assets/Main/2_UnrelatedStages/DeveloperFuncs.cs",
+     "line": 1867,
+     "method": "ForcedConnectProfile(profileId)",
+     "path": "",
+     "scenes": [],
+     "screen": "(에디터 인스펙터) 개발자 패널 '프로필 강제 연결2'",
+     "trigger": "에디터 인스펙터 버튼으로 실행.",
+     "on_fail": "",
+     "note": "#if UNITY_EDITOR 전용(빌드에 없음)"
+    }
+   ]
+  },
+  {
+   "key": "API_Profile.PasswordReset",
+   "name": "프로필 PIN 재설정 링크 발송",
+   "http": "POST",
+   "paths": [
+    "/api/v3/profiles/password/reset"
+   ],
+   "desc": "잠긴 프로필의 PIN 재설정 링크를 프로필에 등록된 연락처로 보낸다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/MainSetting_v3/01_Script/ProfilePinPoPup.cs",
+     "line": 203,
+     "method": "IeSendResetLink",
+     "path": "",
+     "scenes": [
+      "TitleScene",
+      "MainLobbyScene_v4"
+     ],
+     "screen": "프로필 선택 팝업 > 잠긴 프로필 PIN 입력 팝업 > PIN 찾기",
+     "trigger": "PIN 이 걸린 프로필을 선택/삭제하려 할 때 뜨는 PIN 입력 팝업에서 'PIN 잊음' → 재설정 링크 보내기. 같은 프로필은 하루 1번만(같은 날 다시 누르면 '이미 보냄' 토스트, 기기 날짜 기준).",
+     "on_fail": "서버 거절 시 서버 문구 토스트",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_Profile.PasswordVerification",
+   "name": "프로필 PIN 확인",
+   "http": "POST",
+   "paths": [
+    "/api/v3/profiles/password/verification"
+   ],
+   "desc": "잠긴 프로필의 PIN 4자리가 맞는지 확인한다. 성공하면 프로필 선택 또는 삭제 확인으로 이어진다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/MainSetting_v3/01_Script/ProfilePinPoPup.cs",
+     "line": 121,
+     "method": "IeEnterProfile",
+     "path": "",
+     "scenes": [
+      "TitleScene",
+      "MainLobbyScene_v4"
+     ],
+     "screen": "프로필 선택 팝업 > 잠긴 프로필 PIN 입력 팝업",
+     "trigger": "프로필 선택 팝업에서 PIN 이 걸린 프로필을 선택하거나 삭제하려 할 때 PIN 4자리 입력 후 완료.",
+     "on_fail": "PIN 틀림 시 서버 문구 토스트, 팝업 유지",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_Device.FcmToken",
+   "name": "FCM 푸시 토큰 등록/갱신",
+   "http": "PATCH",
+   "paths": [
+    "/api/v3/devices/{deviceId}/fcm-token"
+   ],
+   "desc": "Firebase 에서 받은 푸시 토큰을 현재 기기(deviceId)에 등록한다. 응답은 쓰지 않는다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/FirebaseManager/FirebaseManager.cs",
+     "line": 145,
+     "method": "SaveFcmTokenToServer",
+     "path": "",
+     "scenes": [
+      "TitleScene",
+      "공통"
+     ],
+     "screen": "화면 없음(백그라운드)",
+     "trigger": "앱이 FCM 토큰을 받은 뒤, UUID 로그인 등으로 deviceId 가 설정될 때마다 자동 호출(보통 타이틀 진입 때마다). 모바일 전용(웹 빌드에서는 FCM 미사용).",
+     "on_fail": "통신 실패 시 재시도 후 오류 토스트, 그 외 영향 없음",
+     "note": "G_UserInfo.onDeviceIdSetting 이벤트 경유. 토큰을 받기 전에 deviceId 가 먼저 설정되면 다음 로그인 때 전송(추정)"
+    }
+   ]
+  },
+  {
+   "key": "API_Developer.AddDiamond",
+   "name": "다이아 지급(개발용)",
+   "http": "PUT",
+   "paths": [
+    "/api/v3/dev/coin/grant/profiles/{현재 profileId}"
+   ],
+   "desc": "개발/QA용으로 현재 프로필에 다이아를 지급한다. 응답 처리 없음.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/DeveloperFuncs.cs",
+     "line": 430,
+     "method": "GetDiamond",
+     "path": "",
+     "scenes": [
+      "공통"
+     ],
+     "screen": "개발자 패널(ForDev)",
+     "trigger": "설정 팝업에서 앱 버전 표시를 5초 안에 8번 연속 탭해 개발자 패널을 열고 다이아 지급 버튼을 누르면. 로그인 전이면 '로그인 후 이용' 토스트.",
+     "on_fail": "통신 실패 시 재시도 후 오류 토스트",
+     "note": "개발자 메뉴 전용. 운영 서버에서는 거절될 것으로 추정"
+    }
+   ]
+  },
+  {
+   "key": "API_Voucher.Registration",
+   "name": "이용권(바우처) 등록",
+   "http": "POST",
+   "paths": [
+    "/api/v3/voucher/registration"
+   ],
+   "desc": "계정에 이용권 코드를 등록한다. 성공 시 토스트 후 타이틀을 다시 불러 이용권 정보를 갱신한다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/Voucher/01_Script/VoucherPopManager.cs",
+     "line": 28,
+     "method": "OnClickConfirm",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "메인 로비 > 설정 팝업 > 구매 탭 > 이용권 등록 팝업",
+     "trigger": "이용권 등록 팝업에서 코드 입력 후 '확인'. 빈 칸이면 토스트만. 게스트는 팝업 대신 회원가입 유도 팝업이 뜨고, 교육용(학교) 이용권 계정과 iOS 에서는 등록 버튼 자체가 숨김.",
+     "on_fail": "잘못된/사용된 코드 등 서버 거절 시 서버 문구 토스트, 팝업 유지",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_License.Type.Get",
+   "name": "이용권(라이선스) 조회 (구 v1)",
+   "http": "GET",
+   "paths": [
+    "/api/v1/license/accounts/{accountId}"
+   ],
+   "desc": "구 v1 라이선스 조회. 이용권 만료 시 갱신하려던 코드가 주석 처리돼 현재 호출되지 않는다(이용권 정보는 로그인 응답으로 받음).",
+   "unused": true,
+   "calls": []
+  },
+  {
+   "key": "API_Coupon.Type.Registration",
+   "name": "쿠폰 등록 (구 v1)",
+   "http": "",
+   "paths": [
+    "/api/v1/coupon/registration"
+   ],
+   "desc": "구 v1 쿠폰 등록 경로. 현재는 이용권 등록(API_Voucher.Registration)으로 대체돼 호출처가 없다.",
+   "unused": true,
+   "calls": []
+  },
+  {
+   "key": "API_Reward.Type.Claim",
+   "name": "보상 수령 (구 v1)",
+   "http": "",
+   "paths": [
+    "/api/v1/reward/claim"
+   ],
+   "desc": "구 v1 보상 수령 경로. 호출처 없음.",
+   "unused": true,
+   "calls": []
+  },
+  {
+   "key": "API_Reward.Type.DailyFreeTicket",
+   "name": "광고 시청 무료 티켓 (구 v1)",
+   "http": "",
+   "paths": [
+    "/api/v1/reward/ad-watch/profiles/{profileId}"
+   ],
+   "desc": "구 v1 광고 시청 보상 경로. 호출처 없음.",
+   "unused": true,
+   "calls": []
+  },
+  {
+   "key": "API_Reward.Type.DailyFirstLearningTicket",
+   "name": "매일 첫 학습 클리어 티켓 (구 v1)",
+   "http": "POST",
+   "paths": [
+    "/api/v1/reward/daily-learning-clear/profiles/{현재 profileId}"
+   ],
+   "desc": "매일 첫 스테이지 클리어 보상(캡슐 티켓)을 받는 구 v1 경로. 호출 코드는 있지만 그 컴포넌트가 어떤 씬·프리팹에도 붙어 있지 않아 실행되지 않는다.",
+   "unused": true,
+   "calls": [
+    {
+     "file": "Assets/Main/StageResult/01_Script/DailyCapsuleTicketPoP.cs",
+     "line": 37,
+     "method": "GetTicket",
+     "path": "",
+     "scenes": [],
+     "screen": "(없음) 스테이지 결과의 일일 캡슐 티켓 팝업으로 만들어졌던 코드",
+     "trigger": "RewardTouch/NoAdGet 에서 호출하지만 DailyCapsuleTicketPoP 컴포넌트를 쓰는 씬·프리팹이 없다.",
+     "on_fail": "",
+     "note": "죽은 코드(컴포넌트 미사용)"
+    }
+   ]
+  },
+  {
+   "key": "API_Event.GetAttendanceEvent",
+   "name": "7일 출석 이벤트 정보 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/event/attendance/profiles/{현재 profileId}"
+   ],
+   "desc": "7일 출석 이벤트의 출석 일수·일차별 출석 여부·보상(마지막 날 다이아 수량 등)을 받아 팝업을 그린다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/AttendanceCharacterEvent/01_Script/AttendanceCharacterEventPop.cs",
+     "line": 156,
+     "method": "LoadEventData",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "메인 로비 > 사이드 배너 > 7일 출석 이벤트 팝업",
+     "trigger": "메인 로비 사이드 배너에서 출석 이벤트 배너를 눌러 팝업이 열릴 때마다 자동 호출. 서버 배너 목록에 해당 이벤트(팝업 이름 AttendanceCharacterEventPop)가 있을 때만 배너가 보인다.",
+     "on_fail": "통신 실패 시 재시도 후 오류 토스트, 팝업은 기본(빈) 상태로 남음",
+     "note": "SideBannerItem 이 배너 value 의 클래스명으로 팝업을 연다"
+    }
+   ]
+  },
+  {
+   "key": "API_Event.PhoneNumberRegistration",
+   "name": "보호자 전화번호 등록 이벤트 참여",
+   "http": "POST",
+   "paths": [
+    "/api/v3/event/phone-number-registration/participation"
+   ],
+   "desc": "보호자 휴대폰 번호를 등록해 이벤트 보상(E0001: 7일 이용권+다이아 카카오톡 발송, E0003: 다이아)을 받는다. 성공 시 배너 갱신과 프로필 전화번호 저장이 이어진다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/PhoneNumberEvent/01_Script/PhoneNumberEventPop.cs",
+     "line": 77,
+     "method": "SubmitPhoneNumber",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "메인 로비 > 사이드 배너 > 전화번호 등록 이벤트 팝업",
+     "trigger": "사이드 배너의 전화번호 등록 이벤트 팝업에서 010 뒤 8자리를 입력하고 '등록' → 번호 확인 팝업에서 '확인'. 자리수가 모자라면 토스트만.",
+     "on_fail": "이미 참여 등 서버 거절 시 서버 문구 토스트, 팝업 유지",
+     "note": "서버 배너에 E0001/E0003 이벤트가 있을 때만 노출(한국어 전용 문구)"
+    }
+   ]
+  },
+  {
+   "key": "API_Event.JapanSignupEventClaim",
+   "name": "일본 신규회원 이벤트 이용권 지급",
+   "http": "POST",
+   "paths": [
+    "/api/v3/event/japan-signup/claims"
+   ],
+   "desc": "일본 신규회원 1개월 무료 이벤트 이용권을 계정당 1회 지급한다. 회원은 팝업에서 바로, 게스트는 회원가입 완료 직후 자동으로 요청한다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/JapanSignupEvent/01_Script/JapanSignupEventPop.cs",
+     "line": 80,
+     "method": "OnClickClaim",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "메인 로비 > 사이드 배너 > 일본 신규회원 이벤트 팝업",
+     "trigger": "서버 배너(JAPAN_SIGNUP_EVENT)로 뜬 이벤트 팝업에서 지급(초록) 버튼을 정식 회원이 누르면. 게스트는 요청 없이 회원가입 화면으로 넘어간다. 성공 시 토스트 후 타이틀 재진입(이용권 갱신).",
+     "on_fail": "대상 아님 등 서버 거절 시 서버 문구 토스트, 8초 무응답이면 버튼 다시 활성",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/LoginManager/01_Script/LoginSignupUI.cs",
+     "line": 493,
+     "method": "IeClaimJapanSignupEventThenFinish",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "로그인/회원가입 팝업 > 회원가입 완료 직후",
+     "trigger": "게스트가 일본 이벤트 팝업의 지급 버튼 → 회원가입 탭에서 가입(게스트 전환) 성공 직후 자동 호출. 성공하면 가입 토스트 대신 '이벤트 지급 완료' 토스트 1개 후 타이틀.",
+     "on_fail": "실패하거나 8초 안에 응답이 없어도 가입은 정상 완료로 처리하고 일반 '가입 완료' 토스트 후 타이틀",
+     "note": "이벤트 팝업을 거치지 않고 가입한 경우에는 호출되지 않음"
+    }
+   ]
+  },
+  {
+   "key": "API_Class.GetAccounts",
+   "name": "학급 학생 계정 목록 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/classes/{classId}/account",
+    "/api/v3/classes/schools/{schoolId}/account/unassigned"
+   ],
+   "desc": "학교 프로필 선택에서 고른 반의 학생 계정·프로필 목록을 받는다. classId 가 -1(미배정)이면 미배정 계정 경로로 바뀐다. 반별로 한 번 받으면 팝업 안에서 캐시.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/SchoolProfileManager/01_Script/SchoolProfileManager.cs",
+     "line": 196,
+     "method": "FetchStudentInfoFromAPI",
+     "path": "/api/v3/classes/{선택한 classId}/account (미배정 선택 시 /api/v3/classes/schools/{schoolId}/account/unassigned)",
+     "scenes": [
+      "TitleScene",
+      "MainLobbyScene_v4"
+     ],
+     "screen": "학교 프로필 선택 팝업 > 반 선택 → 학생 목록",
+     "trigger": "학교 계정(교육용 이용권)으로 프로필 선택(타이틀 프로필 버튼 / 설정의 프로필 변경)을 열고 학년 → 반을 고른 뒤 다음을 누르면. 7번째 학년 탭(미배정으로 추정)을 고르면 반 선택 없이 바로 미배정 경로로 호출.",
+     "on_fail": "통신 실패 시 재시도 후 오류 토스트, 학생 목록이 안 나옴",
+     "note": "7번째 학년 탭 = 미배정은 코드(grade>=7 → classId -1) 기준 추정"
+    }
+   ]
+  },
+  {
+   "key": "API_Class.UnassignedAccounts",
+   "name": "미배정 학생 계정 목록 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/classes/schools/{schoolId}/account/unassigned"
+   ],
+   "desc": "학교 소속이지만 반에 배정되지 않은 학생 계정 목록. 직접 호출되지 않고 GetAccounts(-1) 안에서 이 경로로 바뀌어 쓰인다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/SchoolProfileManager/01_Script/SchoolProfileManager.cs",
+     "line": 196,
+     "method": "FetchStudentInfoFromAPI",
+     "path": "",
+     "scenes": [
+      "TitleScene",
+      "MainLobbyScene_v4"
+     ],
+     "screen": "학교 프로필 선택 팝업 > 학년 선택(미배정) → 학생 목록",
+     "trigger": "학교 프로필 선택 팝업에서 7번째 학년 탭(미배정으로 추정)을 고르고 다음을 누르면 반 선택 단계를 건너뛰고 호출.",
+     "on_fail": "통신 실패 시 재시도 후 오류 토스트, 학생 목록이 안 나옴",
+     "note": "API_Class.GetAccounts(-1) 경유"
+    }
+   ]
+  },
+  {
+   "key": "API_Class.GetClassInfo",
+   "name": "학년별 학급 목록 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/classes/schools/{schoolId}/grades/{학년 1~6}"
+   ],
+   "desc": "현재 학교의 선택한 학년 학급(반) 목록을 받아 반 선택 토글을 만든다. 학년별로 한 번 받으면 팝업 안에서 캐시. 7학년 이상이면 '지원하지 않는 학년' 토스트 후 요청하지 않는다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/SchoolProfileManager/01_Script/SchoolProfileManager.cs",
+     "line": 162,
+     "method": "FetchClassInfoFromAPI",
+     "path": "",
+     "scenes": [
+      "TitleScene",
+      "MainLobbyScene_v4"
+     ],
+     "screen": "학교 프로필 선택 팝업 > 학년 선택 → 반 선택",
+     "trigger": "학교 계정으로 프로필 선택(타이틀 프로필 버튼 / 설정의 프로필 변경)을 열고 1~6학년 중 하나를 고른 뒤 다음을 누르면. 같은 학년은 두 번째부터 캐시 사용.",
+     "on_fail": "통신 실패 시 재시도 후 오류 토스트, 반 목록이 안 나옴",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_Learning.DailyLearningData",
+   "name": "오늘의 학습 데이터 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/learning/daily/national-chapters/{nationalChapterId}/profiles/{profileId}"
+   ],
+   "desc": "현재 단원의 오늘의 학습 스테이지별 기록과 현재 라운드를 받아 맵(푯말·캐릭터 위치·라운드 진행 막대)을 그린다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/DailyStudy/01_Script/DailyStudyManager.cs",
+     "line": 219,
+     "method": "GetLearningData",
+     "path": "",
+     "scenes": [
+      "DailyStudyScene"
+     ],
+     "screen": "오늘의 학습 맵",
+     "trigger": "오늘의 학습에 들어올 때마다 자동 호출. 오늘의 학습 화면에 있는 동안 프로필 정보가 갱신되면(예: 레벨 변경 팝업에서 단원을 바꾸면) 다시 호출된다.",
+     "on_fail": "공통 처리(최대 3회 자동 재시도 후 'UnknownError' 토스트). 응답에 없는 스테이지 ID가 섞이거나 파싱 오류면 'DailyStudyDataException' 토스트 후 이전 씬으로 돌아간다. 통신 자체가 실패하면 로딩 화면이 닫히지 않을 수 있음(추정).",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/2_UnrelatedStages/DailyStudy/01_Script/DailyStudyManager.cs",
+     "line": 133,
+     "method": "CheckDailyStudyData",
+     "path": "",
+     "scenes": [
+      "DailyStudyScene"
+     ],
+     "screen": "(에디터 인스펙터 버튼 '오늘의 학습 데이터 체크')",
+     "trigger": "유니티 에디터에서 DailyStudyManager 인스펙터의 버튼을 눌렀을 때만. 앱에서는 호출되지 않는다.",
+     "on_fail": "",
+     "note": "개발용 죽은 코드(#if UNITY_EDITOR). 다른 profileId 를 넣어 조회하는 오버로드 사용."
+    },
+    {
+     "file": "Assets/Main/2_UnrelatedStages/DeveloperFuncs.cs",
+     "line": 1821,
+     "method": "CheckDailyStudyData",
+     "path": "",
+     "scenes": [],
+     "screen": "(에디터 인스펙터 버튼 '오늘의 학습 데이터 체크', ForDev 개발자 패널)",
+     "trigger": "유니티 에디터에서 개발자 패널 인스펙터의 버튼을 눌렀을 때만. 앱에서는 호출되지 않는다.",
+     "on_fail": "",
+     "note": "개발용 죽은 코드(#if UNITY_EDITOR). 응답을 쓰지 않는다."
+    }
+   ]
+  },
+  {
+   "key": "API_Learning.RoundCompletion",
+   "name": "오늘의 학습 라운드 완료 기록",
+   "http": "PUT",
+   "paths": [
+    "/api/v3/learning/daily/round/completion/national-chapters/{nationalChapterId}/profiles/{profileId}"
+   ],
+   "desc": "현재 단원의 오늘의 학습 라운드를 하나 올린다(1→2→3라운드, 3라운드 이후는 무한 모드 라운드). 응답이 오면 클라가 라운드 번호를 올리고 맵을 다시 그린다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/DailyStudy/01_Script/DailyStudyManager.cs",
+     "line": 668,
+     "method": "IeRoundChangeAct",
+     "path": "",
+     "scenes": [
+      "DailyStudyScene"
+     ],
+     "screen": "오늘의 학습 맵 > 끝 푯말(라운드 전환 구름 연출)",
+     "trigger": "1·2라운드에서 현재 라운드 스테이지를 모두 클리어한 뒤 맵 끝 푯말을 누르면 구름 연출 중에 호출. 무한 모드(4라운드 이상)에서 끝 푯말 → 단원 변경 팝업의 '계속(반복)' 을 눌러도 호출된다.",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 응답이 안 오면 라운드가 안 올라가고 구름이 화면을 덮은 채 남을 수 있음(추정).",
+     "note": "에디터에서는 스테이지를 다 안 깨도 끝 푯말을 누르면 호출된다(연출 확인용, 앱 빌드 아님)."
+    },
+    {
+     "file": "Assets/Main/2_UnrelatedStages/DailyStudy/01_Script/DailyStudyManager.cs",
+     "line": 543,
+     "method": "ChangeMode",
+     "path": "",
+     "scenes": [
+      "DailyStudyScene"
+     ],
+     "screen": "오늘의 학습 맵 > 무한 모드 전환",
+     "trigger": "3라운드를 모두 클리어한 상태에서 모드 전환 버튼을 누르거나, 끝 푯말 → 단원 변경 팝업에서 '계속(반복)' 을 눌러 무한 모드로 처음 넘어갈 때 1회 호출. 이미 4라운드 이상이면 호출 없이 모드만 바뀐다.",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 응답이 없으면 무한 모드로 전환되지 않는다.",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_Learning.ChallengeLearningData",
+   "name": "트로피 도전(1% 도전) 학습 데이터 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/learning/challenge/levels/{level}/country-codes/{countryCode}/profiles/{profileId}"
+   ],
+   "desc": "선택한 레벨의 트로피 도전 스테이지별 기록(도전/성공 횟수)을 받아 행성·대단원 목록을 그린다. 레벨·모드별로 한 번 받은 데이터는 캐시한다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/Challenge/01_Script/ChallengeManager.cs",
+     "line": 200,
+     "method": "GetLearningData",
+     "path": "",
+     "scenes": [
+      "ChallengeScene"
+     ],
+     "screen": "챌린지 > 트로피 도전 모드",
+     "trigger": "트로피 도전 모드로 챌린지에 들어올 때(전체 콘텐츠 팝업의 '1% 도전' 등) 자동 호출. 화면 안에서 레벨 좌우 화살표로 아직 안 본 레벨로 바꾸거나, 만점 도전에서 모드 토글로 트로피 도전으로 바꿨을 때(그 레벨을 처음 볼 때만)도 호출.",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 콜백이 안 오면 로딩 화면이 닫히지 않을 수 있음(추정).",
+     "note": "단원 잠금 범위 밖 레벨로는 이동이 막혀 호출되지 않는다."
+    }
+   ]
+  },
+  {
+   "key": "API_Learning.PerfectChallengeLearningData",
+   "name": "만점 도전 학습 데이터 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/learning/perfect-challenge/levels/{level}/country-codes/{countryCode}/profiles/{profileId}"
+   ],
+   "desc": "선택한 레벨의 만점 도전(Perfect Challenge) 스테이지별 기록을 받아 행성·대단원 목록을 그린다. 레벨·모드별로 캐시.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/Challenge/01_Script/ChallengeManager.cs",
+     "line": 201,
+     "method": "GetLearningData",
+     "path": "",
+     "scenes": [
+      "ChallengeScene"
+     ],
+     "screen": "챌린지 > 만점 도전 모드",
+     "trigger": "만점 도전 모드로 챌린지에 들어올 때(전체 콘텐츠 팝업의 '만점 도전') 자동 호출. 화면 안에서 아직 안 본 레벨로 바꾸거나, 모드 토글로 만점 도전으로 바꿨을 때(그 레벨을 처음 볼 때만)도 호출.",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 콜백이 안 오면 로딩 화면이 닫히지 않을 수 있음(추정).",
+     "note": "ChallengeManager.GetLearningData 한 메서드가 모드에 따라 트로피/만점 경로 중 하나를 고른다."
+    }
+   ]
+  },
+  {
+   "key": "API_Learning.FreeLearningData",
+   "name": "자유 학습 데이터 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/learning/free/national-chapters/{nationalChapterId}/profiles/{profileId}"
+   ],
+   "desc": "선택한 단원의 자유 학습 스테이지별 기록을 받아 스테이지 목록을 그린다. 단원별로 캐시.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/FreeStudy/01_Script/FreeStudyManager.cs",
+     "line": 84,
+     "method": "LoadLearningData",
+     "path": "",
+     "scenes": [
+      "FreeStudyScene"
+     ],
+     "screen": "자유 학습 > 단원 스테이지 목록",
+     "trigger": "자유 학습에 들어올 때 프로필 현재 단원으로 자동 호출. 단원 좌우 화살표로 아직 안 본 단원으로 바꿀 때, 레벨 변경 팝업 등으로 프로필 정보가 갱신될 때도 호출.",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 콜백이 안 오면 로딩 화면이 닫히지 않을 수 있음(추정).",
+     "note": "자유 학습을 나갈 때 마지막으로 본 단원이 프로필 단원으로 저장된다(프로필 API, 이 문서 범위 밖)."
+    }
+   ]
+  },
+  {
+   "key": "API_Learning.GetLesson",
+   "name": "학교 수업(레슨) 목록 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/learning/lesson/profiles/{profileId}"
+   ],
+   "desc": "선생님이 보낸 수업 스테이지 목록과 완료 여부를 받는다. 미완료가 있으면 '수업' 탭에 New 배지를 켠다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/SchoolLearning/01_Script/SchoolLearningManager.cs",
+     "line": 222,
+     "method": "LoadLessonData",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "메인 로비 > 학교 학습 팝업 > 수업 탭",
+     "trigger": "메인 로비(또는 전체 콘텐츠 팝업)의 '학교학습' 버튼으로 팝업을 열 때 자동 호출. 수업 탭에서 새로고침 버튼을 누르거나, 팝업에서 스테이지를 풀고 원래 씬으로 돌아왔을 때 수업 탭이 선택돼 있으면 다시 호출(3초 내 재요청은 'N초 후 다시 시도' 토스트).",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 콜백이 안 오면 팝업이 나타나지 않는다(4개 목록이 다 와야 페이드인).",
+     "note": "학교 계정에서 쓰는 기능(버튼 노출 조건은 추정). AI 레벨테스트 진입 시 선생님 시험 안내 팝업, 매쓰배틀 그룹활동 복귀 시에도 이 팝업이 열려 같이 호출된다."
+    }
+   ]
+  },
+  {
+   "key": "API_Learning.GetHomework",
+   "name": "학교 숙제 목록 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/learning/homework/profiles/{profileId}"
+   ],
+   "desc": "선생님이 낸 숙제 스테이지 목록(D-day, 완료 여부)을 받아 D-day 순으로 정렬한다. 미완료가 있으면 '숙제' 탭에 New 배지.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/SchoolLearning/01_Script/SchoolLearningManager.cs",
+     "line": 240,
+     "method": "LoadHomeworkData",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "메인 로비 > 학교 학습 팝업 > 숙제 탭",
+     "trigger": "학교 학습 팝업을 열 때 자동 호출. 숙제 탭에서 새로고침을 누르거나, 숙제 스테이지를 풀고 돌아왔을 때 숙제 탭이 선택돼 있으면 다시 호출.",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 콜백이 안 오면 팝업이 나타나지 않는다.",
+     "note": "학교 계정 기능(추정)."
+    }
+   ]
+  },
+  {
+   "key": "API_Learning.WorldStudyLearningData",
+   "name": "연산월드 학습 데이터 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/learning/world/levels/{level}/country-codes/{countryCode}/profiles/{profileId}"
+   ],
+   "desc": "프로필 현재 레벨의 연산월드 스테이지별 기록을 받아 월드 맵 위 스테이지 오브젝트를 배치한다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/WorldStudy/01_Script/WorldStudyManager.cs",
+     "line": 65,
+     "method": "LoadServerData",
+     "path": "",
+     "scenes": [
+      "WorldStudyScene"
+     ],
+     "screen": "연산월드 맵",
+     "trigger": "연산월드에 들어올 때(전체 콘텐츠 팝업의 '연산월드') 자동 호출. 레벨 변경 등으로 프로필 정보가 갱신되면 씬을 다시 불러오면서 다시 호출된다.",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 응답이 없으면 맵 오브젝트 배치가 끝나지 않는다(추정).",
+     "note": "레벨은 경로 인자가 아니라 프로필 현재 레벨을 쓴다. CommonAPI 주석('숙제 정보 조회')은 복붙 오기."
+    }
+   ]
+  },
+  {
+   "key": "API_Learning.SaveLearningData",
+   "name": "스테이지 학습 결과 저장",
+   "http": "POST",
+   "paths": [
+    "/api/v3/learning/daily/completion",
+    "/api/v3/learning/challenge/completion",
+    "/api/v3/learning/perfect-challenge/completion",
+    "/api/v3/learning/free/completion",
+    "/api/v3/learning/world/completion",
+    "/api/v3/learning/review/completion",
+    "/api/v3/learning/lesson/completion",
+    "/api/v3/learning/homework/completion",
+    "/api/v3/learning/ai-recommended/completion"
+   ],
+   "desc": "스테이지를 다 푼 뒤 풀이 수·정답/오답 수·정확도·시간·등급을 콘텐츠 종류별 경로로 저장한다. 오답노트는 learningMode·learningRecordId, 수업은 lessonId, 숙제는 homeworkId, AI 추천학습은 levelTestId 를 추가로 보낸다. 응답의 보상(rewards)이 있으면 보상 연출이 뜬다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/StageResult/01_Script/StudyResultManager_v3.cs",
+     "line": 422,
+     "method": "IeSaveData",
+     "path": "/api/v3/learning/daily/completion",
+     "scenes": [
+      "StageResultScene"
+     ],
+     "screen": "스테이지 결과 화면 (오늘의 학습)",
+     "trigger": "오늘의 학습 맵에서 현재 라운드에 아직 안 깬 스테이지를 시작해 끝까지 풀면, 결과 화면이 뜨면서 자동 호출. 이미 깬 스테이지는 '복습'으로 시작돼 저장하지 않는다.",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 결과 화면 연출은 그대로 진행되고 기록만 안 남는다. 성공 시에만 오늘 목표 진행 수가 오른다.",
+     "note": "찍기 의심(isGuessing)으로 판정되면 'msg_stage_guessing_3_title' 토스트만 띄우고 저장하지 않는다(모든 콘텐츠 공통)."
+    },
+    {
+     "file": "Assets/Main/StageResult/01_Script/StudyResultManager_v3.cs",
+     "line": 422,
+     "method": "IeSaveData",
+     "path": "/api/v3/learning/challenge/completion",
+     "scenes": [
+      "StageResultScene"
+     ],
+     "screen": "스테이지 결과 화면 (트로피 도전 성공/실패)",
+     "trigger": "챌린지(트로피 도전 모드)에서 스테이지를 시작해 끝내면 결과 화면 진입 시 자동 호출.",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 실패하면 '성공 N / 도전 N' 횟수 표시가 안 뜬다.",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/StageResult/01_Script/StudyResultManager_v3.cs",
+     "line": 422,
+     "method": "IeSaveData",
+     "path": "/api/v3/learning/perfect-challenge/completion",
+     "scenes": [
+      "StageResultScene"
+     ],
+     "screen": "스테이지 결과 화면 (만점 도전 성공/실패)",
+     "trigger": "챌린지(만점 도전 모드)에서 스테이지를 시작해 끝내면 결과 화면 진입 시 자동 호출. 오답 0개면 성공.",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 실패하면 성공/도전 횟수 표시가 안 뜬다.",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/StageResult/01_Script/StudyResultManager_v3.cs",
+     "line": 422,
+     "method": "IeSaveData",
+     "path": "/api/v3/learning/free/completion",
+     "scenes": [
+      "StageResultScene"
+     ],
+     "screen": "스테이지 결과 화면 (자유 학습)",
+     "trigger": "자유 학습 스테이지, 학습 결과 > 오늘 탭 스테이지 상세의 '다시 풀기', 학교 학습 팝업의 스테이지 검색에서 고른 스테이지를 끝까지 풀면 결과 화면 진입 시 자동 호출(세 경로 모두 자유 학습으로 저장).",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 결과 화면은 그대로 진행.",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/StageResult/01_Script/StudyResultManager_v3.cs",
+     "line": 422,
+     "method": "IeSaveData",
+     "path": "/api/v3/learning/world/completion",
+     "scenes": [
+      "StageResultScene"
+     ],
+     "screen": "스테이지 결과 화면 (연산월드)",
+     "trigger": "연산월드 맵에서 스테이지를 시작해 끝까지 풀면 결과 화면 진입 시 자동 호출.",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 결과 화면은 그대로 진행.",
+     "note": "이용권 없는 유저는 시작 단계에서 업그레이드 팝업으로 막혀 여기까지 오지 않는다."
+    },
+    {
+     "file": "Assets/Main/StageResult/01_Script/StudyResultManager_v3.cs",
+     "line": 422,
+     "method": "IeSaveData",
+     "path": "/api/v3/learning/review/completion",
+     "scenes": [
+      "StageResultScene"
+     ],
+     "screen": "스테이지 결과 화면 (오답노트 재학습 결과 UI)",
+     "trigger": "오답노트 팝업(메인 로비 '오답노트' 버튼 / 학습 결과 > 오답노트 탭)에서 스테이지를 골라 다시 풀고 끝내면 결과 화면 진입 시 자동 호출.",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 결과 화면은 그대로 진행.",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/StageResult/01_Script/StudyResultManager_v3.cs",
+     "line": 422,
+     "method": "IeSaveData",
+     "path": "/api/v3/learning/lesson/completion",
+     "scenes": [
+      "StageResultScene"
+     ],
+     "screen": "스테이지 결과 화면 (학교 수업)",
+     "trigger": "학교 학습 팝업 > 수업 탭에서 스테이지를 시작해 끝까지 풀면 결과 화면 진입 시 자동 호출.",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 결과 화면은 그대로 진행.",
+     "note": "학교 계정 기능."
+    },
+    {
+     "file": "Assets/Main/StageResult/01_Script/StudyResultManager_v3.cs",
+     "line": 422,
+     "method": "IeSaveData",
+     "path": "/api/v3/learning/homework/completion",
+     "scenes": [
+      "StageResultScene"
+     ],
+     "screen": "스테이지 결과 화면 (학교 숙제)",
+     "trigger": "학교 학습 팝업 > 숙제 탭에서 스테이지를 시작해 끝까지 풀면 결과 화면 진입 시 자동 호출.",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 결과 화면은 그대로 진행.",
+     "note": "학교 계정 기능."
+    },
+    {
+     "file": "Assets/Main/StageResult/01_Script/StudyResultManager_v3.cs",
+     "line": 422,
+     "method": "IeSaveData",
+     "path": "/api/v3/learning/ai-recommended/completion",
+     "scenes": [
+      "StageResultScene"
+     ],
+     "screen": "스테이지 결과 화면 (AI 맞춤학습)",
+     "trigger": "AI 레벨테스트 기록 팝업에서 시험 항목의 'AI 맞춤학습' 을 열고 추천 스테이지를 풀어 끝내면 결과 화면 진입 시 자동 호출.",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 결과 화면은 그대로 진행.",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/2_UnrelatedStages/DeveloperFuncs.cs",
+     "line": 475,
+     "method": "IeDailyStudySetComplete",
+     "path": "/api/v3/learning/daily/completion",
+     "scenes": [
+      "DailyStudyScene"
+     ],
+     "screen": "개발자 패널(ForDev) > '오늘의학습 완료' 버튼",
+     "trigger": "개발자 패널에서 '오늘의학습 완료' 버튼을 누르면, 현재 단원에서 안 깬 스테이지(마지막 1개 제외)마다 100점 기록을 순서대로 보내고 오늘의 학습 씬을 다시 불러온다. 오늘의 학습 화면에서만 동작.",
+     "on_fail": "공통 처리. 하나라도 실패하면 로딩이 풀리지 않고 씬 재로드도 안 된다(추정).",
+     "note": "QA·개발용. 개발 서버 빌드는 패널이 자동으로 뜨고, 그 외엔 설정에서 버전을 8번 눌러 연다."
+    }
+   ]
+  },
+  {
+   "key": "API_Learning.StartLesson",
+   "name": "학교 수업 시작 기록",
+   "http": "POST",
+   "paths": [
+    "/api/v3/learning/lesson/start"
+   ],
+   "desc": "학교 수업 스테이지를 시작했다는 사실을 lessonId·profileId 로 서버에 알린다. 응답은 쓰지 않는다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/StudyStartPoP_v3/01_Script/StudyStartPoP.cs",
+     "line": 493,
+     "method": "StartStage",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "학교 학습 팝업 > 수업 탭 > 학습 시작 팝업",
+     "trigger": "수업 탭에서 스테이지를 눌러 뜬 학습 시작 팝업에서 '시작' 버튼을 누르면 스테이지로 넘어가면서 호출.",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 응답을 기다리지 않고 스테이지는 그대로 시작된다.",
+     "note": "학교 학습 팝업은 메인 로비 외의 씬에서도 열릴 수 있어 씬은 대표값(추정)."
+    }
+   ]
+  },
+  {
+   "key": "API_LearningProgress.GetStudyProgress",
+   "name": "단원별 학습 진행도 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/learning-progress/daily/country-codes/{countryCode}/profiles/{profileId}",
+    "/api/v3/learning-progress/free/country-codes/{countryCode}/profiles/{profileId}"
+   ],
+   "desc": "단원별 학습 진행도를 받는다. 오늘의 학습은 라운드별 클리어 수, 자유 학습은 클리어 수. 콘텐츠가 챌린지·연산월드면 경로가 null 이라 요청하지 않는다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/LevelChange/01_Script/LevelManager.cs",
+     "line": 471,
+     "method": "GetLearningProgress",
+     "path": "/api/v3/learning-progress/daily/country-codes/{countryCode}/profiles/{profileId}",
+     "scenes": [
+      "DailyStudyScene",
+      "MainLobbyScene_v4"
+     ],
+     "screen": "레벨 변경 팝업(단원 선택, 단원별 진행도 표시)",
+     "trigger": "오늘의 학습 상단 레벨 버튼, 내 프로필 팝업의 레벨 변경, 설정의 레벨 변경 버튼으로 레벨 변경 팝업이 열릴 때 자동 호출.",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 응답이 없으면 팝업 초기화가 진행되지 않아 내용이 비어 보인다(추정).",
+     "note": "학부모앱 단원 잠금이 FULL 이면 오늘의 학습 화면 밖에서는 팝업이 열리지 않고 잠금 토스트만 뜬다(호출 없음). 내 프로필·설정 팝업은 다른 씬에서도 열릴 수 있음."
+    },
+    {
+     "file": "Assets/Main/2_UnrelatedStages/LevelChange/01_Script/LevelManager.cs",
+     "line": 471,
+     "method": "GetLearningProgress",
+     "path": "/api/v3/learning-progress/free/country-codes/{countryCode}/profiles/{profileId}",
+     "scenes": [
+      "FreeStudyScene"
+     ],
+     "screen": "자유 학습 > 레벨 변경 팝업",
+     "trigger": "자유 학습 화면 상단의 레벨 버튼으로 레벨 변경 팝업이 열릴 때 자동 호출.",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 응답이 없으면 팝업 내용이 비어 보인다(추정).",
+     "note": "챌린지·연산월드 화면의 레벨 버튼으로 연 팝업은 진행도 요청 없이 바로 열린다."
+    },
+    {
+     "file": "Assets/Main/2_UnrelatedStages/LevelChange/01_Script/LevelManager.cs",
+     "line": 110,
+     "method": "CheckCurrentChapterCompleted",
+     "path": "/api/v3/learning-progress/daily/country-codes/{countryCode}/profiles/{profileId}",
+     "scenes": [
+      "DailyStudyScene"
+     ],
+     "screen": "오늘의 학습 > 레벨 변경 버튼(단원 완전 잠금 확인)",
+     "trigger": "학부모앱/선생님이 단원 잠금을 FULL 로 걸어 둔 프로필이 오늘의 학습 화면에서 레벨 변경을 누르면 호출. 현재 단원 3라운드를 완주했으면 '다음 단원만' 고를 수 있는 레벨 변경 팝업을 열고, 아니면 잠금 토스트를 띄운다.",
+     "on_fail": "실패 시 조용히 끝나고 팝업도 토스트도 뜨지 않는다(중복 요청 방지 플래그만 해제).",
+     "note": "단원 잠금 FULL 프로필 전용."
+    }
+   ]
+  },
+  {
+   "key": "API_LearningResult.DailyLearningResult",
+   "name": "일간 학습 결과 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/learning-result/daily/country-codes/{countryCode}/profiles/{profileId}?localDate={localDate}"
+   ],
+   "desc": "특정 날짜의 학습 결과(풀이 수·학습 시간·정확도·스테이지/게임/영상 기록)를 받아 학습 결과 '오늘' 탭을 그린다. 날짜별로 캐시.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/LearningResult_v3/01_Script/LearningResult_Today.cs",
+     "line": 361,
+     "method": "LoadData",
+     "path": "",
+     "scenes": [
+      "LearningResultScene"
+     ],
+     "screen": "학습 결과 > 오늘(일간) 탭",
+     "trigger": "학습 결과에 들어올 때 오늘 날짜로 자동 호출. 날짜 좌우 화살표로 아직 안 본 날짜로 이동하거나 다른 탭에서 '오늘' 탭으로 돌아올 때(그 날짜가 캐시에 없으면) 호출.",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 첫 진입에서 실패하면 씬 로딩 화면이 닫히지 않을 수 있음(추정).",
+     "note": "localDate 는 기기 날짜(DateTime.Now + 이동 일수, yyyy-MM-dd)로 만든다. 기기 시계를 바꾸면 조회 날짜가 바뀐다."
+    }
+   ]
+  },
+  {
+   "key": "API_LearningResult.WeeklyLearningResult",
+   "name": "주간 학습 결과 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/learning-result/weekly/country-codes/{countryCode}/profiles/{profileId}?localDate={localDate}"
+   ],
+   "desc": "기준 날짜가 속한 주의 학습 결과를 받아 주간 그래프와 요약을 그린다. 주별로 캐시.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/LearningResult_v3/01_Script/LearningResult_Week.cs",
+     "line": 150,
+     "method": "LoadWeekData",
+     "path": "",
+     "scenes": [
+      "LearningResultScene"
+     ],
+     "screen": "학습 결과 > 주간 탭",
+     "trigger": "학습 결과에서 '주간' 탭을 누르면 이번 주로 자동 호출. 주 좌우 화살표로 아직 안 본 주로 이동하면 호출.",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 해당 주 화면이 갱신되지 않는다.",
+     "note": "localDate 는 기기 날짜(DateTime.Now + 7일×이동 주 수)로 만든다."
+    }
+   ]
+  },
+  {
+   "key": "API_LearningResult.ReviewNoteLearningResult",
+   "name": "월별 오답노트 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/learning-result/review-note/country-codes/{countryCode}/profiles/{profileId}?localDate={localDate}"
+   ],
+   "desc": "해당 월의 오답노트 스테이지 목록과 완료 수/전체 수를 받아 오답노트 팝업을 그린다. 월별 캐시.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/ReviewNote/01_Script/ReviewNoteManager.cs",
+     "line": 109,
+     "method": "LoadServerData",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4",
+      "LearningResultScene"
+     ],
+     "screen": "오답노트 팝업",
+     "trigger": "메인 로비(또는 전체 콘텐츠 팝업)의 '오답노트' 버튼, 학습 결과의 오답노트 탭으로 팝업을 열 때 이번 달로 자동 호출. 이전/다음 달 버튼으로 아직 안 본 달로 이동하거나, 오답노트에서 스테이지를 풀고 원래 씬으로 돌아왔을 때도 다시 호출.",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 응답이 없으면 팝업이 투명한 채로 나타나지 않는다.",
+     "note": "localDate 는 기기 날짜(DateTime.Now + 이동 월 수) 기준."
+    }
+   ]
+  },
+  {
+   "key": "API_LevelTest.GetResult",
+   "name": "AI 레벨테스트 개별 결과 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/level-test/profiles/{profileId}/{levelTestId}"
+   ],
+   "desc": "저장된 레벨테스트 한 건의 문항·답·등급 등 상세 결과를 받는다. 결과 분석 화면, 재시험 결과 화면, 오답 극복 진입에 쓴다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/LevelTest/01_Script/L3/LT_L3_Manager.cs",
+     "line": 1032,
+     "method": "GetTestData",
+     "path": "",
+     "scenes": [
+      "AILevelTestScene_L3"
+     ],
+     "screen": "AI 레벨테스트 > 결과 분석 화면",
+     "trigger": "레벨테스트 기록 팝업에서 시험 항목의 '결과 분석' 을 눌러 결과 분석 화면에 들어오면 자동 호출. (방금 본 시험 결과로 들어올 때는 호출하지 않고 저장만 한다.)",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 응답이 없으면 결과 화면이 채워지지 않는다.",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/LevelTest/01_Script/L3/LT_L3_RetestManager.cs",
+     "line": 597,
+     "method": "IeLoadData",
+     "path": "",
+     "scenes": [
+      "AILevelTestScene_L3_Retest"
+     ],
+     "screen": "AI 레벨테스트 > 재시험 결과 화면",
+     "trigger": "AI 재시험을 다 풀고 제출해 결과가 저장된 직후, 또는 기록 팝업에서 완료된 'AI 재시험' 항목을 눌러 재시험 결과 화면에 들어오면 자동 호출(재시험 결과 조회와 동시에).",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 두 요청이 모두 와야 화면을 그리므로 하나라도 실패하면 화면이 비어 있다.",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/LevelTest/01_Script/L4/LT_L4_HistoryItem.cs",
+     "line": 168,
+     "method": "OnClickGoReviewNote",
+     "path": "",
+     "scenes": [
+      "AILevelTestScene_L1",
+      "MainLobbyScene_v4"
+     ],
+     "screen": "AI 레벨테스트 기록 팝업 > 시험 항목 > '오답 극복' 버튼",
+     "trigger": "기록 팝업에서 시험 항목을 펼쳐 '오답 극복' 을 누르면 호출되고, 응답이 오면 오답 극복 화면(AILevelTestScene_L3_2)으로 이동.",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 응답이 없으면 화면 이동이 안 된다.",
+     "note": "기록 팝업은 AI 레벨테스트 첫 화면의 기록 버튼(개인) 또는 학교 학습 팝업 > 레벨테스트 탭의 기록 버튼(학교)에서 열린다."
+    },
+    {
+     "file": "Assets/Main/LevelTest/01_Script/LT_Developer.cs",
+     "line": 16,
+     "method": "GetLevelTestResult",
+     "path": "",
+     "scenes": [],
+     "screen": "(에디터 인스펙터 버튼 'Get Level Test Result', L4_HistoryPoP 프리팹)",
+     "trigger": "유니티 에디터에서 LT_Developer 인스펙터 버튼으로 시험 ID 를 넣어 눌렀을 때만.",
+     "on_fail": "",
+     "note": "개발용(Odin 인스펙터 버튼). 앱 UI에서는 호출되지 않는다."
+    }
+   ]
+  },
+  {
+   "key": "API_LevelTest.GetRetestResult",
+   "name": "AI 재시험 결과 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/level-test/profiles/{profileId}/{levelTestId}/retest"
+   ],
+   "desc": "재시험 한 건의 원 시험 대비 비교 결과를 받아 재시험 결과 화면을 그린다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/LevelTest/01_Script/L3/LT_L3_RetestManager.cs",
+     "line": 605,
+     "method": "IeLoadData",
+     "path": "",
+     "scenes": [
+      "AILevelTestScene_L3_Retest"
+     ],
+     "screen": "AI 레벨테스트 > 재시험 결과 화면",
+     "trigger": "AI 재시험 제출 후 결과 저장 직후, 또는 기록 팝업에서 완료된 'AI 재시험' 항목을 눌러 들어오면 개별 결과 조회와 동시에 자동 호출.",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 응답이 없으면 화면이 그려지지 않는다.",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_LevelTest.SaveResult",
+   "name": "AI 레벨테스트 결과 저장",
+   "http": "POST",
+   "paths": [
+    "/api/v3/level-test/results"
+   ],
+   "desc": "방금 푼 레벨테스트(개인·학교·재시험) 전체 결과를 저장하고 levelTestId 를 받는다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/LevelTest/01_Script/L3/LT_L3_Manager.cs",
+     "line": 1044,
+     "method": "SaveTestData",
+     "path": "",
+     "scenes": [
+      "AILevelTestScene_L3"
+     ],
+     "screen": "AI 레벨테스트 > 결과 분석 화면(시험 직후)",
+     "trigger": "레벨테스트(개인 또는 선생님이 보낸 학교 시험)를 다 풀고 제출하거나 시간이 끝나 결과 분석 화면으로 넘어오면 자동 호출.",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 결과 화면은 클라 계산으로 그대로 보이지만 levelTestId 를 못 받아 이후 공유하기 등이 실패할 수 있다(추정).",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/LevelTest/01_Script/L3/LT_L3_RetestManager.cs",
+     "line": 621,
+     "method": "SaveTestData",
+     "path": "",
+     "scenes": [
+      "AILevelTestScene_L3_Retest"
+     ],
+     "screen": "AI 레벨테스트 > 재시험 결과 화면(시험 직후)",
+     "trigger": "기록 팝업의 'AI 재시험' 으로 시작한 재시험을 다 풀고 제출하면 재시험 결과 화면 진입 시 자동 호출. 성공하면 개별 결과·재시험 결과를 이어서 조회한다.",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 응답이 없으면 재시험 결과 화면이 그려지지 않는다.",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_LevelTest.StartTest",
+   "name": "AI 레벨테스트 시작 (개인)",
+   "http": "GET",
+   "paths": [
+    "/api/v3/level-test/start"
+   ],
+   "desc": "개인 레벨테스트 시작 시각(startedAt)을 서버에서 받아 시험 정보에 넣는다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/LevelTest/01_Script/L2/LT_L2_Manager.cs",
+     "line": 336,
+     "method": "SaveTestStart",
+     "path": "",
+     "scenes": [
+      "AILevelTestScene_L2"
+     ],
+     "screen": "AI 레벨테스트 > 문제 풀이 화면",
+     "trigger": "AI 레벨테스트 첫 화면에서 시험 종류를 골라 '시작' 을 누르거나, 기록 팝업에서 'AI 재시험' 을 눌러 문제 풀이 화면에 들어오면 자동 호출.",
+     "on_fail": "응답을 기다리지 않고 시험은 바로 시작된다. 실패 시 공통 처리(재시도 후 토스트)만 있고 시작 시각이 비어 저장될 수 있음(추정).",
+     "note": "시작인데 HTTP 메서드가 GET 이다. 이용권 없는 유저는 AI 레벨테스트 진입 자체가 업그레이드 팝업으로 막힌다."
+    }
+   ]
+  },
+  {
+   "key": "API_LevelTest.GetSchoolTest",
+   "name": "학교 레벨테스트 목록 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/level-test/school/profiles/{profileId}"
+   ],
+   "desc": "선생님이 보낸 학교 레벨테스트(평가 종류·난이도·범위·문항) 목록을 받는다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/SchoolLearning/01_Script/SchoolLearningManager.cs",
+     "line": 288,
+     "method": "LoadLevelTestData",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "메인 로비 > 학교 학습 팝업 > 레벨테스트 탭",
+     "trigger": "학교 학습 팝업을 열 때 자동 호출. 레벨테스트 탭에서 새로고침을 누르거나, 시험을 보고 돌아왔을 때 레벨테스트 탭이 선택돼 있으면 다시 호출. 목록이 있으면 탭에 New 배지.",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 콜백이 안 오면 팝업이 나타나지 않는다.",
+     "note": "학교 계정 기능(추정)."
+    },
+    {
+     "file": "Assets/Main/LoadingManager/01_Script/LoadingManager.cs",
+     "line": 153,
+     "method": "LoadNextSceneInternal",
+     "path": "",
+     "scenes": [
+      "AILevelTestScene_L1"
+     ],
+     "screen": "AI 레벨테스트 첫 화면 > '선생님이 보낸 시험이 있어요' 안내 팝업",
+     "trigger": "학교 계정(AcademicLicense)으로 AI 레벨테스트 첫 화면에 들어오면 씬 전환 직후 자동 호출. 선생님 시험이 있고 학교 학습 팝업이 안 떠 있으면 안내 팝업을 띄우고, 확인을 누르면 학교 학습 팝업 레벨테스트 탭을 연다.",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 안내 팝업이 안 뜰 뿐 화면은 정상.",
+     "note": "학교 계정 전용. LoadingManager 는 부팅 씬(AssetBundleScene)에 붙은 전역 매니저."
+    }
+   ]
+  },
+  {
+   "key": "API_LevelTest.StartSchoolTest",
+   "name": "AI 레벨테스트 시작 (학교)",
+   "http": "POST",
+   "paths": [
+    "/api/v3/level-test/school/start"
+   ],
+   "desc": "학교 시험 시작을 알리고(levelTestSchoolId, 클라가 만든 문제가 있으면 함께 전송) 서버가 확정한 문제 목록과 시작 시각을 받는다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/LevelTest/01_Script/L2/LT_L2_Manager.cs",
+     "line": 356,
+     "method": "SaveTestStart",
+     "path": "",
+     "scenes": [
+      "AILevelTestScene_L2"
+     ],
+     "screen": "AI 레벨테스트 > 문제 풀이 화면(학교 시험)",
+     "trigger": "학교 학습 팝업 > 레벨테스트 탭에서 시험을 누르고 시작 팝업에서 '시작' 을 눌러 문제 풀이 화면에 들어오면 자동 호출.",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 응답이 와야 문제가 세팅되므로 실패하면 시험이 시작되지 않는다.",
+     "note": "학교 계정 전용."
+    }
+   ]
+  },
+  {
+   "key": "API_LevelTest.Similar",
+   "name": "유사 문제 풀이 완료 기록",
+   "http": "PUT",
+   "paths": [
+    "/api/v3/level-test/similar-questions"
+   ],
+   "desc": "오답 극복 화면에서 유사 문제를 맞혔을 때 levelTestId·문항 번호와 count=1 을 보낸다. 응답은 쓰지 않는다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/LevelTest/01_Script/L2_2/LT_L2_2_Manager.cs",
+     "line": 273,
+     "method": "SaveSimilarQuestion",
+     "path": "",
+     "scenes": [
+      "AILevelTestScene_L3_2"
+     ],
+     "screen": "AI 레벨테스트 > 오답 극복 화면 > 유사 문제",
+     "trigger": "오답 극복 화면에서 유사 문제 풀이 모드로 문제를 풀고 정답을 맞힐 때마다 호출.",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 화면 표시(유사 문제 맞힌 수)는 그대로 올라간다.",
+     "note": "오답 극복 화면은 결과 분석 화면의 '오답 극복' 버튼 또는 기록 팝업의 '오답 극복' 버튼으로 들어간다."
+    }
+   ]
+  },
+  {
+   "key": "API_LevelTest.Review",
+   "name": "틀린 문제 다시 풀기 완료 기록",
+   "http": "PUT",
+   "paths": [
+    "/api/v3/level-test/review"
+   ],
+   "desc": "오답 극복 화면에서 원래 틀렸던 문제를 맞혔을 때 levelTestId·문항 번호와 count=0 을 보낸다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/LevelTest/01_Script/L2_2/LT_L2_2_Manager.cs",
+     "line": 253,
+     "method": "SaveReviewNoteClear",
+     "path": "",
+     "scenes": [
+      "AILevelTestScene_L3_2"
+     ],
+     "screen": "AI 레벨테스트 > 오답 극복 화면",
+     "trigger": "오답 극복 화면에서 틀렸던 문제를 다시 풀어 정답을 맞히면 호출. 응답 후 모든 문제가 정답/극복 상태면 '오답 모두 극복' 팝업이 뜬다.",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 실패하면 마지막 문제를 맞혀도 모두 극복 팝업이 안 뜬다.",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_LevelTest.History",
+   "name": "AI 레벨테스트 풀이 기록 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/level-test/history/profiles/{profileId}?page={curPage}&size={pageSize}",
+    "/api/v3/level-test/school/history/profiles/{profileId}?page={curPage}&size={pageSize}"
+   ],
+   "desc": "레벨테스트 기록 목록을 페이지 단위로 받는다. 개인 모드와 학교 모드 경로가 다르다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/LevelTest/01_Script/L4/LT_L4_HistoryManager.cs",
+     "line": 131,
+     "method": "GetHistoryItems",
+     "path": "/api/v3/level-test/history/profiles/{profileId}?page={curPage}&size={pageSize}",
+     "scenes": [
+      "AILevelTestScene_L1"
+     ],
+     "screen": "AI 레벨테스트 첫 화면 > 기록 팝업(개인)",
+     "trigger": "AI 레벨테스트 첫 화면에서 기록 버튼을 눌러 팝업을 처음 열 때, 팝업의 다음 페이지(더보기) 버튼을 누를 때, 기록 항목에서 결과 분석·오답 극복·재시험·맞춤학습을 하고 돌아왔을 때 호출.",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 기록이 0건이면 'LT_L4_NoHistory', 더 없으면 'LT_L4_NoMoreHistory' 토스트.",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/LevelTest/01_Script/L4/LT_L4_HistoryManager.cs",
+     "line": 131,
+     "method": "GetHistoryItems",
+     "path": "/api/v3/level-test/school/history/profiles/{profileId}?page={curPage}&size={pageSize}",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "학교 학습 팝업 > 레벨테스트 탭 > 기록 팝업(학교)",
+     "trigger": "학교 학습 팝업 레벨테스트 탭에서 기록 버튼을 눌러 팝업을 열 때, 다음 페이지(더보기) 버튼을 누를 때, 기록 항목에서 다른 화면에 갔다가 돌아왔을 때 호출.",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 0건이면 'LT_L4_NoHistory' 토스트.",
+     "note": "학교 계정 기능. CommonAPI 주석('틀린문제 다시 풀기')은 복붙 오기."
+    }
+   ]
+  },
+  {
+   "key": "API_LevelTest.SchoolHomeworkList",
+   "name": "학교 숙제 목록 조회(레벨테스트)",
+   "http": "GET",
+   "paths": [
+    "/api/v3/level-test/school/profiles/{profileId}"
+   ],
+   "desc": "정의만 있고 쓰는 곳이 없다. 경로가 GetSchoolTest 와 완전히 같다.",
+   "unused": true,
+   "calls": []
+  },
+  {
+   "key": "API_LevelTest.SendMessage",
+   "name": "AI 진단평가 보고서 링크 전송",
+   "http": "POST",
+   "paths": [
+    "/api/v3/level-test/send-message"
+   ],
+   "desc": "레벨테스트 결과 보고서 링크를 카카오 알림톡(ALIMTALK) 또는 이메일(EMAIL)로 보내 달라고 요청한다(profileId, levelTestId, 언어, 채널).",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/LevelTest/01_Script/L4/LT_L4_ResultSharePop.cs",
+     "line": 162,
+     "method": "OnClickShare",
+     "path": "",
+     "scenes": [
+      "AILevelTestScene_L1",
+      "MainLobbyScene_v4"
+     ],
+     "screen": "AI 레벨테스트 기록 팝업 > 시험 항목 '공유하기' > 공유하기 선택 팝업",
+     "trigger": "기록 팝업에서 시험 항목의 공유 버튼을 눌러 공유 팝업을 열고, 카카오 알림톡/이메일 중 하나를 고른 뒤 '보내기' 를 누르면 호출. 연락처가 비어 있으면 'Inquiry_EnterIContactInfo' 토스트만 뜨고 호출하지 않는다.",
+     "on_fail": "공통 처리(자동 재시도 후 토스트). 성공하면 'SentL4Histroy' 토스트 후 팝업이 닫힌다.",
+     "note": "채널 노출: 개인 계정 알림톡·이메일, 학교 계정 알림톡, 해외 계정 이메일(코드 주석 기준)."
+    }
+   ]
+  },
+  {
+   "key": "API_Game.SaveResult",
+   "name": "미니게임 결과 저장",
+   "http": "POST",
+   "paths": [
+    "/api/v3/game/mathlympic/completion",
+    "/api/v3/game/mathland-run/completion",
+    "/api/v3/game/card/completion",
+    "/api/v3/game/mathrun/completion",
+    "/api/v3/game/speedmath/completion",
+    "/api/v3/game/maketen/completion",
+    "/api/v3/game/mathgalaxy/completion"
+   ],
+   "desc": "미니게임 한 판의 결과(점수·정답 수·플레이 시간 등)를 서버에 저장한다. 게임마다 GameName 으로 경로가 갈린다(math-battle 은 이 API 를 쓰지 않음).",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/MathLympics/Scripts/ML_Network_Manager.cs",
+     "line": 142,
+     "method": "IESavePlayData",
+     "path": "/api/v3/game/mathlympic/completion",
+     "scenes": [
+      "MathLympics"
+     ],
+     "screen": "매쓰림픽 > 경기(육상·수영·쇼트트랙·스노보드, 쉬움 포함) 결과",
+     "trigger": "경기를 끝까지 마쳐 내 순위가 정해지면 자동 저장. 성공하면 실시간 랭킹 상승 여부를 이어서 조회한다.",
+     "on_fail": "통신 실패 시 점검 확인 후 최대 3회 자동 재시도, 끝내 실패하면 오류 토스트(UnknownError). 서버 오류 응답이면 서버 메시지 토스트",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/2_UnrelatedStages/MathRun/01_Script/MathRun_GameManager.cs",
+     "line": 935,
+     "method": "SaveResult",
+     "path": "/api/v3/game/mathland-run/completion",
+     "scenes": [
+      "MathRun_Ingame"
+     ],
+     "screen": "매쓰랜드 연산런 > 인게임 결과 팝업",
+     "trigger": "게임이 끝나 결과 팝업이 뜰 때 총점이 0보다 크면 자동 저장. 튜토리얼 맵(MathRun_Tutorial)은 저장하지 않는다. 성공 시 맵별 실시간 랭킹 상승 체크.",
+     "on_fail": "통신 실패 시 점검 확인 후 최대 3회 자동 재시도, 끝내 실패하면 오류 토스트(UnknownError). 서버 오류 응답이면 서버 메시지 토스트",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/Games/Card/Script/Card_ServerManager.cs",
+     "line": 74,
+     "method": "IeScoreUpdate",
+     "path": "/api/v3/game/card/completion",
+     "scenes": [
+      "Card_RankingPlay"
+     ],
+     "screen": "카드게임 > 랭킹 모드 결과",
+     "trigger": "랭킹 모드에서 실패하면 매번, 또는 마지막(5단계)까지 클리어하면 자동 저장. 연습(스테이지) 모드는 저장하지 않는다.",
+     "on_fail": "통신 실패 시 점검 확인 후 최대 3회 자동 재시도, 끝내 실패하면 오류 토스트(UnknownError). 서버 오류 응답이면 서버 메시지 토스트",
+     "note": "Card_ServerManager 는 Card_SelectMode 씬에서 생성되어 DontDestroyOnLoad 로 유지됨"
+    },
+    {
+     "file": "Assets/Main/Games/run/Scripts/run_ServerManager.cs",
+     "line": 86,
+     "method": "IeScoreUpdate",
+     "path": "/api/v3/game/mathrun/completion",
+     "scenes": [
+      "Rungame_practice_1"
+     ],
+     "screen": "깨비나라 연산런 > 게임 오버/클리어 패널",
+     "trigger": "목숨을 다 써 게임 오버되거나 최종 레벨을 클리어했을 때 자동 저장. 플레이 중 '저장하고 나가기' 버튼을 눌러도 저장 후 타이틀로 이동.",
+     "on_fail": "통신 실패 시 점검 확인 후 최대 3회 자동 재시도, 끝내 실패하면 오류 토스트(UnknownError). 서버 오류 응답이면 서버 메시지 토스트",
+     "note": "코드상 GameName.MathRun 은 '깨비나라 연산런'(run 게임)이다. 매쓰랜드 연산런(mathland-run)과 혼동 주의"
+    },
+    {
+     "file": "Assets/Main/Games/Speed/Script/Speed_ServerManager.cs",
+     "line": 81,
+     "method": "IeScoreUpdate",
+     "path": "/api/v3/game/speedmath/completion",
+     "scenes": [
+      "Speed_PlayScene"
+     ],
+     "screen": "스피드연산 > 스테이지 결과",
+     "trigger": "스테이지를 실패하거나 클리어해 결과 패널이 뜨면 약 0.3초 뒤 자동 저장하고 스피드연산 타이틀로 이동.",
+     "on_fail": "통신 실패 시 점검 확인 후 최대 3회 자동 재시도, 끝내 실패하면 오류 토스트(UnknownError). 서버 오류 응답이면 서버 메시지 토스트",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/Games/Speed/Script/Speed_ServerManager.cs",
+     "line": 114,
+     "method": "IeScoreUpdateMain",
+     "path": "/api/v3/game/speedmath/completion",
+     "scenes": [
+      "Speed_PlayScene"
+     ],
+     "screen": "스피드연산 > 클리어 패널 '메인' 버튼 / 플레이 중 '나가기' 버튼",
+     "trigger": "클리어 패널에서 '메인' 버튼을 누르거나, 플레이 중 우측 '나가기' 버튼(또는 기기 뒤로가기 키)을 누르면 저장.",
+     "on_fail": "통신 실패 시 점검 확인 후 최대 3회 자동 재시도, 끝내 실패하면 오류 토스트(UnknownError). 서버 오류 응답이면 서버 메시지 토스트. '메인' 버튼 경로는 저장이 성공해야 타이틀로 이동하므로 실패 시 화면에 남음",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/MakeTen/01_Script/MakeTenFlow.cs",
+     "line": 3009,
+     "method": "ReportResultToServer",
+     "path": "/api/v3/game/maketen/completion",
+     "scenes": [
+      "MakeTenScene"
+     ],
+     "screen": "텐텐팡 > 혼자하기 결과 화면",
+     "trigger": "혼자하기 한 판이 끝나 결과 화면이 뜰 때 자동 저장(요청 큐 경유). 직후 텐텐팡 프로필을 다시 조회한다. 로컬 로봇 대전은 저장하지 않는다.",
+     "on_fail": "통신 실패 시 점검 확인 후 최대 3회 자동 재시도, 끝내 실패하면 오류 토스트(UnknownError). 서버 오류 응답이면 서버 메시지 토스트",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/Resources_moved/MathGalaxy/Scripts/MathGalaxy_GameManager.cs",
+     "line": 574,
+     "method": "IESaveData",
+     "path": "/api/v3/game/mathgalaxy/completion",
+     "scenes": [
+      "MathGalaxyInGame"
+     ],
+     "screen": "매쓰갤럭시 > 게임 오버(결과) 패널",
+     "trigger": "게임 오버(또는 보스 클리어)되면 약 2.5초 뒤 자동 저장. 저장 중 문구가 뜨고, 성공하면 '로비로' 버튼이 나타나며 실시간 랭킹 상승 체크.",
+     "on_fail": "통신 실패 시 점검 확인 후 최대 3회 자동 재시도, 끝내 실패하면 오류 토스트(UnknownError). 서버 오류 응답이면 서버 메시지 토스트. 실패하면 '저장 중' 문구가 남고 '로비로' 버튼이 다시 나타나지 않음(코드상)",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_Game.GetInformation",
+   "name": "미니게임 내 정보 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/game/mathland-run/profiles/{profileId}",
+    "/api/v3/game/card/profiles/{profileId}",
+    "/api/v3/game/maketen/profiles/{profileId}",
+    "/api/v3/game/mathgalaxy/profiles/{profileId}",
+    "/api/v3/game/math-battle/profiles/{profileId}"
+   ],
+   "desc": "게임별 내 기록·상태(최고 점수, 보유 아이템, 티어 구간표, 패널티 등)를 조회한다. GameName 으로 경로가 갈린다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/MathRun/01_Script/MathRun_LobbyManager.cs",
+     "line": 331,
+     "method": "GetMathlandData",
+     "path": "/api/v3/game/mathland-run/profiles/{profileId}",
+     "scenes": [
+      "MathRun_Lobby"
+     ],
+     "screen": "매쓰랜드 연산런 로비(맵 선택)",
+     "trigger": "매쓰랜드 연산런 로비에 들어올 때 자동 조회(맵별 최고 점수, 능력치 레벨).",
+     "on_fail": "통신 실패 시 점검 확인 후 최대 3회 자동 재시도, 끝내 실패하면 오류 토스트(UnknownError). 서버 오류 응답이면 서버 메시지 토스트. 로딩 화면은 성공 콜백에서만 꺼짐(실패 시 로딩이 남을 수 있음, 추정)",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/Games/Card/Script/Card_ServerManager.cs",
+     "line": 100,
+     "method": "IeGetUserRank",
+     "path": "/api/v3/game/card/profiles/{profileId}",
+     "scenes": [
+      "Card_SelectRankingMode"
+     ],
+     "screen": "카드게임 > 랭킹 모드 선택 화면",
+     "trigger": "카드게임에서 랭킹 모드 화면에 들어올 때 자동 조회(덧셈·뺄셈·혼합 내 최고점수/순위 표시).",
+     "on_fail": "통신 실패 시 점검 확인 후 최대 3회 자동 재시도, 끝내 실패하면 오류 토스트(UnknownError). 서버 오류 응답이면 서버 메시지 토스트. 실패하면 점수/순위 칸이 채워지지 않음",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/MakeTen/01_Script/MakeTenProfileData.cs",
+     "line": 202,
+     "method": "Request",
+     "path": "/api/v3/game/maketen/profiles/{profileId}",
+     "scenes": [
+      "MakeTenScene"
+     ],
+     "screen": "텐텐팡 로비(랭크 뱃지) / 내 정보 팝업 / 결과 화면",
+     "trigger": "텐텐팡 로비 화면이 켜질 때마다(랭크 점수 뱃지), '내 정보' 팝업을 열 때, 혼자하기 결과 저장 직후, 랭크 대결 결과 화면(랭크포인트 게이지)에서 자동 조회. 응답 전 중복 요청은 하나로 합친다.",
+     "on_fail": "서버 오류 응답은 토스트 없이 로그만 남김. 통신 실패 시 최대 3회 재시도 후 오류 토스트. 실패 시 캐시된 값 그대로 표시(내 정보 칸이 비어 있을 수 있음)",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/Resources_moved/MathGalaxy/Scripts/MathGalaxy_LobbyManager.cs",
+     "line": 188,
+     "method": "IECheckHaveShip",
+     "path": "/api/v3/game/mathgalaxy/profiles/{profileId}",
+     "scenes": [
+      "MathGalaxyLobby"
+     ],
+     "screen": "매쓰갤럭시 로비(우주선 선택)",
+     "trigger": "매쓰갤럭시 로비에 들어올 때 자동 조회(보유 우주선, 마지막 사용 우주선).",
+     "on_fail": "통신 실패 시 점검 확인 후 최대 3회 자동 재시도, 끝내 실패하면 오류 토스트(UnknownError). 서버 오류 응답이면 서버 메시지 토스트. 터치 차단 오브젝트가 성공 시에만 꺼져 실패하면 로비 조작이 막힐 수 있음(추정)",
+     "note": ""
+    },
+    {
+     "file": "Assets/MathBattle/01_Script/MathBattleProfileData.cs",
+     "line": 286,
+     "method": "Request",
+     "path": "/api/v3/game/math-battle/profiles/{profileId}",
+     "scenes": [
+      "MathBattleLobby",
+      "MathBattleInGame"
+     ],
+     "screen": "매쓰배틀 로비 / 내 정보 팝업 / 랭크포인트 결과",
+     "trigger": "매쓰배틀 로비에 들어올 때마다(게임 끝나고 돌아올 때 포함) 자동, 로비 좌하단 '내 정보' 버튼을 누를 때, 랭크 결과 화면에서 티어 구간표가 아직 없을 때만 한 번 더 조회. 트롤 패널티·랭크 해금·시즌 남은 시간도 여기서 받는다.",
+     "on_fail": "서버 오류 응답은 토스트 없이 로그만 남김. 통신 실패 시 최대 3회 재시도 후 오류 토스트. 실패 시 랭크포인트 게이지가 숨겨지고 캐시된 값으로 표시",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_Game.GetMathLympicMatchingData",
+   "name": "매쓰림픽 대전 상대 정보 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/game/mathlympic/modes/{ATHLETICS|SWIMMING|SHORT_TRACK|SNOWBOARD|ATHLETICS_EASY|SWIMMING_EASY}/profiles/{profileId}"
+   ],
+   "desc": "선택한 매쓰림픽 종목의 함께 달릴 상대(다른 유저 기록) 데이터를 받아온다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/MathLympics/Scripts/ML_Network_Manager.cs",
+     "line": 100,
+     "method": "IEGetMatchingUserInfo",
+     "path": "",
+     "scenes": [
+      "MathLympics"
+     ],
+     "screen": "매쓰림픽 > 종목 선택 > 경기 시작",
+     "trigger": "종목을 고르고 '경기 시작'을 누를 때마다 자동 조회. 성공해야 경기 화면이 로드된다.",
+     "on_fail": "통신 실패 시 점검 확인 후 최대 3회 자동 재시도, 끝내 실패하면 오류 토스트(UnknownError). 서버 오류 응답이면 서버 메시지 토스트. 실패하면 경기가 시작되지 않고 다시 선택 가능",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_Game.GetMathLympicRecord",
+   "name": "매쓰림픽 내 기록 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/game/mathlympic/modes/{ATHLETICS|SWIMMING|SHORT_TRACK|SNOWBOARD|ATHLETICS_EASY|SWIMMING_EASY}/record/profiles/{profileId}"
+   ],
+   "desc": "선택한 매쓰림픽 종목의 내 메달(금·은·동) 등 개인 기록을 조회한다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/MathLympics/Scripts/ML_Network_Manager.cs",
+     "line": 70,
+     "method": "IEGetMyRecord",
+     "path": "",
+     "scenes": [
+      "MathLympics"
+     ],
+     "screen": "매쓰림픽 > 종목 선택 > 내 기록 팝업",
+     "trigger": "종목 화면에서 '내 기록' 버튼을 처음 누를 때 조회(종목별로 로비에 돌아올 때까지 한 번만).",
+     "on_fail": "통신 실패 시 점검 확인 후 최대 3회 자동 재시도, 끝내 실패하면 오류 토스트(UnknownError). 서버 오류 응답이면 서버 메시지 토스트",
+     "note": "경기 후 로비로 돌아오면 캐시가 초기화되어 다시 조회"
+    }
+   ]
+  },
+  {
+   "key": "API_Game.GetMathRunUpgrade",
+   "name": "매쓰랜드 연산런 능력치 업그레이드",
+   "http": "POST",
+   "paths": [
+    "/api/v3/game/mathland-run/level/purchase"
+   ],
+   "desc": "다이아를 써서 매쓰랜드 연산런 능력치 레벨을 올린다. 성공 시 클라에서 다이아 차감 후 능력치 레벨 갱신.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/MathRun/01_Script/MathRun_LobbyManager.cs",
+     "line": 431,
+     "method": "IE_UpgradeStatus",
+     "path": "",
+     "scenes": [
+      "MathRun_Lobby"
+     ],
+     "screen": "매쓰랜드 연산런 로비 > 캐릭터 선택 > 능력치 업그레이드 확인 팝업",
+     "trigger": "능력치를 고르고 업그레이드 확인 팝업(또는 Lv99 초월 팝업)에서 '확인'을 누르면. 다이아가 부족하면 요청 없이 토스트.",
+     "on_fail": "통신 실패 시 점검 확인 후 최대 3회 자동 재시도, 끝내 실패하면 오류 토스트(UnknownError). 서버 오류 응답이면 서버 메시지 토스트",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_Game.PurchaseMathGalaxySpaceship",
+   "name": "매쓰갤럭시 우주선 구매",
+   "http": "POST",
+   "paths": [
+    "/api/v3/game/mathgalaxy/spaceship/purchase"
+   ],
+   "desc": "다이아로 매쓰갤럭시 우주선을 구매한다. 성공 시 다이아 차감, 보유 표시 갱신.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/Resources_moved/MathGalaxy/Scripts/MathGalaxy_LobbyManager.cs",
+     "line": 646,
+     "method": "Purchase",
+     "path": "",
+     "scenes": [
+      "MathGalaxyLobby"
+     ],
+     "screen": "매쓰갤럭시 로비 > 우주선 구매 패널",
+     "trigger": "미보유 우주선을 선택하고 구매 패널에서 '구매' 버튼을 누르면. 다이아가 부족하면 요청 없이 토스트.",
+     "on_fail": "통신 실패 시 점검 확인 후 최대 3회 자동 재시도, 끝내 실패하면 오류 토스트(UnknownError). 서버 오류 응답이면 서버 메시지 토스트",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_Game.PlayTime",
+   "name": "게임 플레이 시간 등록",
+   "http": "POST",
+   "paths": [
+    "/api/v3/game/play-time"
+   ],
+   "desc": "한 판의 플레이 시간(초)을 등록해 학부모앱 일일 게임 시간 제한을 집계한다. 응답의 누적 시간/플레이 가능 여부를 프로필에 반영.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/Script/GamePlayTime.cs",
+     "line": 166,
+     "method": "End",
+     "path": "",
+     "scenes": [
+      "MathGalaxyInGame",
+      "MathRun_Ingame",
+      "MathRun_Tutorial",
+      "Card_Play",
+      "Card_RankingPlay",
+      "Rungame_practice_1",
+      "Speed_PlayScene",
+      "MathLympics",
+      "MakeTenScene",
+      "MathBattleInGame"
+     ],
+     "screen": "각 미니게임 플레이 화면",
+     "trigger": "한 판이 끝날 때(결과 저장 직전·결과 화면 진입 시) 또는 판 도중 씬을 떠날 때 자동. 플레이 시간이 0초면 보내지 않는다. 매쓰배틀 그룹활동(학교학습)은 집계하지 않음.",
+     "on_fail": "서버 오류 응답은 토스트 없이 로그만 남김. 통신 실패 시 최대 3회 재시도 후 오류 토스트",
+     "note": "씬이 바뀌어도 끊기지 않게 공용 요청 큐로 보냄. 제한 도달 시 새 판 시작 버튼에서 'game_time_limit_reached' 토스트로 막는다(이 API 응답 기반)"
+    }
+   ]
+  },
+  {
+   "key": "API_MathBattle.RankMatch",
+   "name": "매쓰배틀 랭크 매칭(구)",
+   "http": "",
+   "paths": [
+    "/api/v3/netgame/math-battle/rank-match"
+   ],
+   "desc": "정의만 남아 있고 클라이언트에서 호출하지 않는다. 랭크/연습 매칭은 MatchingTicket + WebSocket 큐로 대체됨.",
+   "unused": true,
+   "calls": []
+  },
+  {
+   "key": "API_MathBattle.CreateCustomRoom",
+   "name": "매쓰배틀 커스텀방 생성",
+   "http": "POST",
+   "paths": [
+    "/api/v3/netgame/math-battle/custom-room"
+   ],
+   "desc": "선택한 레벨로 커스텀(친선)방을 만들고 방 코드와 wsTicket 을 받는다. 성공 즉시 매쓰배틀 WebSocket 에 접속해 방에 JOIN.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/MathBattle/01_Script/Lobby/MathBattleLobby.cs",
+     "line": 664,
+     "method": "OnClickCreateCustomRoom",
+     "path": "",
+     "scenes": [
+      "MathBattleLobby"
+     ],
+     "screen": "매쓰배틀 로비 > '방만들기' 버튼",
+     "trigger": "로비에서 '방만들기' 버튼을 누르면. 일일 게임 시간 제한에 걸렸으면 요청 없이 토스트. 트롤 패널티 중에도 허용.",
+     "on_fail": "서버 오류 응답은 서버 메시지 토스트 후 로비 유지. 통신 실패 시 최대 3회 재시도 후 오류 토스트",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_MathBattle.JoinCustomRoom",
+   "name": "매쓰배틀 커스텀방 입장 검증",
+   "http": "POST",
+   "paths": [
+    "/api/v3/netgame/math-battle/custom-room/join"
+   ],
+   "desc": "입력한 방 코드로 입장 가능한지 검증하고 wsTicket 을 받는다. 성공 시 방 찾기 팝업을 닫고 WebSocket 에 접속해 JOIN.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/MathBattle/01_Script/Lobby/MathBattleLobby.cs",
+     "line": 697,
+     "method": "OnClickSearchCustomRoom",
+     "path": "",
+     "scenes": [
+      "MathBattleLobby"
+     ],
+     "screen": "매쓰배틀 로비 > '방 찾기' 팝업(방 코드 입력)",
+     "trigger": "방 찾기 팝업에 방 코드를 입력하고 확인 버튼을 누르면(빈 값이면 무시). 일일 게임 시간 제한에 걸렸으면 요청 없이 토스트.",
+     "on_fail": "없는 방·가득 찬 방 등 서버 오류는 서버 메시지 토스트, 팝업은 열린 채 유지. 통신 실패 시 재시도 후 오류 토스트",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_MathBattle.MatchingTicket",
+   "name": "매쓰배틀 랜덤 매칭 티켓 발급",
+   "http": "POST",
+   "paths": [
+    "/api/v3/netgame/math-battle/matching/ticket"
+   ],
+   "desc": "랭크/연습 랜덤 매칭용 wsTicket 을 받는다. 받은 즉시 WebSocket 에 접속해 매칭 큐에 등록.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/MathBattle/01_Script/Lobby/MathBattleLobby.cs",
+     "line": 543,
+     "method": "StartRandomMatching",
+     "path": "",
+     "scenes": [
+      "MathBattleLobby"
+     ],
+     "screen": "매쓰배틀 로비 > '랭크모드' / '연습모드' 버튼",
+     "trigger": "로비에서 '랭크모드' 또는 '연습모드' 버튼을 누르면. 트롤 패널티 중이면 이용 제한 팝업, 랭크 미해금이면 안내 토스트, 일일 게임 시간 제한이면 토스트로 막고 요청하지 않는다.",
+     "on_fail": "서버 오류 응답이면 토스트 없이 티켓 없이 그대로 매칭 진행. 통신 실패 시 재시도 후 오류 토스트, 매칭은 진행되지 않음",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_NetGame.ActiveRooms",
+   "name": "참가 중인 방 역조회(앱 재시작 복귀)",
+   "http": "GET",
+   "paths": [
+    "/api/v3/netgame/rooms/profiles/{profileId}"
+   ],
+   "desc": "앱을 새로 켰을 때 진행 중인 네트워크 게임 방이 있는지 조회한다. 매쓰배틀 방이 잡히면 해당 게임으로 자동 복귀시킨다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/Script/NetGameResume.cs",
+     "line": 127,
+     "method": "IE_CheckAndResume",
+     "path": "",
+     "scenes": [
+      "TitleScene"
+     ],
+     "screen": "타이틀 화면",
+     "trigger": "로그인이 끝나고 바로 로비로 갈 수 있는 상태(프로필 있음, 비밀번호 변경·로그인 유도 단계 없음)면 타이틀에서 자동 1회. 그 조건이 나중에 충족되면 '시작' 버튼을 누를 때 조회.",
+     "on_fail": "실패해도 토스트 없이 무시하고 평소대로 메인 로비로 진행",
+     "note": "매쓰배틀 일반전은 매쓰배틀 인게임으로, 그룹활동은 대기 화면을 거쳐 복귀. 텐텐팡 방은 처리기가 없어 그냥 로비로 감"
+    }
+   ]
+  },
+  {
+   "key": "API_GroupActivity.MyActivities",
+   "name": "내 그룹활동 목록 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/netgame/group-activity/profiles/{profileId}"
+   ],
+   "desc": "선생님이 보낸 매쓰배틀 그룹활동 목록(완료는 당일까지 클리어 표시)을 조회한다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/SchoolLearning/01_Script/SchoolLearningManager.cs",
+     "line": 309,
+     "method": "LoadGroupActivityData",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4",
+      "공통"
+     ],
+     "screen": "학교학습 팝업 > 그룹활동 탭",
+     "trigger": "메인 로비 '학교학습' 버튼(또는 전체 콘텐츠 팝업의 '학교 학습')으로 팝업을 열 때 자동, 그룹활동 탭에서 새로고침(3초 쿨다운), 입장하려던 방이 사라졌을 때 자동 재조회. 그룹활동 게임을 마치고 돌아와 팝업이 다시 뜰 때도 조회.",
+     "on_fail": "통신 실패 시 점검 확인 후 최대 3회 자동 재시도, 끝내 실패하면 오류 토스트(UnknownError). 서버 오류 응답이면 서버 메시지 토스트",
+     "note": "미완료 활동이 있으면 탭에 New 배지. 학교 계정 전용 화면으로 추정"
+    },
+    {
+     "file": "Assets/MathBattle/01_Script/GroupActivity/MathBattleGroupActivitySession.cs",
+     "line": 147,
+     "method": "TryResumeAfterRestart",
+     "path": "",
+     "scenes": [
+      "TitleScene"
+     ],
+     "screen": "타이틀 화면(앱 재시작 복귀)",
+     "trigger": "앱을 다시 켰을 때 역조회에 진행 중인 그룹활동 방이 잡히면, 대기 화면 제목(방 이름)을 얻으려고 자동 조회.",
+     "on_fail": "실패해도 토스트 없이 방 이름 없이 복귀를 계속 진행",
+     "note": "calls 입력에 없던 추가 호출처"
+    }
+   ]
+  },
+  {
+   "key": "API_NetGameMakeTen.CreateCustomRoom",
+   "name": "텐텐팡 커스텀방 생성",
+   "http": "POST",
+   "paths": [
+    "/api/v3/netgame/maketen/custom-room"
+   ],
+   "desc": "텐텐팡 친구 대전용 방을 만들고 4자리 방 코드를 받는다. 성공 시 대기 화면에 방 코드를 보여주고 WebSocket 에 접속.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/MakeTen/01_Script/MakeTenFlow.cs",
+     "line": 1854,
+     "method": "StartCreateRoom",
+     "path": "",
+     "scenes": [
+      "MakeTenScene"
+     ],
+     "screen": "텐텐팡 로비 > '방 만들기' 버튼",
+     "trigger": "로비 중앙 '방 만들기' 버튼을 누르면. 일일 게임 시간 제한에 걸렸으면 요청 없이 토스트.",
+     "on_fail": "서버 오류 응답은 서버 메시지 토스트 후 로비 유지. 통신 실패 시 재시도 후 오류 토스트",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_NetGameMakeTen.JoinCustomRoom",
+   "name": "텐텐팡 커스텀방 입장 검증",
+   "http": "POST",
+   "paths": [
+    "/api/v3/netgame/maketen/custom-room/join"
+   ],
+   "desc": "입력한 4자리 방 코드로 입장 가능한지 검증한다. 통과하면 대기 화면으로 넘어가 WebSocket 에 접속.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/MakeTen/01_Script/MakeTenFlow.cs",
+     "line": 1947,
+     "method": "ConfirmJoinRoom",
+     "path": "",
+     "scenes": [
+      "MakeTenScene"
+     ],
+     "screen": "텐텐팡 로비 > '방 들어가기' > 방 코드 입력 팝업",
+     "trigger": "'방 들어가기' 버튼으로 연 팝업에 방 코드 4자리를 입력하고 확인을 누르면(4자리가 아니면 요청 없이 토스트).",
+     "on_fail": "없는 방·가득 찬 방은 서버 메시지 토스트, 입력 팝업 유지. 통신 실패 시 재시도 후 오류 토스트",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_NetGameMakeTen.RankedResult",
+   "name": "텐텐팡 랭크 대결 결과 리포트",
+   "http": "POST",
+   "paths": [
+    "/api/v3/netgame/maketen/ranked/result"
+   ],
+   "desc": "랭크 대결 한 판의 결과를 내 시점으로 보고한다(양쪽이 각자 호출). 고스트봇 매칭이면 roomId/상대 profileId 는 null.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/MakeTen/01_Script/MakeTenFlow.cs",
+     "line": 3037,
+     "method": "ReportResultToServer",
+     "path": "",
+     "scenes": [
+      "MakeTenScene"
+     ],
+     "screen": "텐텐팡 > 랭크 대결 결과 화면",
+     "trigger": "로비 '대결' 버튼으로 시작한 랭크 대결(실제 상대·고스트봇 모두)이 끝나 결과 화면이 뜰 때 자동(요청 큐 경유). 무승부도 승리로 보고.",
+     "on_fail": "통신 실패 시 점검 확인 후 최대 3회 자동 재시도, 끝내 실패하면 오류 토스트(UnknownError). 서버 오류 응답이면 서버 메시지 토스트",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_NetGameMakeTen.FriendlyResult",
+   "name": "텐텐팡 친선전(커스텀방) 결과 리포트",
+   "http": "POST",
+   "paths": [
+    "/api/v3/netgame/maketen/custom-room/result"
+   ],
+   "desc": "커스텀방 대결 결과를 보고한다. 본문은 랭크와 같고 전적은 남지만 랭크 포인트는 반영되지 않는다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/MakeTen/01_Script/MakeTenFlow.cs",
+     "line": 3036,
+     "method": "ReportResultToServer",
+     "path": "",
+     "scenes": [
+      "MakeTenScene"
+     ],
+     "screen": "텐텐팡 > 커스텀방 대결 결과 화면",
+     "trigger": "'방 만들기'/'방 들어가기'로 친구와 붙은 대결이 끝나 결과 화면이 뜰 때 자동. '로봇 넣기' 대결은 저장하지 않는다.",
+     "on_fail": "통신 실패 시 점검 확인 후 최대 3회 자동 재시도, 끝내 실패하면 오류 토스트(UnknownError). 서버 오류 응답이면 서버 메시지 토스트",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_Ranking.GetMyDiaranking",
+   "name": "내 다이아 랭킹 순위 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/ranking/coin/profiles/{profileId}/rank"
+   ],
+   "desc": "실시간 랭킹 상승 연출의 기준이 될 내 다이아 랭킹 순위를 받아 둔다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/RealtimeRanking/RealtimeRankingManager.cs",
+     "line": 191,
+     "method": "InitializeDiaRankingData",
+     "path": "",
+     "scenes": [
+      "TitleScene",
+      "CreateProfileScene",
+      "공통"
+     ],
+     "screen": "화면 없음(백그라운드)",
+     "trigger": "로그인/회원가입 완료 시(메인 프로필이 있을 때) 자동, 프로필 생성 직후 자동. 프로필이 바뀐 뒤 다이아가 처음 늘어날 때도 다시 조회.",
+     "on_fail": "통신 실패 시 점검 확인 후 최대 3회 자동 재시도, 끝내 실패하면 오류 토스트(UnknownError). 서버 오류 응답이면 서버 메시지 토스트",
+     "note": "RealtimeRankingManager 는 TitleScene 프리팹에 있는 전역 싱글톤"
+    }
+   ]
+  },
+  {
+   "key": "API_Ranking.GetRanking",
+   "name": "랭킹 목록·내 순위 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/ranking/coin/profiles/{profileId}?countryCode={countryCode}&page={page}&size=10",
+    "/api/v3/ranking/coin/profiles/{profileId}?schoolId={schoolId}&page={page}&size=10",
+    "/api/v3/ranking/coin/profiles/{profileId}?countryCode=ALL&page=1&size=3",
+    "/api/v3/ranking/{route}/profiles/{profileId}?countryCode={countryCode}&page={page}&size=10",
+    "/api/v3/ranking/{route}/profiles/{profileId}?countryCode=ALL&page=1&size=3"
+   ],
+   "desc": "다이아(coin) 또는 게임별 랭킹 페이지와 내 순위를 조회한다. schoolId 를 넘기면 학교 내부 랭킹. route: 매쓰갤럭시=mathgalaxy, 매쓰랜드 연산런=mathland-run/modes/{GRASSLAND|DESSERT|ICE_FIELD|LAVA_CAVE}, 매쓰림픽=mathlympic/modes/{ATHLETICS|ATHLETICS_EASY|SWIMMING|SWIMMING_EASY|SHORT_TRACK|SNOWBOARD}, 스피드연산=speedmath, 깨비나라 연산런=mathrun, 매쓰배틀=math-battle/levels/{1~12}, 텐텐팡=maketen/single 또는 maketen/ranked",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/DiaRanking/01_Script/DiaRankingManager.cs",
+     "line": 125,
+     "method": "GetServerData",
+     "path": "/api/v3/ranking/coin/profiles/{profileId}?countryCode={countryCode}&page={page}&size=10 (학교 탭: ?schoolId={schoolId}&page={page}&size=10)",
+     "scenes": [
+      "DiaRankingScene"
+     ],
+     "screen": "다이아 랭킹 화면",
+     "trigger": "다이아 랭킹 화면에 들어올 때 자동, 페이지 이동(처음/끝/내 순위/이전·다음), 국가 드롭다운 변경, '우리 학교' 토글 전환(학교 계정만 보임), 시즌 남은 시간이 0이 되면 재조회.",
+     "on_fail": "통신 실패 시 점검 확인 후 최대 3회 자동 재시도, 끝내 실패하면 오류 토스트(UnknownError). 서버 오류 응답이면 서버 메시지 토스트",
+     "note": "카테고리 전환 코드가 있지만 다이아 외 카테고리(별·트로피)는 주석 처리돼 항상 coin 으로 요청"
+    },
+    {
+     "file": "Assets/Main/2_UnrelatedStages/GameRanking/01_Script/GameRankingManager.cs",
+     "line": 85,
+     "method": "GetServerData",
+     "path": "/api/v3/ranking/{route}/profiles/{profileId}?countryCode={countryCode}&page={page}&size=10",
+     "scenes": [
+      "MathLympics",
+      "MathRun_Lobby",
+      "RunGame_TitleScene",
+      "Speed_TitleScene",
+      "MathGalaxyLobby",
+      "MakeTenScene",
+      "MathBattleLobby"
+     ],
+     "screen": "각 게임 로비 > 랭킹 팝업(GameRanking)",
+     "trigger": "매쓰갤럭시·매쓰랜드 연산런(캐릭터 선택 화면)·매쓰림픽(종목 화면)·깨비나라 연산런·스피드연산·텐텐팡·매쓰배틀 로비의 '랭킹' 버튼으로 팝업을 열 때, 팝업 안에서 페이지 이동·국가 변경, 텐텐팡 싱글/랭크 토글, 시즌 남은 시간이 0이 될 때.",
+     "on_fail": "통신 실패 시 점검 확인 후 최대 3회 자동 재시도, 끝내 실패하면 오류 토스트(UnknownError). 서버 오류 응답이면 서버 메시지 토스트",
+     "note": "매쓰배틀은 로비에서 선택한 레벨의 랭킹(math-battle/levels/{level}). route: 매쓰갤럭시=mathgalaxy, 매쓰랜드 연산런=mathland-run/modes/{GRASSLAND|DESSERT|ICE_FIELD|LAVA_CAVE}, 매쓰림픽=mathlympic/modes/{ATHLETICS|ATHLETICS_EASY|SWIMMING|SWIMMING_EASY|SHORT_TRACK|SNOWBOARD}, 스피드연산=speedmath, 깨비나라 연산런=mathrun, 매쓰배틀=math-battle/levels/{1~12}, 텐텐팡=maketen/single 또는 maketen/ranked"
+    },
+    {
+     "file": "Assets/Main/RealtimeRanking/RealtimeRankingManager.cs",
+     "line": 246,
+     "method": "RequestMyGameRank",
+     "path": "/api/v3/ranking/{route}/profiles/{profileId}?countryCode=ALL&page=1&size=3",
+     "scenes": [
+      "MathLympics",
+      "MathRun_Lobby",
+      "MathRun_Ingame",
+      "MathGalaxyLobby",
+      "MathGalaxyInGame",
+      "MakeTenScene",
+      "MathBattleInGame"
+     ],
+     "screen": "화면 없음(실시간 랭킹 상승 연출 판단용)",
+     "trigger": "매쓰림픽 종목 선택·매쓰랜드 연산런 맵 선택·매쓰갤럭시 로비 진입 시 기준 순위 조회. 각 게임 결과 저장 성공 직후(매쓰림픽·매쓰랜드 연산런·매쓰갤럭시), 텐텐팡 결과 화면, 매쓰배틀 랭크 결과 화면에서 다시 조회해 순위가 오르면 상단 실시간 랭킹 상승 연출. 텐텐팡 로비 진입·매쓰배틀 랭크 인게임 시작 시엔 기준 순위가 없을 때만 조회.",
+     "on_fail": "통신 실패 시 점검 확인 후 최대 3회 자동 재시도, 끝내 실패하면 오류 토스트(UnknownError). 서버 오류 응답이면 서버 메시지 토스트",
+     "note": "텐텐팡은 저장 요청 뒤에 오도록 요청 큐로 보냄. 매쓰배틀은 랭크 매치일 때만"
+    },
+    {
+     "file": "Assets/Main/RealtimeRanking/RealtimeRankingManager.cs",
+     "line": 319,
+     "method": "UpdateDiaRankingData",
+     "path": "/api/v3/ranking/coin/profiles/{profileId}?countryCode=ALL&page=1&size=3",
+     "scenes": [
+      "공통"
+     ],
+     "screen": "화면 상단 실시간 랭킹 상승 연출",
+     "trigger": "보유 다이아가 늘어날 때마다 자동(5초 안의 중복은 무시). 순위가 일정 이상 오르면 실시간 랭킹 상승 연출.",
+     "on_fail": "통신 실패 시 점검 확인 후 최대 3회 자동 재시도, 끝내 실패하면 오류 토스트(UnknownError). 서버 오류 응답이면 서버 메시지 토스트",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_Ranking.GetHallOfFame",
+   "name": "명예의 전당 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/ranking/contest/hall-of-fame?round={round}",
+    "/api/v3/ranking/coin/hall-of-fame?round={round}",
+    "/api/v3/ranking/coin/schools/{schoolId}/hall-of-fame",
+    "/api/v3/ranking/{route}/hall-of-fame?round={round}"
+   ],
+   "desc": "회차별 Top3(명예의 전당)를 조회한다. round=0 이면 최신 회차, 응답의 회차 목록으로 드롭다운을 만든다. schoolId 를 넘기면 학교 지난달 Top3.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/AvatarContest/01_Script/AvatarContest_Hof.cs",
+     "line": 147,
+     "method": "FetchDataFromServer",
+     "path": "/api/v3/ranking/contest/hall-of-fame?round={round}",
+     "scenes": [
+      "AvatarContestScene"
+     ],
+     "screen": "아바타 콘테스트 > 명예의 전당",
+     "trigger": "아바타 콘테스트 상단 '명예의 전당' 버튼을 누르면 최신 회차 조회, 회차 드롭다운을 바꾸면 캐시에 없는 회차만 조회.",
+     "on_fail": "통신 실패 시 점검 확인 후 최대 3회 자동 재시도, 끝내 실패하면 오류 토스트(UnknownError). 서버 오류 응답이면 서버 메시지 토스트",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/2_UnrelatedStages/DiaRanking/01_Script/DiaRankingHofManager.cs",
+     "line": 164,
+     "method": "GetHOFData",
+     "path": "/api/v3/ranking/coin/hall-of-fame?round={round} (학교 TOP3: /api/v3/ranking/coin/schools/{schoolId}/hall-of-fame)",
+     "scenes": [
+      "DiaRankingScene"
+     ],
+     "screen": "다이아 랭킹 > 명예의 전당 / 학교 지난달 TOP3",
+     "trigger": "전체 탭(다이아)에서 '명예의 전당' 버튼, 또는 '우리 학교' 탭에서 '지난달 TOP3' 버튼을 처음 누를 때. 명예의 전당 회차 드롭다운을 바꾸면 캐시에 없는 회차만 조회.",
+     "on_fail": "통신 실패 시 점검 확인 후 최대 3회 자동 재시도, 끝내 실패하면 오류 토스트(UnknownError). 서버 오류 응답이면 서버 메시지 토스트",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/2_UnrelatedStages/GameRanking/01_Script/GameHoFManager.cs",
+     "line": 178,
+     "method": "FetchDataFromServer",
+     "path": "/api/v3/ranking/{route}/hall-of-fame?round={round}",
+     "scenes": [
+      "MathLympics",
+      "MathRun_Lobby",
+      "RunGame_TitleScene",
+      "Speed_TitleScene",
+      "MathGalaxyLobby",
+      "MakeTenScene",
+      "MathBattleLobby"
+     ],
+     "screen": "각 게임 랭킹 팝업 > 명예의 전당",
+     "trigger": "게임 랭킹 팝업에서 '명예의 전당' 버튼을 누를 때, 회차 드롭다운 변경 시(캐시 없을 때), 텐텐팡에서 명예의 전당을 연 채 싱글/랭크 토글을 바꿀 때.",
+     "on_fail": "통신 실패 시 점검 확인 후 최대 3회 자동 재시도, 끝내 실패하면 오류 토스트(UnknownError). 서버 오류 응답이면 서버 메시지 토스트",
+     "note": "route: 매쓰갤럭시=mathgalaxy, 매쓰랜드 연산런=mathland-run/modes/{GRASSLAND|DESSERT|ICE_FIELD|LAVA_CAVE}, 매쓰림픽=mathlympic/modes/{ATHLETICS|ATHLETICS_EASY|SWIMMING|SWIMMING_EASY|SHORT_TRACK|SNOWBOARD}, 스피드연산=speedmath, 깨비나라 연산런=mathrun, 매쓰배틀=math-battle/levels/{1~12}, 텐텐팡=maketen/single 또는 maketen/ranked"
+    }
+   ]
+  },
+  {
+   "key": "API_Ranking.GetCountryRanking",
+   "name": "국가별 랭킹 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/ranking/coin/nation/country-codes/{countryCode}?page=1&size=10"
+   ],
+   "desc": "다이아 랭킹의 국가 순위(상위 국가 + 내 국가)를 조회한다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/DiaRanking/01_Script/DiaRanking_CountryRank.cs",
+     "line": 45,
+     "method": "PopOn",
+     "path": "",
+     "scenes": [
+      "DiaRankingScene"
+     ],
+     "screen": "다이아 랭킹 > 국가별 랭킹 팝업",
+     "trigger": "다이아 랭킹 화면 우측 상단 '국가별 랭킹' 버튼을 처음 누를 때(이후엔 캐시 사용). 내 국가 코드로 요청.",
+     "on_fail": "통신 실패 시 점검 확인 후 최대 3회 자동 재시도, 끝내 실패하면 오류 토스트(UnknownError). 서버 오류 응답이면 서버 메시지 토스트. 실패하면 팝업이 열리지 않음",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "WS.MathBattle",
+   "name": "매쓰배틀 WebSocket 연결",
+   "http": "WS",
+   "paths": [
+    "wss://{도메인}/ws/netgame/math-battle"
+   ],
+   "desc": "매쓰배틀 대기방·매칭·인게임 실시간 통신용 소켓 연결. 도메인은 ServerSetting(dev/live) 서버 주소에서 유도. 연결이 끊기면 WebSocketManager 가 자동 재접속을 시도한다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/MathBattle/01_Script/Lobby/MathBattleLobby.cs",
+     "line": 563,
+     "method": "ConnectAndJoinMatchQueue",
+     "path": "wss://{도메인}/ws/netgame/math-battle?ticket={wsTicket} (티켓 없으면 쿼리 없음)",
+     "scenes": [
+      "MathBattleLobby"
+     ],
+     "screen": "매쓰배틀 로비 > 랭크모드/연습모드 매칭",
+     "trigger": "'랭크모드' 또는 '연습모드' 버튼을 눌러 매칭 티켓 요청이 끝나면 바로 연결해 매칭 큐에 등록.",
+     "on_fail": "",
+     "note": ""
+    },
+    {
+     "file": "Assets/MathBattle/01_Script/Lobby/MathBattleLobby.cs",
+     "line": 862,
+     "method": "ConnectAndJoinCustomRoom",
+     "path": "wss://{도메인}/ws/netgame/math-battle?ticket={wsTicket}",
+     "scenes": [
+      "MathBattleLobby"
+     ],
+     "screen": "매쓰배틀 로비 > 커스텀방 대기실",
+     "trigger": "'방만들기' 또는 '방 찾기'(방 코드 입력) HTTP 요청이 성공하면 바로 연결해 해당 방에 JOIN.",
+     "on_fail": "",
+     "note": ""
+    },
+    {
+     "file": "Assets/MathBattle/01_Script/GroupActivity/MathBattleGroupActivitySession.cs",
+     "line": 283,
+     "method": "Enter",
+     "path": "wss://{도메인}/ws/netgame/math-battle (티켓 없음)",
+     "scenes": [
+      "MainLobbyScene_v4",
+      "공통",
+      "TitleScene"
+     ],
+     "screen": "학교학습 팝업 > 그룹활동 탭 > 활동 입장(대기 화면)",
+     "trigger": "학교학습 팝업 그룹활동 탭에서 활동에 입장하면 대기 화면을 띄우고 연결. 앱 재시작 복귀로 그룹활동 방이 잡혔을 때도 타이틀에서 연결.",
+     "on_fail": "연결이 끊기거나 재접속에 실패하면 안내 토스트 후 대기 화면을 닫고 원래 화면으로 복귀",
+     "note": ""
+    },
+    {
+     "file": "Assets/MathBattle/01_Script/MathBattleRestartResume.cs",
+     "line": 105,
+     "method": "IE_Resume",
+     "path": "wss://{도메인}/ws/netgame/math-battle?ticket={wsTicket}",
+     "scenes": [
+      "TitleScene"
+     ],
+     "screen": "타이틀 화면(앱 재시작 복귀)",
+     "trigger": "앱을 다시 켰을 때 진행 중인 매쓰배틀 일반전(친선·연습·랭크) 방이 역조회되면 자동 연결해 방에 다시 JOIN, 스냅샷을 받으면 매쓰배틀 인게임으로 이동.",
+     "on_fail": "",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "WS.MakeTen",
+   "name": "텐텐팡 WebSocket 연결",
+   "http": "WS",
+   "paths": [
+    "wss://{도메인}/ws/netgame/maketen"
+   ],
+   "desc": "텐텐팡 랭크 매칭·커스텀방 대전 실시간 통신용 소켓 연결. 도메인은 ServerSetting(dev/live) 서버 주소에서 유도.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/MakeTen/01_Script/MakeTenNetPlay.cs",
+     "line": 235,
+     "method": "BeginMatch",
+     "path": "",
+     "scenes": [
+      "MakeTenScene"
+     ],
+     "screen": "텐텐팡 로비 > '대결' 버튼(랭크 매칭 검색 팝업)",
+     "trigger": "로비 '대결' 버튼을 누르면 바로 연결해 랭크 매칭 큐에 등록. 랭크 결과 화면의 다시하기, 매칭된 상대가 거절·이탈해 다시 찾을 때도 새로 연결.",
+     "on_fail": "",
+     "note": "호출: MakeTenFlow.StartPlayerMatchmaking. 일일 게임 시간 제한에 걸렸으면 연결하지 않음"
+    },
+    {
+     "file": "Assets/Main/MakeTen/01_Script/MakeTenNetPlay.cs",
+     "line": 281,
+     "method": "BeginRoom",
+     "path": "",
+     "scenes": [
+      "MakeTenScene"
+     ],
+     "screen": "텐텐팡 > 커스텀방 대기 화면",
+     "trigger": "'방 만들기' 또는 '방 들어가기'(방 코드 검증) HTTP 요청이 성공하면 바로 연결해 방에 JOIN.",
+     "on_fail": "",
+     "note": "호출: MakeTenFlow.StartCreateRoom / ConfirmJoinRoom. 텐텐팡은 앱 재시작 복귀 처리기가 없음"
+    }
+   ]
+  },
+  {
+   "key": "API_Avatar.GetPurchasedInfo",
+   "name": "판타지 아바타 구매 아이템 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/avatar/fantasy/item/purchase/profiles/{profileId}"
+   ],
+   "desc": "판타지 아바타에서 이미 구매한 아이템 목록을 받아 아이템 슬롯에 '보유' 표시를 한다. {url}은 Type 매핑(Friends→friends, Fantasy→fantasy, Idol→idol)으로 정해지며 호출처는 판타지 하나뿐.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/Games/Avartar_2/Scripts/Avartar_2_Manager.cs",
+     "line": 215,
+     "method": "LoadPurchaseInfo",
+     "path": "/api/v3/avatar/fantasy/item/purchase/profiles/{profileId}",
+     "scenes": [
+      "FantasyAvatar_Play"
+     ],
+     "screen": "판타지 아바타 > 꾸미기(플레이) 화면",
+     "trigger": "판타지 아바타 로비에서 슬롯을 골라 꾸미기 화면에 들어오면 자동 호출(씬 시작 시 1회)",
+     "on_fail": "기본 처리: 통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트, 서버가 실패 상태로 응답하면 서버 메시지 토스트. 실패하면 구매한 아이템도 미보유로 보임",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_Avatar.GetInfomation",
+   "name": "아바타 정보 조회(프렌즈/판타지/아이돌)",
+   "http": "GET",
+   "paths": [
+    "/api/v3/avatar/friends/profiles/{profileId}",
+    "/api/v3/avatar/fantasy/profiles/{profileId}",
+    "/api/v3/avatar/idol/profiles/{profileId}"
+   ],
+   "desc": "아바타 종류별 내 아바타 정보를 받는다. 프렌즈는 스타일 슬롯, 슬롯 가격, 상점 배너, 이번 달 정보를 받고 판타지/아이돌은 저장된 아바타 슬롯 목록을 받는다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/FriendsAvatar_v3/01_Script/Closet/Style/FriendsAvatar_StyleManager.cs",
+     "line": 51,
+     "method": "LoadServerData",
+     "path": "/api/v3/avatar/friends/profiles/{profileId}",
+     "scenes": [
+      "MainLobbyScene_v4",
+      "MakeTenScene",
+      "MathBattleLobby",
+      "MathLympics",
+      "AvatarContestScene"
+     ],
+     "screen": "프렌즈 아바타 옷장 팝업 > 스타일 슬롯 목록",
+     "trigger": "옷장 팝업을 열 때와 옷장에서 캐릭터를 구매한 직후 자동 호출. 10초 안에 다시 열면 캐시를 써서 호출하지 않음",
+     "on_fail": "기본 처리: 통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트, 서버가 실패 상태로 응답하면 서버 메시지 토스트. 실패하면 스타일 슬롯이 갱신되지 않음",
+     "note": "옷장은 메인 로비 '아바타 옷장' 버튼, 내 프로필 팝업 '옷장', 전체 콘텐츠 팝업, 메이크텐/매쓰배틀 로비/매쓰림픽 로비의 옷장 버튼, 아바타 콘테스트 참가 신청 팝업에서 열림"
+    },
+    {
+     "file": "Assets/Main/FriendsAvatar_v3/01_Script/Shop/FriendsAvatarDataManager.cs",
+     "line": 73,
+     "method": "GetFriendsAvatarContents",
+     "path": "/api/v3/avatar/friends/profiles/{profileId}",
+     "scenes": [
+      "MainLobbyScene_v4",
+      "MakeTenScene",
+      "MathBattleLobby",
+      "MathLympics"
+     ],
+     "screen": "프렌즈 아바타 상점 팝업",
+     "trigger": "아바타 상점 팝업을 열 때 자동 호출(상점 배너, 이번 달 정보 표시용). 1분 안에 다시 열면 캐시를 쓰고, 프로필 정보가 바뀌면 캐시를 버림",
+     "on_fail": "기본 처리: 통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트, 서버가 실패 상태로 응답하면 서버 메시지 토스트. 실패하면 상점 팝업이 페이드인되지 않아 투명한 채로 남을 수 있음(추정)",
+     "note": "스크립트는 부팅 씬(AssetBundleScene)에 있는 상주 매니저. 상점은 메인 로비 '아바타 상점' 버튼, 전체 콘텐츠 팝업, 공지 배너(MB003), 옷장 안의 '상점 가기'로 열림"
+    },
+    {
+     "file": "Assets/Main/Games/Avartar_2/Scripts/Avartar_2_Lobby_Manager.cs",
+     "line": 179,
+     "method": "GetAvartarInfo",
+     "path": "/api/v3/avatar/fantasy/profiles/{profileId}",
+     "scenes": [
+      "FantasyAvatar_Lobby"
+     ],
+     "screen": "판타지 아바타 로비(슬롯 선택 화면)",
+     "trigger": "전체 콘텐츠 팝업 등에서 판타지 아바타에 들어와 로비가 뜰 때 자동 호출",
+     "on_fail": "기본 처리: 통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트, 서버가 실패 상태로 응답하면 서버 메시지 토스트. 실패하면 씬 전환 로딩 화면이 닫히지 않을 수 있음(추정, 로딩 해제가 성공 콜백 안에만 있음)",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/Games/Avartar_3/Scripts/Avartar_3_Lobby_Manager.cs",
+     "line": 290,
+     "method": "GetAvartarInfo",
+     "path": "/api/v3/avatar/idol/profiles/{profileId}",
+     "scenes": [
+      "IdolAvatarScene"
+     ],
+     "screen": "아이돌 아바타 로비",
+     "trigger": "아이돌 아바타 씬에 들어올 때 자동 호출(상점 정보 조회와 병렬). 아바타 저장, 슬롯 구매, 옷장 저장 직후에도 다시 호출되어 화면 갱신",
+     "on_fail": "기본 처리: 통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트, 서버가 실패 상태로 응답하면 서버 메시지 토스트",
+     "note": "응답에 저장된 아바타가 하나도 없으면(첫 진입) 기본 아바타를 만들어 바로 저장(SaveStyle)이 이어짐"
+    }
+   ]
+  },
+  {
+   "key": "API_Avatar.PurchaseItem",
+   "name": "아바타 아이템 구매",
+   "http": "POST",
+   "paths": [
+    "/api/v3/avatar/friends/item/purchase",
+    "/api/v3/avatar/fantasy/item/purchase",
+    "/api/v3/avatar/idol/item/purchase"
+   ],
+   "desc": "다이아로 아바타 아이템을 산다. 성공하면 클라이언트가 보유 목록에 추가하고 다이아 차감을 화면에 반영한다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/FriendsAvatar_v3/01_Script/Shop/FriendsAvatarShopManager.cs",
+     "line": 464,
+     "method": "PurchaseComplete",
+     "path": "/api/v3/avatar/friends/item/purchase",
+     "scenes": [
+      "MainLobbyScene_v4",
+      "MakeTenScene",
+      "MathBattleLobby",
+      "MathLympics"
+     ],
+     "screen": "프렌즈 아바타 상점 팝업 > 구매 확인 팝업",
+     "trigger": "상점에서 아이템 하나를 눌러 단일 구매 팝업의 '구매' → 확인 팝업 '구매'를 누르거나, 장바구니 일괄 구매 → 확인 팝업 '구매'를 누르면. 선택한 캐릭터를 보유하지 않았으면 호출 없이 '캐릭터 먼저 구매' 토스트",
+     "on_fail": "기본 처리: 통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트, 서버가 실패 상태로 응답하면 서버 메시지 토스트",
+     "note": "성공 시 구매 완료 팝업과 옷장 저장(SaveCloset)이 이어짐"
+    },
+    {
+     "file": "Assets/Main/Games/Avartar_2/Scripts/Avartar_2_Manager.cs",
+     "line": 394,
+     "method": "PurchaseItem",
+     "path": "/api/v3/avatar/fantasy/item/purchase",
+     "scenes": [
+      "FantasyAvatar_Play"
+     ],
+     "screen": "판타지 아바타 > 꾸미기 화면 > 아이템 구매 팝업",
+     "trigger": "미보유 아이템을 눌러 구매 팝업이 뜬 뒤 '구매' 버튼을 누르면. 다이아가 부족하면 호출 없이 에러 팝업",
+     "on_fail": "기본 처리: 통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트, 서버가 실패 상태로 응답하면 서버 메시지 토스트. 실패하면 아이템은 미보유로 남고 다이아도 차감되지 않음",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/Games/Avartar_3/Scripts/Avartar_3_Shop_Manager.cs",
+     "line": 758,
+     "method": "IeBuyItem",
+     "path": "/api/v3/avatar/idol/item/purchase",
+     "scenes": [
+      "IdolAvatarScene"
+     ],
+     "screen": "아이돌 아바타 > 상점 > 구매 패널",
+     "trigger": "상점에서 미보유 아이템을 고르고 '구매' 버튼을 누르면(기본 무료 아이템은 통신 없이 옷장에 추가)",
+     "on_fail": "기본 처리: 통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트, 서버가 실패 상태로 응답하면 서버 메시지 토스트",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_Avatar.PurchaseStyle",
+   "name": "아바타 스타일 슬롯 구매",
+   "http": "POST",
+   "paths": [
+    "/api/v3/avatar/friends/style/purchase",
+    "/api/v3/avatar/idol/style/purchase"
+   ],
+   "desc": "다이아로 아바타 저장 슬롯을 추가 구매한다. 프렌즈는 캐릭터별 스타일 슬롯, 아이돌은 로비의 아바타 슬롯.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/FriendsAvatar_v3/01_Script/Closet/Style/FriendsAvatar_StyleBuyPop.cs",
+     "line": 34,
+     "method": "Purchase",
+     "path": "/api/v3/avatar/friends/style/purchase",
+     "scenes": [
+      "MainLobbyScene_v4",
+      "MakeTenScene",
+      "MathBattleLobby",
+      "MathLympics",
+      "AvatarContestScene"
+     ],
+     "screen": "프렌즈 아바타 옷장 > 스타일 탭 > 슬롯 구매 팝업",
+     "trigger": "스타일 탭에서 잠긴(미구매) 슬롯의 구매 버튼 → 가격 확인 팝업에서 구매 버튼을 누르면. 현재 캐릭터를 보유하지 않았으면 호출 없이 토스트",
+     "on_fail": "기본 처리: 통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트, 서버가 실패 상태로 응답하면 서버 메시지 토스트",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/Games/Avartar_3/Scripts/Avartar_3_Lobby_Manager.cs",
+     "line": 950,
+     "method": "IeBuySlot",
+     "path": "/api/v3/avatar/idol/style/purchase",
+     "scenes": [
+      "IdolAvatarScene"
+     ],
+     "screen": "아이돌 아바타 로비 > 슬롯 구매 패널",
+     "trigger": "로비에서 잠긴 슬롯을 눌러 슬롯 구매 패널이 뜬 뒤 '구매'를 누르면. 성공하면 옷장으로 넘어가고 바로 아바타 저장(SaveStyle)이 이어짐",
+     "on_fail": "기본 처리: 통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트, 서버가 실패 상태로 응답하면 서버 메시지 토스트",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_Avatar.SaveStyle",
+   "name": "아바타 저장(판타지/아이돌)",
+   "http": "POST",
+   "paths": [
+    "/api/v3/avatar/fantasy/style/save",
+    "/api/v3/avatar/idol/style/save"
+   ],
+   "desc": "현재 꾸민 아바타(파츠 번호, 슬롯 번호, 이름 등)를 해당 슬롯에 저장한다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/Games/Avartar_2/Scripts/Avartar_2_Manager.cs",
+     "line": 445,
+     "method": "IeSaveAvartar",
+     "path": "/api/v3/avatar/fantasy/style/save",
+     "scenes": [
+      "FantasyAvatar_Play"
+     ],
+     "screen": "판타지 아바타 > 꾸미기 화면",
+     "trigger": "옷을 바꾼 뒤 '저장' 버튼을 누르거나, 뒤로가기 → 저장 안내 팝업에서 '저장'을 누르면(저장 후 판타지 로비로 이동)",
+     "on_fail": "기본 처리: 통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트, 서버가 실패 상태로 응답하면 서버 메시지 토스트. 실패하면 저장 버튼이 활성 상태로 남고 로비로 이동하지 않음",
+     "note": "HTTP 메서드를 지역 변수로 넘기지만 값은 POST 고정"
+    },
+    {
+     "file": "Assets/Main/Games/Avartar_3/Scripts/Avartar_3_Lobby_Manager.cs",
+     "line": 474,
+     "method": "IeSaveAvartar",
+     "path": "/api/v3/avatar/idol/style/save",
+     "scenes": [
+      "IdolAvatarScene"
+     ],
+     "screen": "아이돌 아바타 로비/옷장",
+     "trigger": "옷장에서 '저장', 뒤로가기 시 저장 안내 팝업에서 '저장', 잠긴 슬롯 구매 직후, 첫 진입 때 기본 아바타 자동 생성 시 호출. 상점 정보 로딩이 끝날 때까지 기다렸다가 보냄",
+     "on_fail": "기본 처리: 통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트, 서버가 실패 상태로 응답하면 서버 메시지 토스트",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_Avatar.SaveFriendsAvatarStyle",
+   "name": "프렌즈 아바타 스타일 저장/비우기",
+   "http": "PUT",
+   "paths": [
+    "/api/v3/avatar/friends/styles/{styleId}"
+   ],
+   "desc": "구매한 프렌즈 아바타 스타일 슬롯에 지금 입은 옷을 저장하거나(isEmpty=false), 슬롯을 빈 칸으로 만든다(isEmpty=true).",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/FriendsAvatar_v3/01_Script/Closet/Style/FriendsAvatar_StyleItem.cs",
+     "line": 178,
+     "method": "SetEmptyStyle",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4",
+      "MakeTenScene",
+      "MathBattleLobby",
+      "MathLympics",
+      "AvatarContestScene"
+     ],
+     "screen": "프렌즈 아바타 옷장 > 스타일 탭 > 비우기 확인 팝업",
+     "trigger": "스타일이 저장된 슬롯의 '비우기' 버튼 → 확인 팝업에서 '확인'을 누르면",
+     "on_fail": "기본 처리: 통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트, 서버가 실패 상태로 응답하면 서버 메시지 토스트",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/FriendsAvatar_v3/01_Script/Closet/Style/FriendsAvatar_StyleSavePop.cs",
+     "line": 30,
+     "method": "SaveStyle",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4",
+      "MakeTenScene",
+      "MathBattleLobby",
+      "MathLympics",
+      "AvatarContestScene"
+     ],
+     "screen": "프렌즈 아바타 옷장 > 스타일 탭 > 스타일 저장 팝업",
+     "trigger": "빈 슬롯의 '저장' 버튼 → 스타일 이름 입력 팝업에서 저장 버튼을 누르면(이름을 비우면 기본 이름 사용)",
+     "on_fail": "기본 처리: 통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트, 서버가 실패 상태로 응답하면 서버 메시지 토스트",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_Avatar.GetStoreInfo",
+   "name": "아이돌 아바타 상점/옷장 정보 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/avatar/idol/store/profiles/{profileId}"
+   ],
+   "desc": "아이돌 아바타 상점 아이템 목록(가격, 분류, 보유 여부)과 옷장 정보를 받는다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/Games/Avartar_3/Scripts/Avartar_3_ItemInfo.cs",
+     "line": 91,
+     "method": "GetItemInfo",
+     "path": "/api/v3/avatar/idol/store/profiles/{profileId}",
+     "scenes": [
+      "IdolAvatarScene"
+     ],
+     "screen": "아이돌 아바타 로비(진입 로딩)",
+     "trigger": "아이돌 아바타 씬에 들어올 때 자동 호출(아바타 정보 조회와 병렬)",
+     "on_fail": "기본 처리: 통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트, 서버가 실패 상태로 응답하면 서버 메시지 토스트. 실패하면 아바타 저장이 상점 정보 로딩 완료를 계속 기다려 저장이 진행되지 않을 수 있음(추정)",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_Avatar.PurchaseCharacter",
+   "name": "프렌즈 캐릭터 구매",
+   "http": "POST",
+   "paths": [
+    "/api/v3/avatar/friends/skin/purchase"
+   ],
+   "desc": "미보유 프렌즈 캐릭터(스킨)를 다이아로 구매한다. 성공하면 클라이언트가 보유 처리하고 다이아 100 차감을 화면에 반영한다(가격 100은 클라이언트 고정값).",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/FriendsAvatar_v3/01_Script/Closet/FriendsAvatarClosetManager.cs",
+     "line": 274,
+     "method": "PurchaseCharacter",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4",
+      "MakeTenScene",
+      "MathBattleLobby",
+      "MathLympics",
+      "AvatarContestScene"
+     ],
+     "screen": "프렌즈 아바타 옷장 > 캐릭터 구매 팝업",
+     "trigger": "옷장에서 미보유 캐릭터를 선택한 상태로 캐릭터 구매 안내를 눌러 구매 팝업이 뜬 뒤 '구매' 버튼을 누르면",
+     "on_fail": "기본 처리: 통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트, 서버가 실패 상태로 응답하면 서버 메시지 토스트",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/FriendsAvatar_v3/01_Script/Shop/FriendsAvatarShopManager.cs",
+     "line": 404,
+     "method": "PurchaseCharacter",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4",
+      "MakeTenScene",
+      "MathBattleLobby",
+      "MathLympics"
+     ],
+     "screen": "프렌즈 아바타 상점 > 캐릭터 구매 팝업",
+     "trigger": "상점에서 미보유 캐릭터를 고른 상태로 캐릭터 구매 버튼 → 구매 팝업에서 '구매'를 누르면",
+     "on_fail": "기본 처리: 통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트, 서버가 실패 상태로 응답하면 서버 메시지 토스트",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_Title.Equip",
+   "name": "칭호 장착",
+   "http": "PUT",
+   "paths": [
+    "/api/v3/titles/{titleId}/equip"
+   ],
+   "desc": "칭호 장착 API. 호출 코드(TitleBadgeManager.SaveTitleBadge)가 주석 처리되어 있고, 지금은 칭호 장착을 프로필 수정 요청(titleId)으로 처리한다.",
+   "unused": true,
+   "calls": []
+  },
+  {
+   "key": "API_Title.GetData",
+   "name": "칭호 진행도 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/titles/profiles/{profileId}"
+   ],
+   "desc": "칭호별 진행 수치(currentCount)와 획득 여부를 받아 칭호 목록에 표시한다. 장착 칭호는 서버 값 대신 프로필의 titleId로 판단한다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/TitleBadge/01_Script/TitleBadgeManager.cs",
+     "line": 127,
+     "method": "IeGetTitleInfo",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "미션 팝업 > 칭호 탭",
+     "trigger": "미션 팝업을 칭호 탭으로 열 때(내 프로필 팝업의 칭호 변경, 공지 배너 MB006 '칭호 키링') 또는 미션 팝업에서 칭호 탭을 누를 때 자동 호출",
+     "on_fail": "기본 처리: 통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트, 서버가 실패 상태로 응답하면 서버 메시지 토스트. 실패하면 칭호 탭이 페이드인되지 않아 팝업이 보이지 않을 수 있음(추정)",
+     "note": "미션 팝업(MissionManager.prefab)은 메인 로비, 전체 콘텐츠 팝업, 내 프로필 팝업, 공지 배너에서 열림. 그냥 열면 일일 미션 탭이 기본이라 이 API는 칭호 탭일 때만 호출됨"
+    }
+   ]
+  },
+  {
+   "key": "API_Purchase.GetHistory",
+   "name": "인앱 구매 내역 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/purchase/history/accounts/{accountId}"
+   ],
+   "desc": "계정의 인앱 결제(이용권) 구매 내역을 받아 목록으로 보여준다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/PurchaseHistory/01_Script/PurchaseHistoryPopup.cs",
+     "line": 95,
+     "method": "LoadPurchaseHistory",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "설정 > 구매 탭 > 이용권 > 구매 내역 팝업",
+     "trigger": "설정 팝업의 구매 탭에서 '구매 내역' 버튼을 누르면 팝업이 열리며 자동 호출. 내역이 0건이면 '구매 내역이 없습니다' 토스트 후 팝업이 바로 닫힘",
+     "on_fail": "기본 처리: 통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트, 서버가 실패 상태로 응답하면 서버 메시지 토스트. 실패하면 팝업이 투명한 상태로 남을 수 있음(추정)",
+     "note": "설정 팝업은 메인 로비의 설정 버튼 또는 전체 콘텐츠 팝업에서 열림"
+    }
+   ]
+  },
+  {
+   "key": "API_Purchase.AttemptPurchase",
+   "name": "인앱 구매 시도(사전 검증)",
+   "http": "POST",
+   "paths": [
+    "/api/v3/purchase/in-app/attempt"
+   ],
+   "desc": "스토어 결제창을 띄우기 전에 서버에서 결제 가능 여부를 검증받는다(남은 이용기간이 기준 이상이면 서버가 거부). 성공해야 스토어 결제창이 뜬다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/InAppPurchaseScene/01_Script/IAPManager.cs",
+     "line": 172,
+     "method": "PurchaseProduct",
+     "path": "",
+     "scenes": [
+      "InAppPurchaseScene"
+     ],
+     "screen": "상점(이용권 구매) > 상품 구매 버튼",
+     "trigger": "상점 씬에서 상품의 구매 버튼을 누르면(한국어 안드로이드는 플랫폼 선택 팝업에서 'Google Play'를 고르면). 학교 라이선스이거나 남은 이용기간이 30일 이상이면 호출 없이 안내 토스트",
+     "on_fail": "기본 처리: 통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트, 서버가 실패 상태로 응답하면 서버 메시지 토스트. 실패하면 결제창이 뜨지 않음. 코드상 '결제 진행 중' 표시가 풀리지 않아 같은 앱 실행 중에는 구매 버튼을 다시 눌러도 반응이 없음",
+     "note": "에디터에서는 스토어 대신 SuccessPurchase 시뮬레이션이 바로 이어짐. IAPManager 는 부팅 씬(AssetBundleScene)의 상주 매니저"
+    }
+   ]
+  },
+  {
+   "key": "API_Purchase.FailedPurchase",
+   "name": "인앱 구매 실패 기록",
+   "http": "POST",
+   "paths": [
+    "/api/v3/purchase/in-app/failure"
+   ],
+   "desc": "스토어 결제가 실패하거나 사용자가 취소했을 때 실패 사유를 서버에 기록한다. 응답은 쓰지 않는다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/InAppPurchaseScene/01_Script/IAPManager.cs",
+     "line": 531,
+     "method": "OnPurchaseFailed",
+     "path": "",
+     "scenes": [
+      "InAppPurchaseScene"
+     ],
+     "screen": "상점 > 스토어 결제창",
+     "trigger": "스토어 결제창에서 결제를 취소하거나 결제가 실패하면(카드 거절, 이미 진행 중인 결제 등) 자동 호출",
+     "on_fail": "실패해도 화면 동작 없음(기본 오류 토스트만 뜰 수 있음)",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/2_UnrelatedStages/DeveloperFuncs.cs",
+     "line": 1773,
+     "method": "RandomPurchaseFailed",
+     "path": "",
+     "scenes": [],
+     "screen": "개발자 기능(ForDev 프리팹) 인스펙터 버튼",
+     "trigger": "유니티 에디터 인스펙터의 '랜덤 구매 실패 로그' 버튼으로만 호출",
+     "on_fail": "",
+     "note": "개발용(Odin 인스펙터 버튼 전용). 실제 앱 사용자 동작으로는 호출되지 않음"
+    }
+   ]
+  },
+  {
+   "key": "API_Purchase.GetProducts",
+   "name": "인앱 상품 목록 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/purchase/in-app/product/accounts/{accountId}"
+   ],
+   "desc": "상점에 표시할 인앱 상품 ID 목록, 상단 프로모션 배너, 네이버 스토어 링크를 받는다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/InAppPurchaseScene/01_Script/InAppPurchaseSceneManager.cs",
+     "line": 189,
+     "method": "LoadInAppPurchaseUIData",
+     "path": "",
+     "scenes": [
+      "InAppPurchaseScene"
+     ],
+     "screen": "상점(이용권 구매) 화면",
+     "trigger": "상점 씬에 들어올 때 자동 호출",
+     "on_fail": "기본 처리: 통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트, 서버가 실패 상태로 응답하면 서버 메시지 토스트. 실패하면 씬 전환 로딩 화면이 닫히지 않을 수 있음(추정, 로딩 해제가 성공 콜백 안에만 있음)",
+     "note": ""
+    },
+    {
+     "file": "Assets/Main/InAppPurchaseScene/01_Script/IAPManager.cs",
+     "line": 581,
+     "method": "OpenWebPurchasePage",
+     "path": "",
+     "scenes": [
+      "공통"
+     ],
+     "screen": "상점 이동 시(PC 빌드)",
+     "trigger": "PC(Windows/Mac/WebGL) 빌드에서 어느 화면에서든 상점으로 이동하려고 하면, 씬 이동 대신 이 API를 호출해 받은 네이버 스토어 링크를 브라우저로 연다",
+     "on_fail": "기본 처리: 통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트, 서버가 실패 상태로 응답하면 서버 메시지 토스트. 실패하면 아무 페이지도 열리지 않음",
+     "note": "모바일에서는 호출되지 않음"
+    }
+   ]
+  },
+  {
+   "key": "API_Purchase.SuccessPurchase",
+   "name": "인앱 구매 성공 기록(이용권 지급)",
+   "http": "POST",
+   "paths": [
+    "/api/v3/purchase/in-app/success"
+   ],
+   "desc": "스토어 결제 완료 후 주문 ID, 금액 등을 서버로 보내 이용권을 지급받는다. 이미 처리된 주문이면 isDuplicate=true 로 와서 트랜잭션 확정만 한다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/InAppPurchaseScene/01_Script/IAPManager.cs",
+     "line": 188,
+     "method": "PurchaseProduct",
+     "path": "",
+     "scenes": [
+      "InAppPurchaseScene"
+     ],
+     "screen": "상점 > 상품 구매(에디터 시뮬레이션)",
+     "trigger": "유니티 에디터에서 구매 버튼을 누르고 사전 검증(AttemptPurchase)이 성공하면 스토어 없이 바로 호출",
+     "on_fail": "",
+     "note": "#if UNITY_EDITOR 전용 코드. 실기기 빌드에서는 호출되지 않음"
+    },
+    {
+     "file": "Assets/Main/InAppPurchaseScene/01_Script/IAPManager.cs",
+     "line": 385,
+     "method": "SendPurchaseSuccess",
+     "path": "",
+     "scenes": [
+      "InAppPurchaseScene",
+      "TitleScene"
+     ],
+     "screen": "상점 > 스토어 결제 완료 직후 / 앱 재실행 후 로그인 직후",
+     "trigger": "스토어 결제창에서 결제를 마치면 자동 호출. 결제했지만 지급 확정이 안 된 주문이 남아 있으면 앱을 다시 켜고 로그인이 끝난 직후 자동으로 다시 보냄(복구)",
+     "on_fail": "서버가 실패 상태로 응답하면 서버 메시지 토스트 후 트랜잭션을 확정하지 않고 남겨 다음 앱 실행 때 다시 보냄. 통신 자체가 실패하면 기본 재시도 3회 후 오류 토스트",
+     "note": "성공하면 '구매 완료' 토스트 후 타이틀 씬으로 이동해 재로그인(복구 전송이면 씬 이동 없이 유저 정보만 다시 받음). Firebase 결제 이벤트도 기록"
+    }
+   ]
+  },
+  {
+   "key": "API_Coin.GetHistory",
+   "name": "다이아(코인) 내역 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/coin/history/profiles/{profileId}?date={yyyy-MM-dd}"
+   ],
+   "desc": "지정한 날짜의 다이아 획득/사용 내역을 받아 다이아 영수증 팝업에 보여준다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/Dialog/01_Script/DialogManager_v3.cs",
+     "line": 115,
+     "method": "LoadDiaLog",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "메인 로비 > 상단 다이아 표시 > 다이아 영수증 팝업",
+     "trigger": "메인 로비 상단의 다이아 표시를 눌러 팝업이 열릴 때(오늘 날짜) 자동 호출, 팝업에서 이전 날/다음 날 버튼을 누를 때마다 호출(한 번 받은 날짜는 팝업이 열려 있는 동안 캐시)",
+     "on_fail": "기본 처리: 통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트, 서버가 실패 상태로 응답하면 서버 메시지 토스트. 처음 조회가 실패하면 팝업 등장 애니메이션이 재생되지 않아 팝업이 보이지 않을 수 있음(추정)",
+     "note": "date 는 기기 시계(DateTime.Now) 기준 날짜라 기기 날짜가 틀리면 다른 날의 내역이 조회됨"
+    }
+   ]
+  },
+  {
+   "key": "API_Gacha.Type.Draw",
+   "name": "가챠 뽑기",
+   "http": "",
+   "paths": [
+    "/api/v1/gacha/draw"
+   ],
+   "desc": "가챠 뽑기를 실행한다. 클라이언트 어디에서도 API_Gacha 를 호출하지 않는다(GachaScene 으로 이동하는 함수만 남아 있음).",
+   "unused": true,
+   "calls": []
+  },
+  {
+   "key": "API_Gacha.Type.GetInfo",
+   "name": "가챠 확률표/천장 정보 조회",
+   "http": "",
+   "paths": [
+    "/api/v1/gacha/info/profiles/{profileId}"
+   ],
+   "desc": "가챠 확률표와 천장 정보를 조회한다. 클라이언트 어디에서도 API_Gacha 를 호출하지 않는다(GachaScene 으로 이동하는 함수만 남아 있음).",
+   "unused": true,
+   "calls": []
+  },
+  {
+   "key": "API_Gacha.Type.TicketInfo",
+   "name": "보유 가챠 티켓 조회",
+   "http": "",
+   "paths": [
+    "/api/v1/gacha/tickets/profiles/{profileId}"
+   ],
+   "desc": "보유한 가챠 티켓 수를 조회한다. 클라이언트 어디에서도 API_Gacha 를 호출하지 않는다(GachaScene 으로 이동하는 함수만 남아 있음).",
+   "unused": true,
+   "calls": []
+  },
+  {
+   "key": "API_Contest.GetContestInfo",
+   "name": "아바타 콘테스트 정보 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/contest/profiles/{profileId}",
+    "/api/v3/contest/profiles/{profileId}?datetime={customDateTime}"
+   ],
+   "desc": "콘테스트 진행 단계(신청/예선/본선/결과), 주제, 내 출품작, 받은 하트, 메시지, 블랙리스트 정보를 받아 로비 화면을 구성한다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/AvatarContest/01_Script/AvatarContest_Lobby.cs",
+     "line": 57,
+     "method": "LoadLobbyData",
+     "path": "",
+     "scenes": [
+      "AvatarContestScene"
+     ],
+     "screen": "아바타 콘테스트 로비",
+     "trigger": "아바타 콘테스트 씬에 들어올 때 자동 호출. 참가 신청 완료, 투표 완료 직후와 각 단계의 남은 시간이 0이 될 때도 다시 호출되어 화면 갱신",
+     "on_fail": "기본 처리: 통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트, 서버가 실패 상태로 응답하면 서버 메시지 토스트. 진입할 때 실패하면 씬 전환 로딩 화면이 닫히지 않을 수 있음(추정)",
+     "note": "개발 서버에서 날짜 편집 패널(ForTest)로 customDateTime 을 지정하면 ?datetime= 이 붙는 경로를 쓰지만, 그 패널은 씬에서 꺼져 있고 켜는 코드가 없어 실제로는 에디터에서만 쓰임. 블랙리스트 상태(status>=10)면 제재 안내 팝업 표시. 콘테스트는 전체 콘텐츠 팝업에서 진입"
+    }
+   ]
+  },
+  {
+   "key": "API_Contest.ApplyContest",
+   "name": "아바타 콘테스트 참가 신청",
+   "http": "POST",
+   "paths": [
+    "/api/v3/contest/entries",
+    "/api/v3/contest/entries?datetime={customDateTime}"
+   ],
+   "desc": "현재 입은 프렌즈 아바타와 한마디(코멘트)로 콘테스트에 출품한다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/AvatarContest/01_Script/AvatarContest_ApplyManager.cs",
+     "line": 149,
+     "method": "IE_SaveApply",
+     "path": "",
+     "scenes": [
+      "AvatarContestScene"
+     ],
+     "screen": "아바타 콘테스트 로비 > 참가 신청 팝업",
+     "trigger": "신청 기간에 참가 신청 팝업에서 옷을 입히고 한마디를 쓴 뒤 '신청' 버튼을 누르면. 아이템을 하나도 안 입었거나 금칙어가 있으면 호출 없이 토스트, 한마디를 비우면 기본 문구로 보냄",
+     "on_fail": "기본 처리: 통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트, 서버가 실패 상태로 응답하면 서버 메시지 토스트. 실패하면 신청 팝업이 열린 채로 남음",
+     "note": "개발 서버에서 날짜 편집 패널(ForTest)로 customDateTime 을 지정하면 ?datetime= 이 붙는 경로를 쓰지만, 그 패널은 씬에서 꺼져 있고 켜는 코드가 없어 실제로는 에디터에서만 쓰임"
+    }
+   ]
+  },
+  {
+   "key": "API_Contest.ApplyContestRandom",
+   "name": "콘테스트 랜덤 신청(테스트용)",
+   "http": "POST",
+   "paths": [
+    "/api/v3/contest/entries/random?count=50",
+    "/api/v3/contest/entries/random?count=50&datetime={customDateTime}"
+   ],
+   "desc": "테스트용으로 랜덤 출품작 50개를 한 번에 신청한다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/AvatarContest/01_Script/AvatarContest_ForTest.cs",
+     "line": 82,
+     "method": "RandomApply",
+     "path": "",
+     "scenes": [
+      "AvatarContestScene"
+     ],
+     "screen": "(테스트용 날짜 편집 패널)",
+     "trigger": "유니티 에디터 인스펙터의 '랜덤 신청' 버튼으로만 호출",
+     "on_fail": "",
+     "note": "개발용(Odin 인스펙터 버튼 전용). 씬의 어떤 버튼에도 연결되지 않아 앱 사용자 동작으로는 호출되지 않음"
+    }
+   ]
+  },
+  {
+   "key": "API_Contest.MessageRead",
+   "name": "콘테스트 메시지 읽음 처리",
+   "http": "",
+   "paths": [
+    "/api/v3/contest/message/read/profiles/{profileId}"
+   ],
+   "desc": "콘테스트 메시지 확인 처리 API. 읽음 처리 코드(AvatarContest_MessageManager.IE_SendReadMessage)가 주석 처리되어 호출하지 않는다.",
+   "unused": true,
+   "calls": []
+  },
+  {
+   "key": "API_Contest.GetContestEntriesInfo",
+   "name": "투표용 출품작 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/contest/entries/voting/profiles/{profileId}",
+    "/api/v3/contest/entries/voting/profiles/{profileId}?datetime={customDateTime}"
+   ],
+   "desc": "투표(16강 토너먼트)에 쓸 출품작 목록을 받는다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/AvatarContest/01_Script/AvatarContest_VotePoP.cs",
+     "line": 97,
+     "method": "GetEntryInfo",
+     "path": "",
+     "scenes": [
+      "AvatarContestScene"
+     ],
+     "screen": "아바타 콘테스트 > 예선/본선 투표 팝업",
+     "trigger": "예선(또는 본선) 기간에 투표 버튼 → 투표 확인 팝업에서 확인을 누르면 투표 팝업이 열리며 자동 호출. 투표 기간이 아니거나 오늘 이미 투표했으면 호출 없이 토스트",
+     "on_fail": "기본 처리: 통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트, 서버가 실패 상태로 응답하면 서버 메시지 토스트. 실패하면 투표 팝업이 빈 채로 진행되지 않음(추정)",
+     "note": "개발 서버에서 날짜 편집 패널(ForTest)로 customDateTime 을 지정하면 ?datetime= 이 붙는 경로를 쓰지만, 그 패널은 씬에서 꺼져 있고 켜는 코드가 없어 실제로는 에디터에서만 쓰임"
+    }
+   ]
+  },
+  {
+   "key": "API_Contest.ReportContestEntry",
+   "name": "콘테스트 출품작 신고",
+   "http": "POST",
+   "paths": [
+    "/api/v3/contest/report"
+   ],
+   "desc": "투표 중 부적절한 출품작을 신고한다. 신고에 성공하면 신고당한 쪽은 탈락하고 상대가 자동으로 다음 라운드에 진출한다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/AvatarContest/01_Script/AvatarContest_VotePoP.cs",
+     "line": 370,
+     "method": "IE_Report",
+     "path": "",
+     "scenes": [
+      "AvatarContestScene"
+     ],
+     "screen": "아바타 콘테스트 > 투표 팝업 > 신고 팝업",
+     "trigger": "투표 대결 화면에서 한쪽 출품작의 신고 버튼 → 신고 팝업에서 '신고' 버튼을 누르면",
+     "on_fail": "기본 처리: 통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트, 서버가 실패 상태로 응답하면 서버 메시지 토스트. 실패하면 신고 팝업이 열린 채로 남음",
+     "note": "성공하면 '신고 완료' 토스트"
+    }
+   ]
+  },
+  {
+   "key": "API_Contest.VoteComplete",
+   "name": "콘테스트 투표 완료",
+   "http": "POST",
+   "paths": [
+    "/api/v3/contest/vote/completion"
+   ],
+   "desc": "16강부터 결승까지 고른 결과(출품작별 하트 수)를 서버에 저장한다. 응답에 보상이 있으면 보상 연출이 뜬다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/AvatarContest/01_Script/AvatarContest_VotePoP.cs",
+     "line": 310,
+     "method": "IE_SaveVote",
+     "path": "",
+     "scenes": [
+      "AvatarContestScene"
+     ],
+     "screen": "아바타 콘테스트 > 투표 팝업 > 우승자 화면",
+     "trigger": "투표 팝업에서 결승(마지막 대결)까지 선택을 마치면 우승자 연출과 동시에 자동 호출. 성공하면 로비 정보(GetContestInfo)를 다시 받음",
+     "on_fail": "기본 처리: 통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트, 서버가 실패 상태로 응답하면 서버 메시지 토스트. 실패해도 우승자 화면은 그대로 보임",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_Inquiry.SaveInquiry",
+   "name": "문의 등록",
+   "http": "POST",
+   "paths": [
+    "/api/v3/inquiries"
+   ],
+   "desc": "고객 문의를 서버에 저장한다. 설정의 문의하기 팝업(본문·연락처·첨부 이미지 최대 3장 base64)과 프로필 PIN 입력 팝업의 '내 연락처가 아니에요' 문의(고정 문구)에서 쓴다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/InquiryPop/01_Script/InquiryPop.cs",
+     "line": 368,
+     "method": "OnClickSend",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "설정 > 고객센터 > 문의하기 버튼 > 문의하기 팝업 > '문의하기' 탭",
+     "trigger": "문의 내용과 연락처를 입력하고(이미지 첨부는 선택) 보내기 버튼을 누르면. 내용이나 연락처가 비어 있으면 토스트만 뜨고 호출하지 않는다.",
+     "on_fail": "통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트, 서버가 실패 상태를 주면 서버 문구 토스트. 입력값은 그대로 남는다. 성공 시 '문의 완료' 토스트 후 폼 초기화·문의 내역 탭으로 이동·내역 재조회.",
+     "note": "설정 팝업은 메인 로비와 상단 UI '전체 보기' 팝업에서 열 수 있어 다른 씬에서도 진입 가능. referenceImages(첨부 이미지) 필드는 코드 주석상 서버 스펙 확정 필요."
+    },
+    {
+     "file": "Assets/Main/2_UnrelatedStages/MainSetting_v3/01_Script/ProfilePinPoPup.cs",
+     "line": 240,
+     "method": "ApplyNotMyContactInquiry",
+     "path": "",
+     "scenes": [
+      "TitleScene"
+     ],
+     "screen": "타이틀 > 프로필 선택 > 잠긴 프로필 PIN 입력 팝업 > '내 연락처가 아니에요' 팝업",
+     "trigger": "PIN이 걸린 프로필을 고르거나 삭제하려 할 때 뜨는 PIN 입력 팝업에서 '내 연락처가 아니에요'를 누르고 회신 이메일을 입력한 뒤 확인을 누르면. 한국어가 아닌 언어에서만 버튼이 보이고, 이메일이 비면 토스트만 뜬다.",
+     "on_fail": "통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트. 성공 시 '문의 접수 완료' 토스트.",
+     "note": "contents 는 '잘못된 연락처 등록. 프로필 PIN 번호 찾기 필요' 고정, 입력한 이메일은 phoneNumber 필드에 담겨 간다."
+    }
+   ]
+  },
+  {
+   "key": "API_Inquiry.GetInquiries",
+   "name": "문의 내역 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/inquiries/profiles/{profileId}?page={page}&size=5"
+   ],
+   "desc": "현재 프로필의 문의 내역을 5건씩 페이지로 받아 문의 내역 탭에 그린다(문의 내용·답변·날짜).",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/InquiryPop/01_Script/InquiryPop.cs",
+     "line": 146,
+     "method": "RequestInquiries",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "설정 > 고객센터 > 문의하기 버튼 > 문의하기 팝업 > '문의 내역' 탭",
+     "trigger": "문의하기 팝업을 열 때 1페이지 자동 호출(기본 탭이 문의 내역). 목록 맨 아래 '더보기'를 누르면 다음 페이지, 문의를 보낸 직후에도 1페이지를 다시 부른다.",
+     "on_fail": "통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트. 실패하면 로딩 플래그가 풀리지 않아 그 팝업에서는 '더보기'·재조회가 더 이상 동작하지 않는다(팝업을 다시 열면 복구).",
+     "note": "설정 팝업은 상단 UI '전체 보기'로 다른 씬에서도 열 수 있음. 응답 파싱 실패 시 빈 목록으로 표시."
+    }
+   ]
+  },
+  {
+   "key": "API_Calendar.CalendarInfo",
+   "name": "출석 달력 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/attendance/calendar/profiles/{profileId}?year={year}&month={month}"
+   ],
+   "desc": "해당 연·월의 일별 출석/학습/보호막 사용 여부, 누적 출석 보상, 연속 출석일·다음 연속 보상, 보호막 개수를 받아 출석 달력 팝업을 그린다. 연속 출석일은 유저 정보에도 반영한다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/Calendar/01_Script/CalendarManager.cs",
+     "line": 125,
+     "method": "GetCurrentDateCalendarInfo",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4",
+      "공통"
+     ],
+     "screen": "메인 로비 > 좌측 '출석' 버튼 > 출석 달력 팝업 (전체 보기 팝업 > 기타 > 출석 으로도 열림)",
+     "trigger": "출석 달력 팝업이 열릴 때 이번 달 자동 호출, 팝업 안에서 이전/다음 달 화살표를 누르면 그 달을 호출(이미 받은 달은 캐시라 재호출 안 함). 또 어떤 화면에서든 서버 응답에 일반 출석 보상(GENERAL_ATTENDANCE)이 들어와 보상 연출이 나오면 달력 팝업이 자동으로 열리며 호출된다.",
+     "on_fail": "통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트. 달력 팝업은 투명한 상태로 열린 채 보이지 않는다(추정).",
+     "note": "'공통' = 출석 보상 수신 시 자동 오픈 경로(보통 하루 첫 접속 시 타이틀/로비, 추정). 연·월은 기기 시계(DateTime.Now) 기준으로 계산."
+    }
+   ]
+  },
+  {
+   "key": "API_Keyring.KeyringInfo",
+   "name": "키링 이벤트 정보 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/keyring/language-codes/{languageCode}/profiles/{profileId}"
+   ],
+   "desc": "지난달/이번달/다음달 키링(칭호 연동) 신청 상태, 신청 조건 진행도, 안내 문구를 받아 키링 이벤트 페이지를 그린다. languageCode 는 현재 앱 언어 코드.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/MyProfile_v3/01_Script/KeyringEvent/Keyring_CheckPage.cs",
+     "line": 154,
+     "method": "IE_GetKeyringInfo",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "미션 팝업 > 칭호 탭 > 키링 버튼 > 키링 이벤트 페이지",
+     "trigger": "미션 팝업(로비 좌측 '미션' 버튼, 전체 보기 > 일일 미션, 내 프로필 > 칭호 변경, 공지 배너 MB006)의 칭호 탭에서 '키링' 버튼을 누르면. 키링 신청을 성공한 직후에도 다시 호출한다. 키링 버튼은 국가 KR + 한국어 + 학교 라이선스가 아닐 때만 보인다.",
+     "on_fail": "통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트. 페이지는 빈 상태로 열려 있다.",
+     "note": "유료 이용권이 없으면 응답 후 '유료 고객 전용' 안내 패널을 덮는다."
+    }
+   ]
+  },
+  {
+   "key": "API_Keyring.Application",
+   "name": "키링 신청",
+   "http": "POST",
+   "paths": [
+    "/api/v3/keyring/application"
+   ],
+   "desc": "기기에 저장해 둔 수령 신청서(이름·전화번호·주소)와 현재 키링 신청 기간 ID로 키링을 신청한다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/MyProfile_v3/01_Script/KeyringEvent/KeyringRequest.cs",
+     "line": 227,
+     "method": "IE_ApplyKeyring",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "미션 팝업 > 칭호 탭 > 키링 이벤트 페이지 > 신청 확인 팝업",
+     "trigger": "키링 이벤트 페이지에서 '신청하기'를 눌러(남은 시간 확인 통과 후) 입력 정보 확인 팝업이 뜨고, 거기서 확인 버튼을 누르면.",
+     "on_fail": "통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트, 서버 실패 응답이면 서버 문구 토스트. 성공 시 키링 정보를 다시 조회해 '신청 완료' 상태로 갱신.",
+     "note": "신청서는 서버가 아니라 PlayerPrefs(KeyringRequestForm)에 저장돼 있다가 이 요청에 실린다. 국가 KR + 한국어 + 비학교 라이선스 전용."
+    }
+   ]
+  },
+  {
+   "key": "API_Keyring.RemainingTime",
+   "name": "키링 신청 시작까지 남은 시간 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/keyring/application/countdown"
+   ],
+   "desc": "키링 신청이 열릴 때까지 남은 초를 받는다. 0보다 크면 남은 시간 토스트, 0이면 신청 정보 확인 팝업을 띄운다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/MyProfile_v3/01_Script/KeyringEvent/Keyring_CheckPage.cs",
+     "line": 406,
+     "method": "IE_CheckRemainingTime",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "미션 팝업 > 칭호 탭 > 키링 이벤트 페이지 > '신청하기' 버튼",
+     "trigger": "키링 이벤트 페이지에서 '신청하기' 버튼을 누르면. 신청 조건(주소 입력 완료 + 서버 조건)을 다 채우지 않으면 '이벤트 참가 조건을 만족하지 않습니다' 토스트만 뜨고 호출하지 않는다(에디터에서는 조건 무시하고 호출).",
+     "on_fail": "통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트. 버튼은 1초 뒤 다시 눌린다.",
+     "note": ""
+    }
+   ]
+  },
+  {
+   "key": "API_Mission.GetDailyMissions",
+   "name": "일일 미션 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/mission/daily/profiles/{profileId}"
+   ],
+   "desc": "오늘의 일일 미션 목록(진행도·보상)과 올클리어 미션을 받아 미션 팝업의 일일 미션 탭을 그린다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/DailyMission/01_Script/DailyMissionManager.cs",
+     "line": 53,
+     "method": "GetMissionData",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "메인 로비 > 좌측 '미션' 버튼 > 미션 팝업 > 일일 미션 탭",
+     "trigger": "미션 팝업이 열릴 때 자동 호출(로비 좌측 '미션' 버튼, 전체 보기 팝업 > 기타 > 일일 미션, 내 프로필 > 칭호 변경, 공지 팝업 배너 MB006 어느 경로든 열 때 한 번). 팝업 안에서 '일일 미션' 탭을 누를 때도 다시 호출.",
+     "on_fail": "통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트. 팝업 페이드인이 응답 콜백에서만 일어나서 미션 팝업이 투명한 채 안 보인다(추정).",
+     "note": "전체 보기 팝업은 상단 UI로 다른 씬에서도 열 수 있어 로비 외 씬에서도 호출될 수 있음."
+    }
+   ]
+  },
+  {
+   "key": "API_Notcie.GetNotice",
+   "name": "공지사항 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/notice/profiles/{profileId}"
+   ],
+   "desc": "공지 팝업에 들어갈 메인 공지(이미지 슬라이드), 배너 공지, 업데이트 소식 목록을 받는다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/Notice/01_Script/NoticeManager.cs",
+     "line": 79,
+     "method": "LoadNoticeData",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "메인 로비 > 공지사항 팝업",
+     "trigger": "앱 실행 후 메인 로비에 처음 들어올 때 자동으로 공지 팝업이 열리며 호출(한국어 + '공지 숨기기' 미체크일 때만, 앱 실행당 1회). 로비 우상단 공지 버튼이나 전체 보기 팝업 > 기타 > 공지사항을 눌러 열 때도 매번 호출.",
+     "on_fail": "통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트. 팝업은 내용 없이 빈 채로 보인다.",
+     "note": "NoticePopup.OpenedEvent → NoticeManager.GetNoticeData 경유. 전체 보기 팝업은 상단 UI로 다른 씬에서도 열 수 있음."
+    }
+   ]
+  },
+  {
+   "key": "API_Message.GetMessage",
+   "name": "메시지함 목록 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/message/profiles/{profileId}"
+   ],
+   "desc": "메시지함의 선물(보상) 메시지와 편지 메시지 목록을 받는다. 보상을 이미 받은 선물은 목록에서 뺀다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/MessageBox_v3/01_Script/MessageManager.cs",
+     "line": 112,
+     "method": "LoadMessage",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "메인 로비 > 좌측 '메시지함' 버튼 > 메시지함 팝업",
+     "trigger": "메시지함 팝업을 열 때 자동 호출(로비 좌측 '메시지함' 버튼 또는 전체 보기 > 기타 > 메시지함). 선물 탭에서 '모두 받기'가 끝난 직후, 그리고 학부모 편지 답장 시 서버가 '이미 답장함(MESSAGE_ALREADY_REPLIED)'을 돌려줄 때 다시 호출.",
+     "on_fail": "통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트. 팝업 페이드인이 응답 후에만 일어나 메시지함이 투명한 채 안 보인다(추정).",
+     "note": "MessageManager 는 부팅 씬(AssetBundleScene)의 상주 싱글톤. 공지/사이드 배너가 POPUP 타입으로 메시지함을 열 수도 있음(추정)."
+    }
+   ]
+  },
+  {
+   "key": "API_Message.GetUnreadCount",
+   "name": "안 읽은 메시지 수 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/message/unread-count/profiles/{profileId}"
+   ],
+   "desc": "안 읽은 메시지 수를 받아 메인 로비 메시지함 버튼의 빨간 숫자 배지를 갱신한다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/MessageBox_v3/01_Script/MessagePopup.cs",
+     "line": 565,
+     "method": "MessageCountData.UpdateMessageCount",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4",
+      "공통"
+     ],
+     "screen": "메인 로비 > 좌측 '메시지함' 버튼 숫자 배지",
+     "trigger": "메인 로비에 들어올 때마다 자동 호출, 메시지함 팝업을 닫을 때마다 호출. 타이틀 씬에서는 호출하지 않는다.",
+     "on_fail": "통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트. 배지는 이전 숫자 유지.",
+     "note": "'공통' = 메시지함 팝업을 로비 외 씬(전체 보기 경유)에서 닫아도 호출됨. 응답 DTO 로 API_Message.ReadMessageResponse(count) 를 재사용."
+    },
+    {
+     "file": "Assets/Main/2_UnrelatedStages/MessageBox_v3/01_Script/MessageManager.cs",
+     "line": 121,
+     "method": "GetUnreadMessageCount",
+     "path": "",
+     "scenes": [],
+     "screen": "",
+     "trigger": "",
+     "on_fail": "",
+     "note": "죽은 코드: MessageManager.GetUnreadMessageCount 를 부르는 곳이 없다. (MainLobbyManager_v3g.cs:110 의 직접 호출도 주석 처리됨)"
+    }
+   ]
+  },
+  {
+   "key": "API_Message.DeleteMessage",
+   "name": "메시지 삭제",
+   "http": "POST",
+   "paths": [
+    "/api/v3/message/delete"
+   ],
+   "desc": "선택한 메시지들을 삭제한다. 읽었거나 보상받은 메시지(alert 2 이상)만 보내고, 성공하면 로컬 목록에서도 지운다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/MessageBox_v3/01_Script/MessageManager.cs",
+     "line": 136,
+     "method": "DeleteMessage",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "메시지함 팝업 > 편지 탭 > 하단 '선택 삭제' 버튼",
+     "trigger": "편지 탭에서 편지를 체크해 고른 뒤 '선택 삭제'를 누르면. 아직 안 읽은 편지는 선택에서 빠지고, 남는 게 없어도 빈 목록으로 요청이 나간다.",
+     "on_fail": "통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트, 서버 실패 응답이면 서버 문구 토스트. 목록은 그대로.",
+     "note": "선택 0개면 호출 안 함. 읽지 않은 것만 골랐을 때 빈 messageIds 로 호출되는 점 확인 필요."
+    }
+   ]
+  },
+  {
+   "key": "API_Message.ReadMessage",
+   "name": "메시지 읽음·선물 받기 처리",
+   "http": "POST",
+   "paths": [
+    "/api/v3/message/read"
+   ],
+   "desc": "지정한 메시지 ID들을 읽음 처리한다. 선물 메시지는 이 호출로 보상을 받으며, 응답의 rewards 로 보상 연출이 나온다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/MessageBox_v3/01_Script/MessageManager.cs",
+     "line": 151,
+     "method": "ReadMessage",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "메시지함 팝업 > 편지 탭 / 선물 탭",
+     "trigger": "편지 탭에서 편지 한 통의 열기 버튼을 누를 때(편지 1장 보기), 편지를 여러 개 체크하고 하단 '선택 읽기'를 누를 때, 선물 탭에서 받을 수 있는 선물의 받기 버튼을 누를 때 호출된다.",
+     "on_fail": "통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트, 서버 실패 응답이면 서버 문구 토스트. 편지가 열리지 않고 선물도 목록에 남는다.",
+     "note": "선물은 alert==1(받을 수 있음)일 때만 호출. 보상 연출은 공통 응답 rewards 처리로 나온다."
+    },
+    {
+     "file": "Assets/Main/2_UnrelatedStages/MessageBox_v3/01_Script/MessageManager.cs",
+     "line": 217,
+     "method": "GetRewardAll",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "메시지함 팝업 > 선물 탭 > 하단 '모두 받기' 버튼",
+     "trigger": "선물 탭에서 '모두 받기'를 누르면 받을 수 있는 선물(alert==1) 전체 ID로 호출, 성공 후 메시지 목록을 다시 조회한다.",
+     "on_fail": "통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트, 서버 실패 응답이면 서버 문구 토스트.",
+     "note": "받을 선물이 하나도 없어도 빈 messageIds 로 요청이 나간다(목록 자체가 없을 때만 생략)."
+    }
+   ]
+  },
+  {
+   "key": "API_Message.ReplyMessage",
+   "name": "학부모 편지 답장",
+   "http": "POST",
+   "paths": [
+    "/api/v3/message/reply"
+   ],
+   "desc": "학부모가 보낸 편지(PARENTS)에 아이가 답장을 보낸다(최대 255자, 편지지 1~6, 원본당 1회).",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/2_UnrelatedStages/MessageBox_v3/01_Script/MessageManager.cs",
+     "line": 172,
+     "method": "ReplyMessage",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "메시지함 팝업 > 편지 탭 > 학부모 편지 열기 > 답장 버튼 > 답장 쓰기 팝업",
+     "trigger": "답장 가능한 학부모 편지를 열고 '답장'을 눌러 내용과 편지지를 고른 뒤 보내기를 누르면.",
+     "on_fail": "서버 실패 응답이면 서버 문구 토스트 후 보내기 버튼 재활성. 'MESSAGE_ALREADY_REPLIED'(다른 기기에서 이미 답장)면 쓰기 팝업을 닫고 목록을 다시 받아 답장 내용을 맞춘다. 통신 실패는 자동 재시도(최대 3회) 후 토스트.",
+     "note": "답장한 편지는 '답장 보기'로 바뀌고 재호출하지 않는다."
+    }
+   ]
+  },
+  {
+   "key": "API_Video.GetWatchedVideoList",
+   "name": "학습 영상 시청 기록 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/videos/profiles/{profileId}"
+   ],
+   "desc": "영상별 시청 위치·완료·찜 여부와 최근 본 영상 ID를 받아 영상센터 목록을 그린다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/LearningVideo/01_Script/VideoCenterManager.cs",
+     "line": 137,
+     "method": "LoadWatchedVideo",
+     "path": "",
+     "scenes": [
+      "VideoCenterScene"
+     ],
+     "screen": "영상센터(학습 영상) 화면",
+     "trigger": "영상센터 씬에 들어올 때 자동 호출(메인 로비 '학습 영상' 버튼 또는 전체 보기 > 영상센터).",
+     "on_fail": "통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트. 로딩 화면 끄기가 성공 콜백에만 있어 로딩 화면에 막힐 수 있다(추정).",
+     "note": "학습 영상은 한국어 전용(비한국어면 '한국어만 지원' 토스트). 로비 버튼은 학부모앱 잠금 시 숨김."
+    }
+   ]
+  },
+  {
+   "key": "API_Video.SaveWatching",
+   "name": "학습 영상 시청 기록 저장",
+   "http": "PUT",
+   "paths": [
+    "/api/v3/videos/{videoId}/playback/profiles/{profileId}"
+   ],
+   "desc": "영상 재생 팝업을 닫을 때 재생 위치와 이번에 본 누적 시간을 저장한다. 응답의 완료 여부로 로컬 기록·최근 본 영상·학습 시작 팝업 영상 버튼 색을 갱신한다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/StageData/Curriculum.cs",
+     "line": 727,
+     "method": "VideoMasterDataManager.SaveVideoWatching",
+     "path": "",
+     "scenes": [
+      "VideoCenterScene",
+      "DailyStudyScene",
+      "ChallengeScene",
+      "FreeStudyScene",
+      "MainLobbyScene_v4",
+      "WorldStudyScene",
+      "StageResultScene",
+      "LearningResultScene"
+     ],
+     "screen": "영상 재생 팝업 (영상센터 영상 항목, 또는 학습 시작 팝업의 개념 영상 버튼으로 열림)",
+     "trigger": "영상센터에서 영상을 눌러 보거나, 스테이지 학습 시작 팝업의 개념 영상 번호 버튼을 눌러 본 뒤 영상 팝업을 닫으면(재생 도중 닫아도) 호출.",
+     "on_fail": "통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트. 로컬 시청 기록은 갱신되지 않는다.",
+     "note": "학습 시작 팝업은 오늘의 학습·챌린지·자유 학습·학교 학습(로비)·월드 학습·결과 화면·복습노트·AI 레벨테스트 추천 등에서 열린다. 개념 영상 버튼은 한국어에서만 보인다. 씬 목록은 학습 시작 팝업 호출처 기준 추정."
+    }
+   ]
+  },
+  {
+   "key": "API_Video.ToggleFavorite",
+   "name": "학습 영상 찜 저장",
+   "http": "PUT",
+   "paths": [
+    "/api/v3/videos/favorites/profiles/{profileId}"
+   ],
+   "desc": "찜(즐겨찾기) 상태가 바뀐 영상들의 videoId·isFavorited 목록을 한 번에 저장한다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/StageData/Curriculum.cs",
+     "line": 711,
+     "method": "VideoMasterDataManager.SaveFavoriteVideo",
+     "path": "",
+     "scenes": [
+      "VideoCenterScene"
+     ],
+     "screen": "영상센터 > 영상 항목의 찜(하트) 버튼",
+     "trigger": "영상센터에서 찜 버튼을 누르면 즉시가 아니라 변경이 있을 때 3초마다 모아서 호출되고, 영상센터를 나갈 때 남은 변경이 있으면 한 번 더 호출된다.",
+     "on_fail": "통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트. 성공/실패 모두 화면 변화 없음(로컬 찜 상태는 이미 바뀐 상태).",
+     "note": "같은 영상을 찜했다 해제해도 마지막 상태로 한 번 전송된다."
+    }
+   ]
+  },
+  {
+   "key": "API_Banner.GetBanners",
+   "name": "메인 로비 사이드 배너 조회",
+   "http": "GET",
+   "paths": [
+    "/api/v3/banner/profiles/{profileId}"
+   ],
+   "desc": "메인 로비 오른쪽 사이드 배너(프로모션 1개 + 이벤트 목록)의 이미지·문구·색·남은 시간·클릭 동작을 받는다. 배너가 없으면 사이드 배너를 숨긴다.",
+   "unused": false,
+   "calls": [
+    {
+     "file": "Assets/Main/SideBanner/01_Script/SideBannerManager.cs",
+     "line": 144,
+     "method": "LoadServerData",
+     "path": "",
+     "scenes": [
+      "MainLobbyScene_v4"
+     ],
+     "screen": "메인 로비 > 사이드 배너",
+     "trigger": "메인 로비 씬에 들어올 때마다 로딩 연출이 끝나고 0.3초 뒤 자동 호출. 로비에 있는 동안 프로필 정보가 갱신될 때, 배너의 남은 시간 카운트다운이 0이 될 때, 전화번호 등록 이벤트 팝업에서 등록에 성공했을 때도 다시 호출.",
+     "on_fail": "통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트. 배너 영역은 이전 상태 그대로.",
+     "note": "SideBannerManager 는 부팅 씬(AssetBundleScene) 상주 싱글톤. 한국어가 아니면 E0001·E0003(전화번호 등록 이벤트) 배너를, 일본어가 아니면 일본 신규회원 이벤트 배너를 클라에서 걸러낸다."
+    }
+   ]
+  }
+ ]
+}

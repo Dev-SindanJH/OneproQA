@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="theme-glass.css">
     <link rel="stylesheet" href="stage-audit.css">
+    <link rel="stylesheet" href="api-catalog.css">
     <link rel="stylesheet" href="tug-of-war.css">
 </head>
 <body class="bg-gray-50 font-sans text-gray-900">
@@ -51,6 +52,10 @@
                 <button onclick="showSection('stageaudit')" id="nav-stageaudit" class="nav-item" title="[QAI] 스테이지 검수">
                     <i class="fas fa-microscope nav-icon" aria-hidden="true"></i>
                     <span class="nav-label">[QAI] 스테이지 검수</span>
+                </button>
+                <button onclick="showSection('apicatalog')" id="nav-apicatalog" class="nav-item" title="API 호출 지도">
+                    <i class="fas fa-route nav-icon" aria-hidden="true"></i>
+                    <span class="nav-label">API 호출 지도</span>
                 </button>
                 <button onclick="showSection('masterdata')" id="nav-masterdata" class="nav-item" title="마스터 데이터">
                     <i class="fas fa-database nav-icon" aria-hidden="true"></i>
@@ -638,6 +643,48 @@
             </section>
 
             <!-- [QAI] 스테이지 검수: tools/stage_audit/stage_audit.py 가 올린 정적 분석 결과 -->
+            <!-- API 호출 지도: 클라이언트가 어느 씬에서 어떤 상황에 어떤 서버 API 를 부르는지 (api-catalog.js, 데이터 api-catalog.json) -->
+            <section id="apicatalog" class="section">
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold mb-1 text-slate-800">API 호출 지도</h2>
+                        <p class="text-sm text-gray-500">앱이 어느 씬에서, 어떤 상황에 어떤 서버 API를 부르는지 정리한 표입니다. 서버 이슈를 재현할 때 어디서 무엇을 누르면 되는지 찾는 용도입니다.</p>
+                    </div>
+                </div>
+
+                <div id="ac-loading" class="bg-white rounded-xl border border-gray-100 shadow-sm p-16 text-center text-gray-400">
+                    <i class="fas fa-spinner fa-spin text-2xl mb-3 block"></i>API 목록을 불러오는 중...
+                </div>
+                <div id="ac-empty" class="bg-white rounded-xl border border-gray-100 shadow-sm p-16 text-center text-gray-500 hidden"></div>
+
+                <div id="ac-content" class="hidden">
+                    <div id="ac-meta-bar" class="bg-white rounded-xl border border-gray-100 shadow-sm px-5 py-3 mb-4 flex flex-wrap gap-x-5 gap-y-1 items-center text-xs text-slate-500"></div>
+                    <div id="ac-summary" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5"></div>
+
+                    <div class="flex flex-wrap items-center bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm mb-4 w-max max-w-full">
+                        <button onclick="setApiCatalogView('api')" id="ac-view-api" class="md-lang-btn active px-3 py-2 text-sm font-bold transition"><i class="fas fa-plug mr-1"></i>API별</button>
+                        <button onclick="setApiCatalogView('scene')" id="ac-view-scene" class="md-lang-btn px-3 py-2 text-sm font-bold transition"><i class="fas fa-clapperboard mr-1"></i>씬별</button>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-3 mb-3">
+                        <div class="relative flex-1 min-w-[240px]">
+                            <input type="text" id="ac-search" placeholder="경로·기능·화면·상황·파일 검색 (예: /ranking, 출석, 로비 진입)" oninput="renderApiCatalog()"
+                                   class="w-full bg-white border border-gray-300 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
+                            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        </div>
+                        <div class="flex flex-wrap gap-1.5" id="ac-http-chips"></div>
+                        <label class="flex items-center gap-2 text-sm text-gray-500 cursor-pointer select-none">
+                            <input type="checkbox" id="ac-f-unused" onchange="renderApiCatalog()">
+                            미사용 API 포함
+                        </label>
+                    </div>
+                    <div class="flex flex-wrap gap-1.5 mb-4" id="ac-group-chips"></div>
+
+                    <div id="ac-api-view"></div>
+                    <div id="ac-scene-view" class="hidden"></div>
+                </div>
+            </section>
+
             <section id="stageaudit" class="section">
                 <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
                     <div>
@@ -1395,6 +1442,7 @@
     <script src="cache-manager.js"></script>
     <script src="script.js"></script>
     <script src="stage-audit.js"></script>
+    <script src="api-catalog.js"></script>
     <script src="tug-of-war.js"></script>
 </body>
 </html>

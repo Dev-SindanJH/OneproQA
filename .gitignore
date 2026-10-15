@@ -53,3 +53,6 @@ yarn-error.log*
 *.suo
 # QAI 스테이지 검수 스캐너 출력
 tools/stage_audit/out/
+
+# API 호출 지도 중간 산출물
+tools/api_catalog/raw.json
