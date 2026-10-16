@@ -107,6 +107,24 @@ for key in sorted(set(raw_calls) - seen_keys):
                       'calls': [{'file': c['file'], 'line': c['line'], 'method': c['method'], 'path': '', 'scenes': [], 'screen': '',
                                  'trigger': '(설명 없음 — 새 호출 지점)', 'on_fail': '', 'note': ''} for c in raw_calls[key]]})
 
+# 씬 이동 흐름 → 지도용 간선. 구버전 로비 씬은 빼고, "공통"(팝업·매니저)에서만 들어가는 씬은 로비에서 팝업을 거쳐 간다고 본다.
+LEGACY_SCENES = {'MainLobbyScene', 'MainLobbyScene_mf'}
+edges = {}
+for f in raw.get('flows', []):
+    if f['from'] in LEGACY_SCENES or f['to'] in LEGACY_SCENES:
+        continue
+    e = edges.setdefault((f['from'], f['to']), {'from': f['from'], 'to': f['to'], 'kinds': set(), 'refs': []})
+    e['kinds'].add('button' if f['kind'].startswith('button') else 'code')
+    e['refs'].append(f"{f['file']}:{f['line']}" if f['line'] else f['file'])
+has_direct_in = {t for (s, t) in edges if s != '공통'}
+for (s, t), e in list(edges.items()):
+    if s != '공통':
+        continue
+    del edges[(s, t)]
+    if t not in has_direct_in and t != 'MainLobbyScene_v4':
+        edges[('MainLobbyScene_v4', t)] = {'from': 'MainLobbyScene_v4', 'to': t, 'kinds': {'popup'}, 'refs': e['refs']}
+flows = [{**e, 'kinds': sorted(e['kinds']), 'refs': sorted(set(e['refs']))[:6]} for e in edges.values()]
+
 out = {
     'generated_at': datetime.now(timezone(timedelta(hours=9))).strftime('%Y-%m-%d %H:%M KST'),
     'unity_branch': git('rev-parse', '--abbrev-ref', 'HEAD'),
@@ -114,8 +132,10 @@ out = {
     'api_file': 'Assets/Main/Script/CommonAPI.cs',
     'note': desc.get('note', ''),
     'endpoints': endpoints,
+    'flows': flows,
 }
 json.dump(out, open(OUT, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+print(f"flows={len(flows)}")
 print(f"endpoints={len(endpoints)} used={sum(not e['unused'] for e in endpoints)} calls={sum(len(e['calls']) for e in endpoints)}")
 for w in warn:
     print(w)

@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-10-16 08:46 KST",
+ "generated_at": "2026-10-16 10:31 KST",
  "unity_branch": "release-3.2",
  "unity_commit": "82a5b3619",
  "api_file": "Assets/Main/Script/CommonAPI.cs",
@@ -4841,6 +4841,720 @@
      "on_fail": "통신 실패 시 자동 재시도(최대 3회) 후 '알 수 없는 오류' 토스트. 배너 영역은 이전 상태 그대로.",
      "note": "SideBannerManager 는 부팅 씬(AssetBundleScene) 상주 싱글톤. 한국어가 아니면 E0001·E0003(전화번호 등록 이벤트) 배너를, 일본어가 아니면 일본 신규회원 이벤트 배너를 클라에서 걸러낸다."
     }
+   ]
+  }
+ ],
+ "flows": [
+  {
+   "from": "AssetBundleScene",
+   "to": "TitleScene",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/AppInitManager.cs:228",
+    "Assets/Main/AppInitManager.cs:510",
+    "Assets/Main/InAppPurchaseScene/01_Script/IAPManager.cs:563"
+   ]
+  },
+  {
+   "from": "CreateProfileScene",
+   "to": "TitleScene",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/2_UnrelatedStages/CreateProfile/01_Script/CreateProfileManager.cs:409",
+    "Assets/Main/2_UnrelatedStages/CreateProfile/01_Script/CreateProfileManager.cs:433",
+    "Assets/Main/2_UnrelatedStages/CreateProfile/01_Script/CreateProfileManager.cs:439"
+   ]
+  },
+  {
+   "from": "MathLympics",
+   "to": "MainLobbyScene_v4",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/2_UnrelatedStages/MathLympics/Scripts/MathLympics_Manager.cs:855",
+    "Assets/Main/3_Common_renewal/01_Script/TopUIManager.cs:85"
+   ]
+  },
+  {
+   "from": "MathRun_Ingame",
+   "to": "MathRun_Lobby",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/2_UnrelatedStages/MathRun/01_Script/MathRun_GameManager.cs:343"
+   ]
+  },
+  {
+   "from": "MathRun_Tutorial",
+   "to": "MathRun_Lobby",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/2_UnrelatedStages/MathRun/01_Script/MathRun_GameManager.cs:343",
+    "Assets/Main/2_UnrelatedStages/MathRun/01_Script/MathRun_Tutorial.cs:348"
+   ]
+  },
+  {
+   "from": "MathRun_Lobby",
+   "to": "MainLobbyScene_v4",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/2_UnrelatedStages/MathRun/01_Script/MathRun_LobbyManager.cs:235",
+    "Assets/Main/3_Common_renewal/01_Script/TopUIManager.cs:85"
+   ]
+  },
+  {
+   "from": "MathRun_Lobby",
+   "to": "MathRun_Tutorial",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/2_UnrelatedStages/MathRun/01_Script/MathRun_LobbyManager.cs:471"
+   ]
+  },
+  {
+   "from": "MathRun_Lobby",
+   "to": "MathRun_Ingame",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/2_UnrelatedStages/MathRun/01_Script/MathRun_LobbyManager.cs:475"
+   ]
+  },
+  {
+   "from": "TitleScene",
+   "to": "MainLobbyScene_v4",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/3_Common_renewal/01_Script/TitleSceneManager.cs:180"
+   ]
+  },
+  {
+   "from": "TitleScene",
+   "to": "CreateProfileScene",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/3_Common_renewal/01_Script/TitleSceneManager.cs:315"
+   ]
+  },
+  {
+   "from": "AILevelTestScene_L1",
+   "to": "MainLobbyScene_v4",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/3_Common_renewal/01_Script/TopUIManager.cs:85"
+   ]
+  },
+  {
+   "from": "AssetBundleScene",
+   "to": "MainLobbyScene_v4",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/3_Common_renewal/01_Script/TopUIManager.cs:85",
+    "Assets/MathBattle/01_Script/GroupActivity/MathBattleGroupActivitySession.cs:200"
+   ]
+  },
+  {
+   "from": "ChallengeScene",
+   "to": "MainLobbyScene_v4",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/3_Common_renewal/01_Script/TopUIManager.cs:85"
+   ]
+  },
+  {
+   "from": "DailyStudyScene",
+   "to": "MainLobbyScene_v4",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/3_Common_renewal/01_Script/TopUIManager.cs:85"
+   ]
+  },
+  {
+   "from": "FantasyAvatar_Lobby",
+   "to": "MainLobbyScene_v4",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/3_Common_renewal/01_Script/TopUIManager.cs:85"
+   ]
+  },
+  {
+   "from": "FreeStudyScene",
+   "to": "MainLobbyScene_v4",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/3_Common_renewal/01_Script/TopUIManager.cs:85"
+   ]
+  },
+  {
+   "from": "MakeTenScene",
+   "to": "MainLobbyScene_v4",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/3_Common_renewal/01_Script/TopUIManager.cs:85"
+   ]
+  },
+  {
+   "from": "MathBattleLobby",
+   "to": "MainLobbyScene_v4",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/3_Common_renewal/01_Script/TopUIManager.cs:85"
+   ]
+  },
+  {
+   "from": "MathGalaxyLobby",
+   "to": "MainLobbyScene_v4",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/3_Common_renewal/01_Script/TopUIManager.cs:85",
+    "Assets/Main/Resources_moved/MathGalaxy/Scripts/MathGalaxy_LobbyManager.cs:230"
+   ]
+  },
+  {
+   "from": "VideoCenterScene",
+   "to": "MainLobbyScene_v4",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/3_Common_renewal/01_Script/TopUIManager.cs:85"
+   ]
+  },
+  {
+   "from": "WorldStudyScene",
+   "to": "MainLobbyScene_v4",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/3_Common_renewal/01_Script/TopUIManager.cs:85"
+   ]
+  },
+  {
+   "from": "FantasyAvatar_Lobby",
+   "to": "FantasyAvatar_Play",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/Games/Avartar_2/Scripts/Avartar_2_Lobby_Manager.cs:236"
+   ]
+  },
+  {
+   "from": "FantasyAvatar_Play",
+   "to": "FantasyAvatar_Lobby",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/Games/Avartar_2/Scripts/Avartar_2_Manager.cs:517",
+    "Assets/Main/Games/Avartar_2/Scripts/Avartar_2_Manager.cs:533"
+   ]
+  },
+  {
+   "from": "Card_Play",
+   "to": "Card_SelectStage",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/Games/Card/Script/Card_PrGameManager.cs:51"
+   ]
+  },
+  {
+   "from": "Card_RankingPlay",
+   "to": "Card_SelectRankingMode",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/Games/Card/Script/Card_RankGameManager.cs:58"
+   ]
+  },
+  {
+   "from": "Card_SelectRankingMode",
+   "to": "Card_SelectStage",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/Games/Card/Script/Card_StageManager.cs:46"
+   ]
+  },
+  {
+   "from": "Card_SelectRankingMode",
+   "to": "Card_Play",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/Games/Card/Script/Card_StageManager.cs:70"
+   ]
+  },
+  {
+   "from": "Card_SelectStage",
+   "to": "Card_Play",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/Games/Card/Script/Card_StageManager.cs:70"
+   ]
+  },
+  {
+   "from": "Card_SelectRankingMode",
+   "to": "Card_RankingPlay",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/Games/Card/Script/Card_StageManager.cs:85"
+   ]
+  },
+  {
+   "from": "Card_SelectStage",
+   "to": "Card_RankingPlay",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/Games/Card/Script/Card_StageManager.cs:85"
+   ]
+  },
+  {
+   "from": "RunGame_TitleScene",
+   "to": "Rungame_practice_1",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/Games/run/Scripts/run_sceneController.cs:51"
+   ]
+  },
+  {
+   "from": "Rungame_practice_1",
+   "to": "RunGame_TitleScene",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/Games/run/Scripts/run_sceneController.cs:66",
+    "Assets/Main/Games/run/Scripts/run_sceneController.cs:82"
+   ]
+  },
+  {
+   "from": "Speed_PlayScene",
+   "to": "Speed_TitleScene",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/Games/Speed/Script/Speed_GameManager.cs:758",
+    "Assets/Main/Games/Speed/Script/Speed_GameManager.cs:776"
+   ]
+  },
+  {
+   "from": "Speed_TitleScene",
+   "to": "Speed_PlayScene",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/Games/Speed/Script/Speed_StartGameManager.cs:75"
+   ]
+  },
+  {
+   "from": "AILevelTestScene_L1",
+   "to": "AILevelTestScene_L2",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/LevelTest/01_Script/L1_PoPManager.cs:204"
+   ]
+  },
+  {
+   "from": "AILevelTestScene_L2",
+   "to": "AILevelTestScene_L1",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/LevelTest/01_Script/L2/LT_L2_TopUI.cs:33"
+   ]
+  },
+  {
+   "from": "AILevelTestScene_L2",
+   "to": "AILevelTestScene_L3",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/LevelTest/01_Script/L2/LT_QuestionListPoP.cs:118"
+   ]
+  },
+  {
+   "from": "AILevelTestScene_L2",
+   "to": "AILevelTestScene_L3_Retest",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/LevelTest/01_Script/L2/LT_QuestionListPoP.cs:122"
+   ]
+  },
+  {
+   "from": "AILevelTestScene_L3_2",
+   "to": "AILevelTestScene_L1",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/LevelTest/01_Script/L2_2/LT_L2_2_TopUI.cs:26"
+   ]
+  },
+  {
+   "from": "AILevelTestScene_L3",
+   "to": "AILevelTestScene_L3_2",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/LevelTest/01_Script/L3/LT_L3_Manager.cs:1681"
+   ]
+  },
+  {
+   "from": "AILevelTestScene_L3_Retest",
+   "to": "AILevelTestScene_L3_2",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/LevelTest/01_Script/L3/LT_L3_Manager.cs:1681"
+   ]
+  },
+  {
+   "from": "AssetBundleScene",
+   "to": "DailyStudyScene",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/LoadingManager/01_Script/LoadingManager.cs:232"
+   ]
+  },
+  {
+   "from": "MathGalaxyInGame",
+   "to": "MathGalaxyLobby",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/Resources_moved/MathGalaxy/Scripts/MathGalaxy_GameManager.cs:631"
+   ]
+  },
+  {
+   "from": "MathGalaxyLobby",
+   "to": "MathGalaxyInGame",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/Resources_moved/MathGalaxy/Scripts/MathGalaxy_LobbyManager.cs:414"
+   ]
+  },
+  {
+   "from": "Study_1",
+   "to": "StageResultScene",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/Script/Stage/Study_1_GameManager.cs:812"
+   ]
+  },
+  {
+   "from": "StageResultScene",
+   "to": "Study_1",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/StageResult/01_Script/StudyResultManager_v3.cs:222"
+   ]
+  },
+  {
+   "from": "Study_1",
+   "to": "DailyStudyScene",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/StageTopUI_v3/01_Script/StageTopUI_v3_Manager.cs:365"
+   ]
+  },
+  {
+   "from": "Study_1",
+   "to": "ChallengeScene",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/StageTopUI_v3/01_Script/StageTopUI_v3_Manager.cs:368"
+   ]
+  },
+  {
+   "from": "AssetBundleScene",
+   "to": "Study_1",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/Main/WebGL/01_Script/WebUrlHandler.cs:117"
+   ]
+  },
+  {
+   "from": "AssetBundleScene",
+   "to": "MathBattleInGame",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/MathBattle/01_Script/GroupActivity/MathBattleGroupActivitySession.cs:462"
+   ]
+  },
+  {
+   "from": "MathBattleInGame",
+   "to": "MathBattleLobby",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/MathBattle/01_Script/InGame/MathBattleInGame.cs:877"
+   ]
+  },
+  {
+   "from": "MathBattleLobby",
+   "to": "MathBattleInGame",
+   "kinds": [
+    "code"
+   ],
+   "refs": [
+    "Assets/MathBattle/01_Script/Lobby/MathBattleLobby.cs:802"
+   ]
+  },
+  {
+   "from": "MainLobbyScene_v4",
+   "to": "MathBattleLobby",
+   "kinds": [
+    "button"
+   ],
+   "refs": [
+    "Assets/Main/2_UnrelatedStages/MainLobby_v4/MainLobbyScene_v4.unity"
+   ]
+  },
+  {
+   "from": "MainLobbyScene_v4",
+   "to": "DiaRankingScene",
+   "kinds": [
+    "button"
+   ],
+   "refs": [
+    "Assets/Main/2_UnrelatedStages/MainLobby_v4/MainLobbyScene_v4.unity"
+   ]
+  },
+  {
+   "from": "MainLobbyScene_v4",
+   "to": "VideoCenterScene",
+   "kinds": [
+    "button"
+   ],
+   "refs": [
+    "Assets/Main/2_UnrelatedStages/MainLobby_v4/MainLobbyScene_v4.unity"
+   ]
+  },
+  {
+   "from": "MainLobbyScene_v4",
+   "to": "Speed_TitleScene",
+   "kinds": [
+    "button"
+   ],
+   "refs": [
+    "Assets/Main/2_UnrelatedStages/MainLobby_v4/MainLobbyScene_v4.unity"
+   ]
+  },
+  {
+   "from": "MainLobbyScene_v4",
+   "to": "AILevelTestScene_L1",
+   "kinds": [
+    "button"
+   ],
+   "refs": [
+    "Assets/Main/2_UnrelatedStages/MainLobby_v4/MainLobbyScene_v4.unity"
+   ]
+  },
+  {
+   "from": "MainLobbyScene_v4",
+   "to": "MakeTenScene",
+   "kinds": [
+    "button"
+   ],
+   "refs": [
+    "Assets/Main/2_UnrelatedStages/MainLobby_v4/MainLobbyScene_v4.unity"
+   ]
+  },
+  {
+   "from": "MainLobbyScene_v4",
+   "to": "LearningResultScene",
+   "kinds": [
+    "button"
+   ],
+   "refs": [
+    "Assets/Main/2_UnrelatedStages/MainLobby_v4/MainLobbyScene_v4.unity"
+   ]
+  },
+  {
+   "from": "MainLobbyScene_v4",
+   "to": "RunGame_TitleScene",
+   "kinds": [
+    "button"
+   ],
+   "refs": [
+    "Assets/Main/2_UnrelatedStages/MainLobby_v4/MainLobbyScene_v4.unity"
+   ]
+  },
+  {
+   "from": "MainLobbyScene_v4",
+   "to": "FreeStudyScene",
+   "kinds": [
+    "button"
+   ],
+   "refs": [
+    "Assets/Main/2_UnrelatedStages/MainLobby_v4/MainLobbyScene_v4.unity"
+   ]
+  },
+  {
+   "from": "MainLobbyScene_v4",
+   "to": "DailyStudyScene",
+   "kinds": [
+    "button"
+   ],
+   "refs": [
+    "Assets/Main/2_UnrelatedStages/MainLobby_v4/MainLobbyScene_v4.unity"
+   ]
+  },
+  {
+   "from": "MainLobbyScene_v4",
+   "to": "MathRun_Lobby",
+   "kinds": [
+    "button"
+   ],
+   "refs": [
+    "Assets/Main/2_UnrelatedStages/MainLobby_v4/MainLobbyScene_v4.unity"
+   ]
+  },
+  {
+   "from": "MainLobbyScene_v4",
+   "to": "MathGalaxyLobby",
+   "kinds": [
+    "button"
+   ],
+   "refs": [
+    "Assets/Main/2_UnrelatedStages/MainLobby_v4/MainLobbyScene_v4.unity"
+   ]
+  },
+  {
+   "from": "MainLobbyScene_v4",
+   "to": "WorldStudyScene",
+   "kinds": [
+    "button"
+   ],
+   "refs": [
+    "Assets/Main/2_UnrelatedStages/MainLobby_v4/MainLobbyScene_v4.unity"
+   ]
+  },
+  {
+   "from": "MainLobbyScene_v4",
+   "to": "AvatarContestScene",
+   "kinds": [
+    "button"
+   ],
+   "refs": [
+    "Assets/Main/2_UnrelatedStages/MainLobby_v4/MainLobbyScene_v4.unity"
+   ]
+  },
+  {
+   "from": "MainLobbyScene_v4",
+   "to": "Card_SelectMode",
+   "kinds": [
+    "button"
+   ],
+   "refs": [
+    "Assets/Main/2_UnrelatedStages/MainLobby_v4/MainLobbyScene_v4.unity"
+   ]
+  },
+  {
+   "from": "MainLobbyScene_v4",
+   "to": "MathLympics",
+   "kinds": [
+    "button"
+   ],
+   "refs": [
+    "Assets/Main/2_UnrelatedStages/MainLobby_v4/MainLobbyScene_v4.unity"
+   ]
+  },
+  {
+   "from": "MainLobbyScene_v4",
+   "to": "IdolAvatarScene",
+   "kinds": [
+    "popup"
+   ],
+   "refs": [
+    "Assets/Main/2_UnrelatedStages/AllContentsPoP/01_Scripts/AllContentPoPManager.cs:280"
+   ]
+  },
+  {
+   "from": "MainLobbyScene_v4",
+   "to": "InAppPurchaseScene",
+   "kinds": [
+    "popup"
+   ],
+   "refs": [
+    "Assets/Main/ParentsOnly/01_Script/ParentCheck_v3.cs:101"
    ]
   }
  ]

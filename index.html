@@ -664,6 +664,7 @@
                     <div class="flex flex-wrap items-center bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm mb-4 w-max max-w-full">
                         <button onclick="setApiCatalogView('api')" id="ac-view-api" class="md-lang-btn active px-3 py-2 text-sm font-bold transition"><i class="fas fa-plug mr-1"></i>API별</button>
                         <button onclick="setApiCatalogView('scene')" id="ac-view-scene" class="md-lang-btn px-3 py-2 text-sm font-bold transition"><i class="fas fa-clapperboard mr-1"></i>씬별</button>
+                        <button onclick="setApiCatalogView('map')" id="ac-view-map" class="md-lang-btn px-3 py-2 text-sm font-bold transition"><i class="fas fa-map-location-dot mr-1"></i>지도</button>
                     </div>
 
                     <div class="flex flex-wrap items-center gap-3 mb-3">
@@ -682,6 +683,7 @@
 
                     <div id="ac-api-view"></div>
                     <div id="ac-scene-view" class="hidden"></div>
+                    <div id="ac-map-view" class="hidden"></div>
                 </div>
             </section>
 
@@ -1443,6 +1445,7 @@
     <script src="script.js"></script>
     <script src="stage-audit.js"></script>
     <script src="api-catalog.js"></script>
+    <script src="api-map.js"></script>
     <script src="tug-of-war.js"></script>
 </body>
 </html>

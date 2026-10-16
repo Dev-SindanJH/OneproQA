@@ -215,7 +215,69 @@ for f in {c["file"] for c in calls}:
         via |= scenes_of(pf)
     usage[f] = {"guid": g, "scenes": sorted(direct_scenes), "prefabs": sorted(prefabs), "scenes_via_prefab": sorted(via - direct_scenes)}
 
-json.dump({"apis": apis, "calls": calls, "usage": usage}, open(OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+# ---------------- 4. 씬 이동 흐름 ----------------
+# LoadingManager.LoadNextScene(SceneName.X) 코드 호출 + SceneName 을 직렬화한 컴포넌트(SceneLoadBtn, GameCenter_v3 등)
+enum_src = read(os.path.join(ASSETS, "Main", "Script", "Common_SceneName_List.cs"))
+enum_body = enum_src[enum_src.index("enum SceneName"):]
+enum_body = enum_body[:enum_body.index("}")]
+scene_by_value = {int(v): n for n, v in re.findall(r"(\w+)\s*=\s*(\d+)", enum_body)}
+scene_files = {os.path.splitext(os.path.basename(a))[0]: a for a in asset_refs if a.endswith(".unity")}
+
+
+def owner_scenes(file_rel):
+    g = script_guid.get(file_rel)
+    out = set()
+    if g:
+        for ap, gs in asset_refs.items():
+            if g in gs:
+                out |= {ap} if ap.endswith(".unity") else scenes_of(ap)
+    return sorted({os.path.splitext(os.path.basename(x))[0] for x in out}) or ["공통"]
+
+
+flows = []
+load_re = re.compile(r"LoadNextScene\(\s*(?:Common_SceneName_List\.)?SceneName\.(\w+)")
+for p in cs_files:
+    t = read(p)
+    if "LoadNextScene(" not in t:
+        continue
+    fr = rel(p)
+    srcs = None
+    for i, ln in enumerate(t.split("\n")):
+        if ln.strip().startswith("//"):
+            continue
+        for m in load_re.finditer(ln.split("//")[0]):
+            if m.group(1) not in scene_files:
+                continue
+            srcs = srcs or owner_scenes(fr)
+            for s_ in srcs:
+                if s_ != m.group(1):
+                    flows.append({"from": s_, "to": m.group(1), "file": fr, "line": i + 1, "kind": "code"})
+
+ser_scripts = {}
+for p in cs_files:
+    t = read(p)
+    if re.search(r"SceneName\s+sceneName\s*;", t) and rel(p) in script_guid:
+        ser_scripts[script_guid[rel(p)]] = rel(p)
+for ap, gs in asset_refs.items():
+    hit = gs & set(ser_scripts)
+    if not hit:
+        continue
+    text = read(os.path.join(ROOT, ap))
+    srcs = [os.path.splitext(os.path.basename(ap))[0]] if ap.endswith(".unity") else \
+        sorted({os.path.splitext(os.path.basename(x))[0] for x in scenes_of(ap)})
+    for doc in text.split("--- !u!"):
+        gm = re.search(r"m_Script: \{fileID: \d+, guid: ([0-9a-f]{32})", doc)
+        if not gm or gm.group(1) not in hit:
+            continue
+        for v in re.findall(r"\bsceneName: (\d+)", doc):
+            to = scene_by_value.get(int(v))
+            if to not in scene_files:
+                continue
+            for s_ in srcs:
+                if s_ != to:
+                    flows.append({"from": s_, "to": to, "file": ap, "line": 0, "kind": "button:" + os.path.basename(ser_scripts[gm.group(1)])})
+
+json.dump({"apis": apis, "calls": calls, "usage": usage, "flows": flows}, open(OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 n_members = sum(len(a["members"]) for a in apis.values())
 used = {(c["api"], c["member"]) for c in calls}
 print(f"api classes={len(apis)} members={n_members} calls={len(calls)} files={len(usage)} used_members={len(used)}")
@@ -223,3 +285,4 @@ unused = [(a, m) for a, info in apis.items() for m in info["members"] if (a, m) 
 print("unused:", unused)
 unknown = sorted({(c['api'], c['member']) for c in calls if c['member'] not in apis.get(c['api'], {}).get('members', {})})
 print("unknown members:", unknown)
+print(f"scene flows={len(flows)} edges={len({(f['from'], f['to']) for f in flows})}")

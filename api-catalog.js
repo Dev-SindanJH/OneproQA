@@ -47,7 +47,7 @@ const AC_SCENES = {
     StageResultScene: ['스테이지 결과', 'learning'],
     LearningResultScene: ['학습 결과', 'learning'],
     VideoCenterScene: ['영상센터', 'learning'],
-    Study_1: ['학습 (구버전)', 'learning'],
+    Study_1: ['스테이지 (문제 풀이)', 'learning'],
     AILevelTestScene_L1: ['AI 레벨테스트 L1', 'leveltest'],
     AILevelTestScene_L2: ['AI 레벨테스트 L2', 'leveltest'],
     AILevelTestScene_L3: ['AI 레벨테스트 L3', 'leveltest'],
@@ -125,6 +125,8 @@ function setApiCatalogView(view) {
     document.getElementById('ac-view-scene').classList.toggle('active', view === 'scene');
     document.getElementById('ac-api-view').classList.toggle('hidden', view !== 'api');
     document.getElementById('ac-scene-view').classList.toggle('hidden', view !== 'scene');
+    document.getElementById('ac-view-map').classList.toggle('active', view === 'map');
+    document.getElementById('ac-map-view').classList.toggle('hidden', view !== 'map');
     renderApiCatalog();
 }
 
@@ -171,7 +173,8 @@ function renderApiCatalog() {
     _acRenderSummary();
     _acRenderGroupChips();
     if (acState.view === 'api') _acRenderApiView();
-    else _acRenderSceneView();
+    else if (acState.view === 'scene') _acRenderSceneView();
+    else if (typeof renderApiMap === 'function') renderApiMap();
 }
 
 function _acRenderMeta() {
