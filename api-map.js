@@ -1,5 +1,6 @@
 // =====================================================================
 // API 호출 지도 — 지도 보기 (api-catalog.js 의 세 번째 보기)
+// - 기본은 3D 홀로그램(api-holo.js), 이 파일은 평면 지도·공용 데이터(_amCompute)·패널 내용(_amPanelHtml)
 // - 씬을 구역(부팅·학습·게임…)별로 배치하고, 씬 이동 흐름(api-catalog.json flows)을 선으로 잇는다
 // - 핀 크기 = 그 씬에서 부르는 API 수. 검색·HTTP·묶음 필터에 걸린 씬만 밝게 남는다
 // - 씬을 누르면 오른쪽에 그 씬의 API, API 를 누르면 그 API 를 부르는 씬이 지도에 켜진다
@@ -78,9 +79,11 @@ const amState = {
 
 // ---------------------------------------------------------------- 뼈대
 function _amEnsureSkeleton() {
-    const root = document.getElementById('ac-map-view');
-    if (root.dataset.built) return;
-    root.dataset.built = '1';
+    const host = document.getElementById('ac-map-view');
+    if (host.dataset.built) return;
+    host.dataset.built = '1';
+    host.innerHTML = '<div id="am-flat"></div><div id="am-holo" class="hidden"></div>';
+    const root = document.getElementById('am-flat');
     root.innerHTML = `
         <div class="am-layout">
             <div class="bg-white rounded-xl border border-gray-100 shadow-sm am-stage">
@@ -91,6 +94,7 @@ function _amEnsureSkeleton() {
                         <span><i class="am-lg-line am-lg-dash"></i>팝업을 거쳐 이동(추정)</span>
                     </div>
                     <div class="flex items-center gap-1">
+                        <button class="am-tool am-tool-wide" onclick="setApiMapMode('holo')" title="3D 홀로그램 지도로 보기"><i class="fas fa-cube mr-1"></i>홀로그램</button>
                         <button class="am-tool" onclick="zoomApiMap(1.25)" title="확대"><i class="fas fa-plus"></i></button>
                         <button class="am-tool" onclick="zoomApiMap(0.8)" title="축소"><i class="fas fa-minus"></i></button>
                         <button class="am-tool" onclick="resetApiMap()" title="전체 보기"><i class="fas fa-expand"></i></button>
@@ -151,10 +155,50 @@ function _amRadius(n) {
     return n ? 9 + 3.2 * Math.sqrt(n) : 7;
 }
 
-// ---------------------------------------------------------------- 그리기
+// ---------------------------------------------------------------- 보기 전환 (홀로그램 / 평면)
+// 홀로그램은 api-holo.js(ES 모듈, Three.js)를 처음 쓸 때 불러온다. WebGL·모듈 로드가 안 되면 평면으로 남는다.
+const AM_MODE_KEY = 'oneproqa-apimap-mode';
+let _amHoloModule = null;
+
+function _amMode() {
+    try { return localStorage.getItem(AM_MODE_KEY) || 'holo'; } catch (e) { return 'holo'; }
+}
+
+function setApiMapMode(mode) {
+    try { localStorage.setItem(AM_MODE_KEY, mode); } catch (e) { /* 저장 불가 환경 무시 */ }
+    renderApiMap();
+}
+
 function renderApiMap() {
     if (!acState.data) return;
     _amEnsureSkeleton();
+    const holo = _amMode() === 'holo';
+    document.getElementById('am-flat').classList.toggle('hidden', holo);
+    document.getElementById('am-holo').classList.toggle('hidden', !holo);
+    if (!holo) {
+        if (_amHoloModule && _amHoloModule.pause) _amHoloModule.pause();
+        _amRenderFlat();
+        return;
+    }
+    if (!_amHoloModule) {
+        _amHoloModule = import('./api-holo.js').then(m => m.createHolo(document.getElementById('am-holo')))
+            .catch(e => {
+                console.error('[API 홀로그램 지도] 시작 실패', e);
+                showToast('3D 지도를 열 수 없어 평면 지도로 보여줍니다.', 'error');
+                _amHoloModule = null;
+                setApiMapMode('flat');
+                return null;
+            });
+    }
+    Promise.resolve(_amHoloModule).then(h => {
+        if (!h) return;
+        _amHoloModule = h;
+        if (_amMode() === 'holo' && acState.view === 'map') h.render();
+    });
+}
+
+// ---------------------------------------------------------------- 평면 지도 그리기
+function _amRenderFlat() {
     const { scenes, filterOn, apiScenes, pos } = _amCompute();
     if (amState.scene && !scenes[amState.scene]) amState.scene = null;
 
@@ -229,7 +273,7 @@ function renderApiMap() {
         el.addEventListener('pointerleave', () => _amTip(null));
     });
     _amApplyViewBox();
-    _amRenderPanel(scenes, apiScenes);
+    document.getElementById('am-panel').innerHTML = _amPanelHtml(scenes, apiScenes);
 }
 
 function _amTip(text, ev) {
@@ -242,33 +286,31 @@ function _amTip(text, ev) {
     tip.style.top = `${ev.clientY - box.top + 14}px`;
 }
 
-// ---------------------------------------------------------------- 오른쪽 패널
-function _amRenderPanel(scenes, apiScenes) {
-    const panel = document.getElementById('am-panel');
+// ---------------------------------------------------------------- 패널 내용 (평면 오른쪽 칸 / 홀로그램 떠 있는 패널)
+function _amPanelHtml(scenes, apiScenes) {
     const flows = acState.data.flows || [];
 
     if (amState.api) {
         const ep = acState.data.endpoints.find(e => e.key === amState.api);
-        if (!ep) { amState.api = null; return renderApiMap(); }
+        if (!ep) { amState.api = null; return _amPanelHtml(scenes, null); }
         const rows = ep.calls.map(c => `
             <li class="am-item">
                 <div class="flex flex-wrap gap-1 mb-1">${(c.scenes || []).map(s => `<button class="ac-scene" onclick="selectApiMapScene('${escapeHtml(s)}', true)">${escapeHtml(_acSceneLabel(s))}</button>`).join('') || '<span class="text-xs text-gray-400">씬 미상</span>'}</div>
                 <div class="text-xs font-bold text-slate-800">${escapeHtml(c.screen || '')}</div>
                 <div class="text-xs text-gray-500 mt-0.5">${escapeHtml(c.trigger || '')}</div>
             </li>`).join('');
-        panel.innerHTML = `
+        return `
             <button class="am-back" onclick="selectApiMapApi(null)"><i class="fas fa-arrow-left mr-1"></i>${amState.scene ? escapeHtml(_acSceneLabel(amState.scene)) : '지도'}로 돌아가기</button>
             <div class="flex flex-wrap items-center gap-1.5 mt-2">${_acHttpBadges(ep)}<span class="font-bold text-slate-800">${escapeHtml(ep.name || ep.key)}</span></div>
             ${(ep.paths || []).map(p => `<div class="font-mono ac-path mt-1">${escapeHtml(p)}</div>`).join('')}
             ${ep.desc ? `<div class="text-xs text-gray-500 mt-2">${escapeHtml(ep.desc)}</div>` : ''}
             <div class="am-sub">지도에 켜진 씬 ${apiScenes ? apiScenes.size : 0}곳에서 부릅니다 · 호출 지점 ${ep.calls.length}곳</div>
             <ul class="am-list">${rows}</ul>`;
-        return;
     }
 
     if (!amState.scene) {
         const top = Object.entries(scenes).filter(([, v]) => v.eps.size).sort((a, b) => b[1].eps.size - a[1].eps.size).slice(0, 8);
-        panel.innerHTML = `
+        return `
             <div class="font-bold text-slate-800 mb-1">씬을 눌러 보세요</div>
             <div class="text-xs text-gray-500 leading-relaxed">핀을 누르면 그 씬에서 부르는 API 가 여기 나옵니다. API 를 누르면 그 API 를 부르는 씬이 지도에 켜집니다.
                 위쪽 검색·HTTP·묶음 필터를 걸면 해당하는 씬만 밝게 남고, 핀 오른쪽 위 숫자는 걸린 API 수입니다.</div>
@@ -276,7 +318,6 @@ function _amRenderPanel(scenes, apiScenes) {
             <ul class="am-list">${top.map(([s, v]) => `
                 <li><button class="am-row" onclick="selectApiMapScene('${escapeHtml(s)}')"><span>${escapeHtml(_acSceneLabel(s))}</span><span class="ac-scene-n">${v.eps.size}</span></button></li>`).join('')}
             </ul>`;
-        return;
     }
 
     const s = amState.scene;
@@ -290,7 +331,7 @@ function _amRenderPanel(scenes, apiScenes) {
     const list = _acFiltered(false)
         .map(({ ep, calls }) => ({ ep, c: calls.find(c => (c.scenes || []).includes(s)) }))
         .filter(x => x.c);
-    panel.innerHTML = `
+    return `
         <div class="flex items-baseline gap-2 flex-wrap">
             <div class="text-lg font-bold text-slate-800">${escapeHtml(_acSceneLabel(s))}</div>
             <span class="font-mono text-xs text-gray-400">${escapeHtml(s)}</span>
@@ -308,6 +349,12 @@ function _amRenderPanel(scenes, apiScenes) {
 
 function selectApiMapScene(scene, focus) {
     amState.scene = amState.scene === scene && !focus ? null : scene;
+    amState.api = null;
+    renderApiMap();
+}
+
+function clearApiMapSelection() {
+    amState.scene = null;
     amState.api = null;
     renderApiMap();
 }

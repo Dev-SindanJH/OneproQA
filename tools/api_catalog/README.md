@@ -35,3 +35,4 @@ python -I build_catalog.py raw.json descriptions.json C:\Users\math_18\Documents
 - 지도 보기의 씬 이동선은 이동 대상이 코드에 상수로 박힌 경우만 잡는다. 서버 배너·공지(`bannerData.value` 등)나 '이전 씬으로' 같은 변수 이동은 빠진다.
   팝업·공용 매니저에서만 들어가는 씬(상점, 아이돌 아바타)은 로비에서 팝업을 거친다고 보고 점선으로 그린다.
 - 지도 좌표는 `api-map.js` 의 `AM_POS` 에 손으로 정했다. 새 씬은 로비 아래 빈 칸에 자동으로 놓이니 자리를 정해 넣는다.
+- 지도 보기의 기본은 3D 홀로그램(`api-holo.js`, Three.js 0.160 을 jsDelivr 에서 importmap 으로 받음)이고, 같은 좌표를 쓴다. WebGL·CDN 이 막히면 평면 지도(`api-map.js`)로 자동 전환되고, 화면 오른쪽 위 버튼으로도 바꿀 수 있다(선택은 브라우저에 기억).

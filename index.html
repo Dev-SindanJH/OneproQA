@@ -18,6 +18,15 @@
     <link rel="stylesheet" href="theme-glass.css">
     <link rel="stylesheet" href="stage-audit.css">
     <link rel="stylesheet" href="api-catalog.css">
+    <!-- API 호출 지도의 3D 홀로그램(api-holo.js)이 쓰는 Three.js -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
     <link rel="stylesheet" href="tug-of-war.css">
 </head>
 <body class="bg-gray-50 font-sans text-gray-900">
