@@ -83,6 +83,12 @@
 }
 .tooltip-container:hover .tooltip-text-left { visibility: visible; opacity: 1; }
 
+/* 원본 툴팁 span 은 내용 보관용 - 실제 표시는 body 직속 .floating-tooltip (script.js) */
+.tooltip-container .tooltip-text,
+.tooltip-container .tooltip-text-left { display: none !important; }
+.floating-tooltip { margin-top: 0; transition: opacity 0.15s; }
+.floating-tooltip.show { visibility: visible; opacity: 1; }
+
 /* 커스텀 체크박스 */
 .custom-checkbox { width: 16px; height: 16px; cursor: pointer; accent-color: #3b82f6; }
 
@@ -427,9 +433,8 @@ tbody, tr, td {
     white-space: nowrap;
     display: block;
 }
-#logTable th:nth-child(7), #logTable td:nth-child(7) { width: 130px; }  /* 캡처 */
-#logTable th:nth-child(8), #logTable td:nth-child(8) { width: 200px; } /* 개발자 코멘트 */
-#logTable th:nth-child(9), #logTable td:nth-child(9) { width: 130px; }  /* 상세보기 */
+#logTable th:nth-child(7), #logTable td:nth-child(7) { width: 330px; } /* 개발자 코멘트 (구 캡처 컬럼 폭 130px 흡수) */
+#logTable th:nth-child(8), #logTable td:nth-child(8) { width: 130px; }  /* 상세보기 */
 
 /* 작성일 폰트 크기 축소 */
 #logTable td:nth-child(2) { 
@@ -449,7 +454,7 @@ tbody, tr, td {
 }
 
 /* 개발자 코멘트 - 텍스트 자동 줄바꿈 */
-#logTable td:nth-child(8) { 
+#logTable td:nth-child(7) { 
     white-space: normal;
     word-break: break-word;
     overflow-wrap: break-word;

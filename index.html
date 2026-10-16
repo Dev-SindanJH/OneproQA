@@ -340,11 +340,10 @@
                                         <span>콘텐츠</span>
                                     </th>
                                     <th class="px-4 py-4 font-bold border-b text-center w-[32%]">검수 내용</th>
-                                    <th class="px-4 py-4 font-bold border-b text-center w-[8%]">캡처</th>
-                                    <th class="px-4 py-4 font-bold border-b text-center w-[10%]">
+                                    <th class="px-4 py-4 font-bold border-b text-center w-[18%]">
                                         <div class="flex items-center justify-center gap-1">
                                             <span>개발자 코멘트</span>
-                                            <div class="tooltip-container inline-block" onmouseenter="positionTooltipLeft(event)" onmousemove="positionTooltipLeft(event)">
+                                            <div class="tooltip-container inline-block">
                                                 <i class="fas fa-question-circle text-blue-400 text-xs cursor-help"></i>
                                                 <span class="tooltip-text-left">코멘트 뒤에 붙는 (숫자)는 수정된 버전입니다. 작성된 숫자보다 높은 버전에서 수정완료를 체크해주시면 됩니다.</span>
                                             </div>
@@ -354,7 +353,7 @@
                                 </tr>
                             </thead>
                             <tbody id="logTableBody" class="divide-y divide-gray-100 text-sm">
-                                <tr><td colspan="9" class="text-center py-8 text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>불러오는 중...</td></tr>
+                                <tr><td colspan="8" class="text-center py-8 text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>불러오는 중...</td></tr>
                             </tbody>
                         </table>
                         <div id="pagination" class="flex justify-center items-center gap-1 p-4 bg-white border-t border-gray-100"></div>
@@ -993,11 +992,12 @@
                     </div>
 
                     <!-- 캡처 이미지 영역 -->
-                    <div id="modal-image-section" class="mb-6 hidden">
+                    <div id="modal-image-section" class="mb-6">
                         <h4 class="text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">캡처 이미지</h4>
-                        <div class="bg-slate-100 p-4 rounded-xl border border-slate-200">
+                        <div id="modal-image-wrap" class="bg-slate-100 p-4 rounded-xl border border-slate-200">
                             <img id="modal-image" src="" alt="캡처 이미지" class="max-w-full rounded-lg shadow-sm cursor-pointer hover:opacity-90 transition" onclick="openImageViewerFromModal()">
                         </div>
+                        <button id="modal-image-add-btn" onclick="openAddImageFromModal()" class="hidden text-slate-500 hover:text-slate-700 text-xs font-bold border border-dashed border-slate-300 px-3 py-2 rounded-lg transition"><i class="fas fa-plus mr-1"></i>이미지 추가</button>
                     </div>
 
                     <!-- 전송 직전 최근 탭 시점 화면 기록 -->

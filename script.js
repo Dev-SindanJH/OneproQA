@@ -316,21 +316,6 @@ function toggleSidebar() {
     }
 }
 
-// 툴팁을 마우스 왼쪽에 표시
-function positionTooltipLeft(event) {
-    const tooltip = event.currentTarget.querySelector('.tooltip-text-left');
-    if (!tooltip) return;
-
-    const mouseX = event.clientX;
-    const mouseY = event.clientY;
-
-    // 툴팁의 너비를 고려하여 왼쪽에 배치
-    const tooltipWidth = tooltip.offsetWidth || 400; // 기본값 400px
-
-    tooltip.style.left = `${mouseX - tooltipWidth - 10}px`;
-    tooltip.style.top = `${mouseY + 10}px`;
-}
-
 function showSection(sectionId) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.getElementById(sectionId).classList.add('active');
@@ -564,27 +549,43 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    document.addEventListener('mouseover', (e) => {
-        const container = e.target.closest('.tooltip-container');
-        if (!container) return;
+    // 툴팁: 글래스 테마 카드의 backdrop-filter 가 position: fixed 의 기준을 카드로 바꿔 위치가 어긋나므로,
+    // 원본 span 은 숨기고 body 직속 요소 하나에 내용을 복사해 마우스 옆에 띄운다
+    const floatingTooltip = document.createElement('div');
+    floatingTooltip.className = 'tooltip-text floating-tooltip';
+    document.body.appendChild(floatingTooltip);
+    let tooltipSource = null;
 
-        const tooltip = container.querySelector('.tooltip-text, .tooltip-text-left');
-        if (!tooltip) return;
+    const hideFloatingTooltip = () => {
+        tooltipSource = null;
+        floatingTooltip.classList.remove('show');
+    };
 
-        const rect = container.getBoundingClientRect();
-        const isLeftAligned = tooltip.classList.contains('tooltip-text-left');
+    document.addEventListener('mousemove', (e) => {
+        const container = e.target.closest ? e.target.closest('.tooltip-container') : null;
+        const source = container ? container.querySelector('.tooltip-text, .tooltip-text-left') : null;
+        if (!source) return hideFloatingTooltip();
 
-        // position: fixed는 viewport 기준이므로 scroll offset 제외
-        tooltip.style.top = `${rect.bottom}px`;
-
-        if (isLeftAligned) {
-            tooltip.style.left = 'auto';
-            tooltip.style.right = `${window.innerWidth - rect.right}px`;
-        } else {
-            tooltip.style.left = `${rect.left}px`;
-            tooltip.style.right = 'auto';
+        if (source !== tooltipSource) {
+            tooltipSource = source;
+            floatingTooltip.innerHTML = source.innerHTML;
+            floatingTooltip.classList.add('show');
         }
+
+        // 기본은 커서 오른쪽 아래(코멘트용 -left 는 왼쪽 아래), 화면 밖으로 나가면 반대편으로
+        const gap = 14, margin = 8;
+        const w = floatingTooltip.offsetWidth, h = floatingTooltip.offsetHeight;
+        const preferLeft = source.classList.contains('tooltip-text-left');
+        let x = preferLeft ? e.clientX - w - gap : e.clientX + gap;
+        if (x + w > window.innerWidth - margin) x = e.clientX - w - gap;
+        if (x < margin) x = Math.min(e.clientX + gap, window.innerWidth - w - margin);
+        let y = e.clientY + gap;
+        if (y + h > window.innerHeight - margin) y = e.clientY - h - gap;
+        floatingTooltip.style.left = `${Math.max(margin, x)}px`;
+        floatingTooltip.style.top = `${Math.max(margin, y)}px`;
     });
+    document.addEventListener('scroll', hideFloatingTooltip, true);
+    document.documentElement.addEventListener('mouseleave', hideFloatingTooltip);
 
     // Esc: 열려 있는 모달 중 가장 위(z-index 최대, 같으면 DOM상 나중)에 있는 것 하나만 닫기
     document.addEventListener('keydown', (e) => {
@@ -1237,7 +1238,7 @@ function navigateToListWithFilter(state) {
 async function fetchLogs(forceRefresh = false) {
     const tbody = document.getElementById('logTableBody');
     const mobileContainer = document.getElementById('mobileCardContainer');
-    tbody.innerHTML = '<tr><td colspan="9" class="text-center py-8 text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>데이터를 불러오는 중...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>데이터를 불러오는 중...</td></tr>';
     if (mobileContainer) mobileContainer.innerHTML = '<p class="text-center py-8 text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>데이터를 불러오는 중...</p>';
 
     // 캐시 키 생성 (페이지 + 필터 + 정렬 조건 포함)
@@ -1286,7 +1287,7 @@ async function fetchLogs(forceRefresh = false) {
     const { data, error } = await query;
 
     if (error) {
-        tbody.innerHTML = `<tr><td colspan="9" class="text-center py-8 text-red-500">실패: ${error.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-red-500">실패: ${error.message}</td></tr>`;
         if (mobileContainer) mobileContainer.innerHTML = `<p class="text-center py-8 text-red-500">실패: ${error.message}</p>`;
         return;
     }
@@ -1642,7 +1643,7 @@ function renderTable() {
 
     if (currentPageLogs.length === 0) {
         renderPagination();
-        tbody.innerHTML = '<tr><td colspan="9" class="text-center py-8 text-gray-400">내역이 없습니다.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-gray-400">내역이 없습니다.</td></tr>';
         if (mobileContainer) mobileContainer.innerHTML = '<p class="text-center py-8 text-gray-400">내역이 없습니다.</p>';
         return;
     }
@@ -1652,10 +1653,6 @@ function renderTable() {
         const currentState = (log.state || log.status || '').trim();
         const devComment = log.developer_comment || '<span class="text-gray-300 italic">코멘트 없음</span>';
         const canEditComment = currentState === '수정 완료' || currentState === '보류/패스';
-
-        let imageActionHtml = log.image_url 
-            ? `<button onclick="openImageViewerModal('${log.id}')" class="text-blue-700 hover:text-blue-900 text-[10px] font-black border border-blue-200 px-2.5 py-1 rounded-md bg-blue-50/50 shadow-sm transition"><i class="fas fa-image mr-1"></i>이미지 보기</button>`
-            : `<button onclick="openAddEditImageModal('${log.id}', null)" class="text-slate-500 hover:text-slate-700 text-[10px] font-bold border border-dashed border-slate-300 px-2 py-1 rounded-md transition shadow-inner">+추가</button>`;
 
         let actionButtons = '';
         if (currentState === '수정 필요') {
@@ -1733,7 +1730,6 @@ function renderTable() {
                 </div>
                 ${stageBadgeHtml}
             </td>
-            <td class="px-4 py-4 text-center border-b border-gray-100">${imageActionHtml}</td>
             <td class="px-4 py-4 text-gray-600 border-b border-gray-100 ${canEditComment ? 'cursor-pointer hover:bg-blue-50/30' : ''}" ${canEditComment ? `onclick="openDevCommentEditModal('${log.id}')" title="클릭하여 코멘트 수정"` : ''}>
                 <div class="tooltip-container">
                     <div class="line-clamp-3 w-full text-xs leading-relaxed">${log.developer_comment || '<span class="text-gray-300 italic">코멘트 없음</span>'}</div>
@@ -2198,15 +2194,18 @@ async function openDetailModal(logId) {
     document.getElementById('modal-status').innerHTML = getStateBadge(log.state || log.status);
     document.getElementById('modal-description').innerText = log.user_description || '내용 없음';
 
-    // 캡처 이미지 표시
-    const imageSection = document.getElementById('modal-image-section');
+    // 캡처 이미지 표시 (목록에서 캡처 컬럼이 빠졌으므로 이미지가 없으면 여기서 추가)
     const modalImage = document.getElementById('modal-image');
+    const imageAddBtn = document.getElementById('modal-image-add-btn');
+    modalImage.dataset.logId = log.id;
     if (log.image_url) {
         modalImage.src = log.image_url;
-        modalImage.dataset.logId = log.id;
-        imageSection.classList.remove('hidden');
+        document.getElementById('modal-image-wrap').classList.remove('hidden');
+        imageAddBtn.classList.add('hidden');
     } else {
-        imageSection.classList.add('hidden');
+        modalImage.removeAttribute('src');
+        document.getElementById('modal-image-wrap').classList.add('hidden');
+        imageAddBtn.classList.remove('hidden');
     }
 
     // 검수 환경(디바이스) 정보 표시
@@ -2669,6 +2668,14 @@ function renderScreenHistory(log) {
         </a>`;
     }).join('');
     section.classList.remove('hidden');
+}
+
+function openAddImageFromModal() {
+    const logId = document.getElementById('modal-image').dataset.logId;
+    if (logId) {
+        closeModal('detailModal');
+        openAddEditImageModal(logId, null);
+    }
 }
 
 function openImageViewerFromModal() {
